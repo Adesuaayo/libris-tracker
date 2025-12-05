@@ -30,8 +30,7 @@ jobs:
         run: npm install
 
       - name: Build Web Assets
-        # This builds the React app into the dist/ folder
-        # We pass the secrets as environment variables so the build can use them
+        # Inject secrets from GitHub Settings
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
@@ -39,11 +38,9 @@ jobs:
         run: npm run build
 
       - name: Initialize Android Project
-        # This adds the android folder and runs your fix-android.js script automatically
-        # defined in your package.json as "android:init"
-        run: |
-          npx cap add android
-          node scripts/fix-android.js
+        # We use standard capacitor add here. 
+        # We DO NOT run fix-android.js because the cloud uses Java 17 (standard), not Java 21.
+        run: npx cap add android
 
       - name: Sync Capacitor
         run: npx cap sync
