@@ -1,0 +1,5 @@
+{
+  "name": "Libris - Book Tracker & Analytics",
+  "description": "A comprehensive book tracking application featuring reading analytics, Google Books integration, and AI-powered recommendations using Gemini 2.5 Flash.",
+  "requestFramePermissions": []
+}
