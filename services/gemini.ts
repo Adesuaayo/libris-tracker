@@ -15,8 +15,8 @@ const getEnv = (key: string) => {
 };
 
 // Initialize Gemini Client
-// CHANGED: Checks for GEMINI_API_KEY first to match your .env file
-const apiKey = getEnv('GEMINI_API_KEY') || getEnv('API_KEY');
+// CHANGED: Prioritize VITE_GEMINI_API_KEY which allows Vite to see it during the cloud build
+const apiKey = getEnv('VITE_GEMINI_API_KEY') || getEnv('GEMINI_API_KEY') || getEnv('API_KEY');
 console.log(`[Libris] Gemini Config: Key found? ${!!apiKey}, Length: ${apiKey?.length}`);
 
 const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key' }); 
