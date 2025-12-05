@@ -4,6 +4,7 @@ import { Book, ReadingStatus } from "../types";
 // Helper to reliably get environment variables
 const getEnv = (key: string) => {
   let val = '';
+  // Check both import.meta and process.env to cover all build scenarios
   const meta = import.meta as any;
   if (meta.env && meta.env[key]) {
     val = String(meta.env[key]);
@@ -22,14 +23,21 @@ const standardKey = getEnv('API_KEY');
 
 const apiKey = viteKey || geminiKey || standardKey;
 
-console.log(`[Libris] Gemini Config: Key found? ${!!apiKey}, VITE_KEY: ${!!viteKey}, GEMINI_KEY: ${!!geminiKey}`);
+console.log(`[Libris] Gemini Config: Key found? ${!!apiKey}`);
 
+// Initialize with the found key (or a dummy one to prevent crash on load, handled later)
 const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key' }); 
 
 const checkApiKey = (): string | null => {
   if (!apiKey || apiKey.includes('your_actual_key') || apiKey.length < 10) {
     // Return detailed debug info for the phone alert
-    return `API Key Error. Debug Info: VITE_GEMINI_API_KEY=${viteKey ? 'OK' : 'MISSING'}, GEMINI_API_KEY=${geminiKey ? 'OK' : 'MISSING'}. Check GitHub Secrets.`;
+    return `API Key Error. 
+    Debug Info: 
+    VITE_GEMINI_API_KEY=${viteKey ? 'OK' : 'MISSING'}
+    GEMINI_API_KEY=${geminiKey ? 'OK' : 'MISSING'}
+    API_KEY=${standardKey ? 'OK' : 'MISSING'}
+    
+    Please check GitHub Secrets.`;
   }
   return null;
 };
