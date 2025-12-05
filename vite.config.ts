@@ -7,8 +7,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      // Polyfill process.env so it works the same as Node.js apps
-      'process.env': env
+      // Polyfill process.env but PRESERVE existing system variables (like those from GitHub Actions)
+      'process.env': { ...process.env, ...env }
     },
     server: {
       port: 3000
