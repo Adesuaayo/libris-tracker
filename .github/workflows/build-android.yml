@@ -37,13 +37,17 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: npm run build
 
-      - name: Initialize Android Project
-        # We use standard capacitor add here. 
-        # We DO NOT run fix-android.js because the cloud uses Java 17 (standard), not Java 21.
-        run: npx cap add android
-
-      - name: Sync Capacitor
-        run: npx cap sync
+      - name: Setup Android Project
+        # Logic: If android folder exists (pushed from local), just sync.
+        # If not, add it fresh.
+        run: |
+          if [ -d "android" ]; then
+            echo "Android folder detected. Running Sync..."
+            npx cap sync android
+          else
+            echo "Android folder missing. Creating new..."
+            npx cap add android
+          fi
 
       - name: Build APK with Gradle
         working-directory: ./android
