@@ -6,7 +6,7 @@ import { Button } from './components/Button';
 import { Auth } from './components/Auth';
 import { supabase, bookApi } from './services/supabase';
 import { BookOpen, BarChart2, Plus, Search, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, Menu, LogOut, Loader2 } from 'lucide-react';
-import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
+import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini-client';
 import { App as CapApp } from '@capacitor/app';
 
 type SortOption = 'dateAdded' | 'rating' | 'title' | 'dateFinished';
@@ -221,13 +221,14 @@ export default function App() {
     try {
         let text = "";
         if (mode === 'recommend') {
-            text = await getBookRecommendations(books);
+            const recs = await getBookRecommendations(books);
+            text = JSON.stringify(recs);
         } else {
             text = await analyzeReadingHabits(books);
         }
         setAiResponse(text);
-    } catch (e) {
-        setAiResponse("An error occurred connecting to Gemini.");
+    } catch (e: any) {
+        setAiResponse(`Error: ${e.message || "Failed to connect to AI service. Please try again."}`);
     } finally {
         setAiLoading(false);
     }

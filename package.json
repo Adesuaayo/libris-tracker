@@ -28,9 +28,11 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.4",
     "@capacitor/cli": "^6.0.0",
+    "@types/node": "^20.0.0",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vercel/node": "^3.0.0",
     "typescript": "^5.2.2",
     "vite": "^5.1.4"
   }

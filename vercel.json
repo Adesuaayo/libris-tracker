@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "env": {
+    "GEMINI_API_KEY": "@GEMINI_API_KEY",
+    "VITE_SUPABASE_URL": "@VITE_SUPABASE_URL",
+    "VITE_SUPABASE_ANON_KEY": "@VITE_SUPABASE_ANON_KEY"
+  },
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}
