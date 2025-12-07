@@ -2,6 +2,7 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "nodejs": "20.x",
   "functions": {
     "api/**/*.ts": {
       "runtime": "@vercel/node@3.0.0",
