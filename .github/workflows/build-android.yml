@@ -31,15 +31,14 @@ jobs:
 
       - name: Build Web Assets
         # Inject secrets from GitHub Settings
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           echo "Build environment variables:"
           echo "VITE_GEMINI_API_KEY: ${VITE_GEMINI_API_KEY:0:20}... (length: ${#VITE_GEMINI_API_KEY})"
           echo "VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:0:30}..."
           echo "VITE_SUPABASE_ANON_KEY: length ${#VITE_SUPABASE_ANON_KEY}"
+          VITE_SUPABASE_URL="${{ secrets.VITE_SUPABASE_URL }}" \
+          VITE_SUPABASE_ANON_KEY="${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+          VITE_GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
           npm run build
           echo "Build complete. Checking generated config.ts:"
           cat src/config.ts | head -10
