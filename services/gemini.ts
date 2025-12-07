@@ -2,18 +2,16 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Book, ReadingStatus } from "../types";
 
 // Helper to get environment variables from Vite's import.meta.env
-// This is set by vite.config.ts during build and is reliable in all environments
+// Vite injects these at build time via define config
 const getEnv = (key: string): string => {
-  const meta = import.meta as any;
-  const value = meta.env?.[key] || '';
-  return String(value).trim().replace(/^"|"$/g, '');
+  return String((import.meta.env as any)[key] || '').trim();
 };
 
 // Initialize Gemini Client
 // Use VITE_GEMINI_API_KEY (set by vite.config.ts from GitHub Secrets or .env)
 const apiKey = getEnv('VITE_GEMINI_API_KEY');
 
-console.log(`[Libris] Gemini Config: Key found? ${!!apiKey}, Length: ${apiKey?.length}`);
+console.log(`[Libris] Gemini Config: Key loaded, Length: ${apiKey?.length}`);
 
 // Initialize with the found key (or a dummy one to prevent crash on load, handled later)
 const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key' }); 
