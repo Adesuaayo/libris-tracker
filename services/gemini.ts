@@ -1,43 +1,26 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Book, ReadingStatus } from "../types";
 
-// Helper to reliably get environment variables
-const getEnv = (key: string) => {
-  let val = '';
-  // Check both import.meta and process.env to cover all build scenarios
+// Helper to get environment variables from Vite's import.meta.env
+// This is set by vite.config.ts during build and is reliable in all environments
+const getEnv = (key: string): string => {
   const meta = import.meta as any;
-  if (meta.env && meta.env[key]) {
-    val = String(meta.env[key]);
-  }
-  else if (typeof process !== 'undefined' && process.env && process.env[key]) {
-    val = String(process.env[key]);
-  }
-  return val.trim().replace(/^y"|"$|^"|"/g, '');
+  const value = meta.env?.[key] || '';
+  return String(value).trim().replace(/^"|"$/g, '');
 };
 
 // Initialize Gemini Client
-// Prioritize VITE_GEMINI_API_KEY which allows Vite to see it during the cloud build
-const viteKey = getEnv('VITE_GEMINI_API_KEY');
-const geminiKey = getEnv('GEMINI_API_KEY');
-const standardKey = getEnv('API_KEY');
+// Use VITE_GEMINI_API_KEY (set by vite.config.ts from GitHub Secrets or .env)
+const apiKey = getEnv('VITE_GEMINI_API_KEY');
 
-const apiKey = viteKey || geminiKey || standardKey;
-
-console.log(`[Libris] Gemini Config: Key found? ${!!apiKey}`);
+console.log(`[Libris] Gemini Config: Key found? ${!!apiKey}, Length: ${apiKey?.length}`);
 
 // Initialize with the found key (or a dummy one to prevent crash on load, handled later)
 const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key' }); 
 
 const checkApiKey = (): string | null => {
   if (!apiKey || apiKey.includes('your_actual_key') || apiKey.length < 10) {
-    // Return detailed debug info for the phone alert
-    return `API Key Error. 
-    Debug Info: 
-    VITE_GEMINI_API_KEY=${viteKey ? 'OK' : 'MISSING'}
-    GEMINI_API_KEY=${geminiKey ? 'OK' : 'MISSING'}
-    API_KEY=${standardKey ? 'OK' : 'MISSING'}
-    
-    Please check GitHub Secrets.`;
+    return `API Key Error. VITE_GEMINI_API_KEY is missing or invalid. Please check GitHub Secrets and ensure the workflow maps GEMINI_API_KEY → VITE_GEMINI_API_KEY.`;
   }
   return null;
 };
