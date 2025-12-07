@@ -1,0 +1,6 @@
+// Auto-generated at build time - DO NOT EDIT
+export const ENV_CONFIG = {
+  VITE_GEMINI_API_KEY: '__VITE_GEMINI_API_KEY__',
+  VITE_SUPABASE_URL: '__VITE_SUPABASE_URL__',
+  VITE_SUPABASE_ANON_KEY: '__VITE_SUPABASE_ANON_KEY__',
+};

@@ -1,29 +1,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Book, ReadingStatus } from "../types";
+import { ENV_CONFIG } from "../config";
 
-// Helper to get environment variables
-// Tries multiple sources for compatibility (web, Capacitor, etc.)
-const getEnv = (key: string): string => {
-  let value: any;
-  
-  // Try import.meta.env first (standard Vite)
-  value = (import.meta.env as any)?.[key];
-  if (value) return String(value).trim();
-  
-  // Try globalThis (injected by vite.config for Capacitor compatibility)
-  value = (globalThis as any)?.[key];
-  if (value) return String(value).trim();
-  
-  // Try window (last resort)
-  value = (window as any)?.[key];
-  if (value) return String(value).trim();
-  
-  return '';
-};
-
-// Initialize Gemini Client
-// Use VITE_GEMINI_API_KEY (set by vite.config.ts from GitHub Secrets or .env)
-const apiKey = getEnv('VITE_GEMINI_API_KEY');
+// Get the API key from the generated config (set at build time)
+const apiKey = ENV_CONFIG.VITE_GEMINI_API_KEY || '';
 
 console.log(`[Libris] Gemini Config: Key loaded, Length: ${apiKey?.length}`);
 
