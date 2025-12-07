@@ -1,0 +1,147 @@
+✅ VERCEL ENVIRONMENT VARIABLE ERROR - FIXED
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🐛 THE PROBLEM
+
+You saw this error in Vercel:
+  "Environment Variable 'GEMINI_API_KEY' references Secret 'GEMINI_API_KEY', 
+   which does not exist."
+
+CAUSE: The old vercel.json tried to reference secrets using @GEMINI_API_KEY syntax,
+       but those secrets weren't defined in Vercel's secret manager.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ THE FIX (Already Applied)
+
+I've updated vercel.json to REMOVE the broken env references.
+
+Now environment variables are added directly in Vercel's UI (the correct way).
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📋 YOUR ACTION ITEMS (Copy & Paste into Vercel Dashboard)
+
+1. Go to: https://vercel.com
+
+2. Select your libris-tracker project
+
+3. Go to: Settings → Environment Variables
+
+4. Add THREE variables (use exact values from .env.local):
+
+   ┌─────────────────────────────────────────────────────────────┐
+   │ Variable 1: GEMINI_API_KEY                                  │
+   ├─────────────────────────────────────────────────────────────┤
+   │ Name:  GEMINI_API_KEY                                       │
+   │ Value: AIzaSyAJNLoBBYbDjwLJBpNm2Fuf_UYjA0oUFLs             │
+   │ ☑ Production   ☑ Preview                                    │
+   │ [Save]                                                      │
+   └─────────────────────────────────────────────────────────────┘
+
+   ┌─────────────────────────────────────────────────────────────┐
+   │ Variable 2: VITE_SUPABASE_URL                               │
+   ├─────────────────────────────────────────────────────────────┤
+   │ Name:  VITE_SUPABASE_URL                                    │
+   │ Value: https://rdxbmifcclfbdfgvnikg.supabase.co            │
+   │ ☑ Production   ☑ Preview                                    │
+   │ [Save]                                                      │
+   └─────────────────────────────────────────────────────────────┘
+
+   ┌─────────────────────────────────────────────────────────────┐
+   │ Variable 3: VITE_SUPABASE_ANON_KEY                          │
+   ├─────────────────────────────────────────────────────────────┤
+   │ Name:  VITE_SUPABASE_ANON_KEY                               │
+   │ Value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3M...    │
+   │ ☑ Production   ☑ Preview                                    │
+   │ [Save]                                                      │
+   └─────────────────────────────────────────────────────────────┘
+
+   ⚠️  CRITICAL: For EACH variable, check BOTH "Production" and "Preview"
+
+5. After adding all three:
+   - Go to Deployments tab
+   - Click "Redeploy" on your latest deployment
+   - Wait 2-3 minutes for build
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✔️ VERIFY THE FIX
+
+After redeployment:
+
+1. Visit: https://libris-tracker.vercel.app/api/health
+
+2. You should see:
+   {"status":"ok","timestamp":"2025-12-07T...","message":"Libris backend is running"}
+
+3. If you see this → ✅ WORKING!
+
+4. If you see error → Check Vercel logs (Deployments → Logs tab)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📝 WHAT I CHANGED
+
+Before (Broken):
+  vercel.json had: "env": { "GEMINI_API_KEY": "@GEMINI_API_KEY" }
+  ❌ This syntax doesn't work for regular environment variables
+
+After (Fixed):
+  vercel.json now has: (no env section)
+  ✅ Environment variables added in Vercel UI instead
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎯 QUICK CHECKLIST
+
+In Vercel Dashboard:
+
+  [ ] Settings → Environment Variables opened
+  [ ] Added GEMINI_API_KEY (Production + Preview checked)
+  [ ] Added VITE_SUPABASE_URL (Production + Preview checked)
+  [ ] Added VITE_SUPABASE_ANON_KEY (Production + Preview checked)
+  [ ] Went to Deployments → Clicked Redeploy
+  [ ] Waited 2-3 minutes
+  [ ] Visited /api/health and saw {"status":"ok"}
+  [ ] No more error messages in Vercel dashboard
+
+═══════════════════════════════════════════════════════════════════════════════
+
+💡 WHY THIS WORKS
+
+Vercel Environment Variables:
+  - Can be set in Vercel UI (Dashboard)
+  - Can be set in vercel.json (but NOT as references)
+  - Can be referenced in GitHub Actions with @SECRET_NAME syntax
+  - Our backend code reads them from process.env automatically
+
+The @ syntax only works in specific Vercel services, not for regular env vars.
+So we removed it and use the UI instead (simpler, more reliable).
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📚 FOR MORE DETAILS
+
+See: FIX_VERCEL_ENV_ERROR.md (in your repo)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🚀 AFTER THIS IS FIXED
+
+Your backend will be:
+  ✅ Deployed on Vercel
+  ✅ Using protected API keys
+  ✅ Rate limiting enforced
+  ✅ Ready for production
+
+Next steps:
+  1. Deploy to Vercel using these environment variables
+  2. Test the backend (should see recommendations from Gemini)
+  3. Move on to next features (image storage, error boundaries, etc.)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Questions? The fix is straightforward:
+  Just add the 3 variables in Vercel UI and redeploy. That's it! ✅
