@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Book, ReadingStatus } from "../types";
-import { ENV_CONFIG } from "../config";
+import { ENV_CONFIG } from "../src/config";
 
 // Get the API key from the generated config (set at build time)
 const apiKey = ENV_CONFIG.VITE_GEMINI_API_KEY || '';
