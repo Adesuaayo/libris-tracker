@@ -1,10 +1,24 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Book, ReadingStatus } from "../types";
 
-// Helper to get environment variables from Vite's import.meta.env
-// Vite injects these at build time via define config
+// Helper to get environment variables
+// Tries multiple sources for compatibility (web, Capacitor, etc.)
 const getEnv = (key: string): string => {
-  return String((import.meta.env as any)[key] || '').trim();
+  let value: any;
+  
+  // Try import.meta.env first (standard Vite)
+  value = (import.meta.env as any)?.[key];
+  if (value) return String(value).trim();
+  
+  // Try globalThis (injected by vite.config for Capacitor compatibility)
+  value = (globalThis as any)?.[key];
+  if (value) return String(value).trim();
+  
+  // Try window (last resort)
+  value = (window as any)?.[key];
+  if (value) return String(value).trim();
+  
+  return '';
 };
 
 // Initialize Gemini Client

@@ -34,9 +34,16 @@ export default defineConfig(({ mode }) => {
 
   // Build the define object with each env var properly stringified
   const defineVars: Record<string, string> = {};
+  
+  // Method 1: Inject as import.meta.env.* (for standard Vite/web)
   for (const [key, value] of Object.entries(safeEnv)) {
-    // Stringify the value so it's embedded in the bundle correctly
     defineVars[`import.meta.env.${key}`] = JSON.stringify(value);
+  }
+  
+  // Method 2: Also inject as globalThis.VITE_* (for Capacitor/Android compatibility)
+  // This ensures the values are accessible even if import.meta is not available
+  for (const [key, value] of Object.entries(safeEnv)) {
+    defineVars[`globalThis.${key}`] = JSON.stringify(value);
   }
   
   // Add standard Vite env vars
