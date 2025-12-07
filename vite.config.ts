@@ -6,6 +6,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   // Build a safe, minimal environment object with only the variables we need.
+  // For GitHub Actions: process.env takes priority (secrets injected via env:)
+  // For local dev: loadEnv reads from .env.local
   const safeEnv: Record<string, string> = {};
   
   // Manually pick VITE_ variables (Vite convention)
@@ -15,8 +17,9 @@ export default defineConfig(({ mode }) => {
     'VITE_GEMINI_API_KEY',
   ];
   
-  // Check both process.env (GitHub Actions/CI) and loaded .env file
+  // Check both process.env (GitHub Actions/CI - takes priority) and loaded .env file (local dev)
   for (const key of keysToInclude) {
+    // process.env has priority because GitHub Actions injects secrets there
     if (process.env[key]) {
       safeEnv[key] = process.env[key];
     } else if (env[key]) {
@@ -24,9 +27,15 @@ export default defineConfig(({ mode }) => {
     }
   }
 
+  // Debug: log what we found (will appear in build logs)
+  console.log('[Vite] Environment variables loaded:');
+  console.log(`  VITE_GEMINI_API_KEY: ${safeEnv.VITE_GEMINI_API_KEY ? safeEnv.VITE_GEMINI_API_KEY.substring(0, 10) + '...' : 'MISSING'}`);
+  console.log(`  VITE_SUPABASE_URL: ${safeEnv.VITE_SUPABASE_URL ? 'FOUND' : 'MISSING'}`);
+
   // Build the define object with each env var properly stringified
   const defineVars: Record<string, string> = {};
   for (const [key, value] of Object.entries(safeEnv)) {
+    // Stringify the value so it's embedded in the bundle correctly
     defineVars[`import.meta.env.${key}`] = JSON.stringify(value);
   }
   
