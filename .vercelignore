@@ -1,0 +1,15 @@
+# Ignore Python files - this is a Node.js/React project
+requirements.txt
+main.py
+database.py
+buildozer.spec
+libris.kv
+
+# Ignore Android build artifacts
+android/
+
+# Ignore local development files
+.env.local
+.env.*.local
+node_modules/
+dist/
