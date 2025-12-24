@@ -146,14 +146,7 @@ export const Auth: React.FC = () => {
              <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900 rounded-lg p-3 text-sm text-red-600 dark:text-red-400">
                 <div className="flex gap-2 items-start">
                     <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 space-y-2">
-                        <p>{error}</p>
-                        {/* Debug info in the error message for easy verification */}
-                        <div className="text-xs font-mono bg-white/50 dark:bg-black/20 p-2 rounded mt-2">
-                            <p>Loaded URL: {supabaseConfigDebug.url || 'MISSING'}</p>
-                            <p>Loaded Key: {supabaseConfigDebug.maskedKey}</p>
-                        </div>
-                    </div>
+                    <p>{error}</p>
                 </div>
             </div>
           )}
