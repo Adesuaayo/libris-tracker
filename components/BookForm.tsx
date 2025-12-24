@@ -77,7 +77,12 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
 
   const selectBook = async (item: any) => {
     const info = item.volumeInfo;
-    const coverUrl = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || '';
+    let coverUrl = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || '';
+    
+    // Convert http:// to https:// for Android security
+    if (coverUrl && coverUrl.startsWith('http://')) {
+      coverUrl = coverUrl.replace('http://', 'https://');
+    }
     
     setFormData(prev => ({
       ...prev,
@@ -92,21 +97,40 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     // This ensures images work on Android (avoid CORS issues)
     if (coverUrl) {
       try {
-        const response = await fetch(coverUrl);
+        console.log('Downloading cover from:', coverUrl);
+        const response = await fetch(coverUrl, {
+          mode: 'cors',
+          credentials: 'omit'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const blob = await response.blob();
-        const file = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
+        console.log('Downloaded blob:', blob.size, 'bytes, type:', blob.type);
+        
+        const file = new File([blob], 'cover.jpg', { type: blob.type || 'image/jpeg' });
         setSelectedFile(file);
+        
         // Create preview URL for display
         const reader = new FileReader();
         reader.onloadend = () => {
           setPreviewUrl(reader.result as string);
+          console.log('Preview URL set successfully');
+        };
+        reader.onerror = () => {
+          console.error('FileReader failed');
+          toast.error('Failed to create image preview');
         };
         reader.readAsDataURL(file);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to download Google Books cover:', error);
-        // Fallback to direct URL
+        toast.warning('Could not download cover image. Using direct URL.');
+        // Fallback to direct URL (will be uploaded on submit if it works)
         setPreviewUrl(coverUrl);
         setFormData(prev => ({ ...prev, coverUrl }));
+        setSelectedFile(null);
       }
     } else {
       setPreviewUrl('');
@@ -180,21 +204,29 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
             </div>
             {searchResults.length > 0 && (
               <ul className="mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-800 max-h-48 overflow-y-auto">
-                {searchResults.map((item) => (
-                  <li 
-                    key={item.id} 
-                    className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-3"
-                    onClick={() => selectBook(item)}
-                  >
-                    {item.volumeInfo.imageLinks?.smallThumbnail && (
-                      <img src={item.volumeInfo.imageLinks.smallThumbnail} alt="" className="w-8 h-12 object-cover rounded" />
-                    )}
-                    <div className="text-sm">
-                      <p className="font-medium text-slate-800 dark:text-slate-100">{item.volumeInfo.title}</p>
-                      <p className="text-slate-500 dark:text-slate-400">{item.volumeInfo.authors?.join(', ')}</p>
-                    </div>
-                  </li>
-                ))}
+                {searchResults.map((item) => {
+                  let thumbnailUrl = item.volumeInfo.imageLinks?.smallThumbnail || '';
+                  // Convert to https for Android security
+                  if (thumbnailUrl && thumbnailUrl.startsWith('http://')) {
+                    thumbnailUrl = thumbnailUrl.replace('http://', 'https://');
+                  }
+                  
+                  return (
+                    <li 
+                      key={item.id} 
+                      className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-3"
+                      onClick={() => selectBook(item)}
+                    >
+                      {thumbnailUrl && (
+                        <img src={thumbnailUrl} alt="" className="w-8 h-12 object-cover rounded" />
+                      )}
+                      <div className="text-sm">
+                        <p className="font-medium text-slate-800 dark:text-slate-100">{item.volumeInfo.title}</p>
+                        <p className="text-slate-500 dark:text-slate-400">{item.volumeInfo.authors?.join(', ')}</p>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
