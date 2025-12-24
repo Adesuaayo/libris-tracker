@@ -163,7 +163,9 @@ export const storageApi = {
         const fileExt = file.name.split('.').pop() || 'jpg';
         const fileName = `${user.id}/${bookId}/${Date.now()}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
+        console.log('Uploading cover:', { fileName, fileSize: file.size, fileType: file.type });
+
+        const { error: uploadError, data: uploadData } = await supabase.storage
             .from('book-covers')
             .upload(fileName, file, {
                 cacheControl: '3600',
@@ -171,14 +173,22 @@ export const storageApi = {
             });
 
         if (uploadError) {
-            console.error('Upload error:', uploadError);
+            console.error('Upload error details:', {
+                message: uploadError.message,
+                name: uploadError.name,
+                cause: uploadError.cause,
+            });
             throw new Error(`Failed to upload cover: ${uploadError.message}`);
         }
+
+        console.log('Upload successful:', uploadData);
 
         // Get the public URL
         const { data: { publicUrl } } = supabase.storage
             .from('book-covers')
             .getPublicUrl(fileName);
+
+        console.log('Public URL:', publicUrl);
 
         return publicUrl;
     },
