@@ -144,3 +144,77 @@ export const bookApi = {
         if (error) throw error;
     }
 };
+
+/**
+ * Storage API for uploading book covers to Supabase Storage
+ */
+export const storageApi = {
+    /**
+     * Upload a cover image to Supabase Storage
+     * @param file - The file to upload (from input or converted from base64)
+     * @param bookId - Unique identifier for the book (used in filename)
+     * @returns The public URL of the uploaded image
+     */
+    async uploadCover(file: File, bookId: string): Promise<string> {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("User not logged in");
+
+        // Create a unique filename: userId/bookId/timestamp.extension
+        const fileExt = file.name.split('.').pop() || 'jpg';
+        const fileName = `${user.id}/${bookId}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('book-covers')
+            .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: true
+            });
+
+        if (uploadError) {
+            console.error('Upload error:', uploadError);
+            throw new Error(`Failed to upload cover: ${uploadError.message}`);
+        }
+
+        // Get the public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from('book-covers')
+            .getPublicUrl(fileName);
+
+        return publicUrl;
+    },
+
+    /**
+     * Convert a base64 data URL to a File object
+     */
+    base64ToFile(base64: string, filename: string): File {
+        const arr = base64.split(',');
+        const mimeMatch = arr[0].match(/:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new File([u8arr], filename, { type: mime });
+    },
+
+    /**
+     * Delete a cover image from Supabase Storage
+     */
+    async deleteCover(url: string): Promise<void> {
+        if (!url || !url.includes('book-covers')) return;
+        
+        try {
+            // Extract the path from the URL
+            const urlParts = url.split('/book-covers/');
+            if (urlParts.length < 2) return;
+            
+            const path = urlParts[1];
+            await supabase.storage.from('book-covers').remove([path]);
+        } catch (error) {
+            console.error('Error deleting cover:', error);
+            // Don't throw - deletion failure shouldn't break the app
+        }
+    }
+};

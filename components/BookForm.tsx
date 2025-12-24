@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Book, BookFormat, ReadingStatus } from '../types';
 import { Button } from './Button';
 import { Search, Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { storageApi } from '../services/supabase';
 
 interface BookFormProps {
   initialData?: Book;
@@ -24,6 +25,9 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>(initialData?.coverUrl || '');
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -37,15 +41,19 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
             alert("File is too large. Please select an image under 5MB.");
             return;
         }
+        setSelectedFile(file);
+        // Create preview URL for display
         const reader = new FileReader();
         reader.onloadend = () => {
-            setFormData(prev => ({ ...prev, coverUrl: reader.result as string }));
+            setPreviewUrl(reader.result as string);
         };
         reader.readAsDataURL(file);
     }
   };
 
   const removeCover = () => {
+    setSelectedFile(null);
+    setPreviewUrl('');
     setFormData(prev => ({ ...prev, coverUrl: '' }));
   };
 
@@ -67,37 +75,61 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
 
   const selectBook = (item: any) => {
     const info = item.volumeInfo;
+    const coverUrl = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || '';
     setFormData(prev => ({
       ...prev,
       title: info.title,
       author: info.authors ? info.authors[0] : 'Unknown',
       genre: info.categories ? info.categories[0] : 'General',
-      coverUrl: info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || '',
+      coverUrl: coverUrl,
       notes: info.description?.substring(0, 200) + '...' || ''
     }));
+    setPreviewUrl(coverUrl);
+    setSelectedFile(null); // Clear any selected file since we're using a URL
     setSearchResults([]);
     setSearchQuery('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.author) return;
     
-    const newBook: Book = {
-      id: initialData?.id || crypto.randomUUID(),
-      title: formData.title!,
-      author: formData.author!,
-      genre: formData.genre || 'General',
-      status: formData.status as ReadingStatus,
-      format: formData.format as BookFormat,
-      rating: Number(formData.rating),
-      dateStarted: formData.dateStarted,
-      dateFinished: formData.dateFinished,
-      notes: formData.notes,
-      coverUrl: formData.coverUrl,
-      addedAt: initialData?.addedAt || Date.now(),
-    };
-    onSubmit(newBook);
+    setIsUploading(true);
+    
+    try {
+      const bookId = initialData?.id || crypto.randomUUID();
+      let coverUrl = formData.coverUrl || '';
+      
+      // If a new file was selected, upload it to Supabase Storage
+      if (selectedFile) {
+        try {
+          coverUrl = await storageApi.uploadCover(selectedFile, bookId);
+        } catch (uploadError: any) {
+          console.error('Cover upload failed:', uploadError);
+          // If upload fails, continue without cover (or keep existing)
+          alert(`Cover upload failed: ${uploadError.message}. Saving book without new cover.`);
+          coverUrl = initialData?.coverUrl || '';
+        }
+      }
+      
+      const newBook: Book = {
+        id: bookId,
+        title: formData.title!,
+        author: formData.author!,
+        genre: formData.genre || 'General',
+        status: formData.status as ReadingStatus,
+        format: formData.format as BookFormat,
+        rating: Number(formData.rating),
+        dateStarted: formData.dateStarted,
+        dateFinished: formData.dateFinished,
+        notes: formData.notes,
+        coverUrl: coverUrl,
+        addedAt: initialData?.addedAt || Date.now(),
+      };
+      onSubmit(newBook);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -173,9 +205,9 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
             <div className="flex flex-col sm:flex-row gap-4 items-start">
                 {/* Preview */}
                 <div className="relative w-24 h-36 flex-shrink-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-sm flex items-center justify-center overflow-hidden group">
-                    {formData.coverUrl ? (
+                    {previewUrl ? (
                         <>
-                            <img src={formData.coverUrl} alt="Cover Preview" className="w-full h-full object-cover" />
+                            <img src={previewUrl} alt="Cover Preview" className="w-full h-full object-cover" />
                             <button
                                 type="button"
                                 onClick={removeCover}
@@ -184,6 +216,11 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
                             >
                                 <X className="w-3 h-3" />
                             </button>
+                            {selectedFile && (
+                                <div className="absolute bottom-0 left-0 right-0 bg-brand-500 text-white text-[10px] text-center py-0.5">
+                                    New file
+                                </div>
+                            )}
                         </>
                     ) : (
                         <div className="text-center p-2">
@@ -196,18 +233,22 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
                 {/* Inputs */}
                 <div className="flex-1 w-full space-y-3">
                     <div>
-                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Image URL</label>
+                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Image URL (from web)</label>
                         <input
                             type="text"
                             name="coverUrl"
                             placeholder="https://example.com/image.jpg"
                             value={formData.coverUrl || ''}
-                            onChange={handleChange}
+                            onChange={(e) => {
+                                handleChange(e);
+                                setPreviewUrl(e.target.value);
+                                setSelectedFile(null);
+                            }}
                             className="block w-full rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2 text-sm"
                         />
                     </div>
                     <div className="relative">
-                        <span className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Or upload file</span>
+                        <span className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Or upload from device</span>
                         <input
                             type="file"
                             accept="image/*"
@@ -320,8 +361,10 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         </div>
         
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
-          <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-          <Button type="submit">Save Book</Button>
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={isUploading}>Cancel</Button>
+          <Button type="submit" disabled={isUploading}>
+            {isUploading ? 'Uploading...' : 'Save Book'}
+          </Button>
         </div>
       </form>
     </div>
