@@ -54,6 +54,12 @@ export default function App() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMode, setAiMode] = useState<'recommend' | 'analyze' | null>(null);
 
+  // Profile Picture State
+  const [profilePicture, setProfilePicture] = useState<string | null>(() => {
+    return localStorage.getItem('libris-profile-picture');
+  });
+  const [uploadingProfilePic, setUploadingProfilePic] = useState(false);
+
   // Toast
   const toast = useToastActions();
 
@@ -206,6 +212,61 @@ export default function App() {
       if (newGoal && !isNaN(parseInt(newGoal))) {
           setReadingGoal(parseInt(newGoal));
       }
+  };
+
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setUploadingProfilePic(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not logged in");
+
+      // Create filename: profile-pictures/userId/timestamp.extension
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const fileName = `profile-pictures/${user.id}/${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('book-covers') // Reusing the same bucket
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('book-covers')
+        .getPublicUrl(fileName);
+
+      // Save to localStorage and state
+      localStorage.setItem('libris-profile-picture', publicUrl);
+      setProfilePicture(publicUrl);
+      toast.success('Profile picture updated!');
+    } catch (error: any) {
+      console.error('Profile picture upload failed:', error);
+      toast.error(`Failed to upload: ${error.message}`);
+    } finally {
+      setUploadingProfilePic(false);
+    }
   };
 
   const handleExport = async () => {
@@ -447,14 +508,29 @@ export default function App() {
         <h1 className="text-xl font-bold text-white text-center mb-6 pt-4">Profile</h1>
         <div className="flex flex-col items-center">
           <div className="relative mb-3">
-            <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center border-4 border-white/30">
-              <span className="text-3xl font-bold text-white">
-                {session.user.email?.charAt(0).toUpperCase()}
-              </span>
+            <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center border-4 border-white/30 overflow-hidden">
+              {profilePicture ? (
+                <img src={profilePicture} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-3xl font-bold text-white">
+                  {session.user.email?.charAt(0).toUpperCase()}
+                </span>
+              )}
+              {uploadingProfilePic && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 text-white animate-spin" />
+                </div>
+              )}
             </div>
-            <button className="absolute bottom-0 right-0 w-8 h-8 bg-brand-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+            <label className="absolute bottom-0 right-0 w-8 h-8 bg-brand-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg cursor-pointer hover:bg-brand-400 transition-colors">
               <Camera className="h-4 w-4 text-white" />
-            </button>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleProfilePictureUpload}
+                className="hidden"
+              />
+            </label>
           </div>
           <h2 className="text-xl font-bold text-white">{session.user.email?.split('@')[0]}</h2>
           <p className="text-brand-200 text-sm">{session.user.email}</p>
