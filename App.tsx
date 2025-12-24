@@ -7,7 +7,7 @@ import { Auth } from './components/Auth';
 const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })));
 const BookForm = lazy(() => import('./components/BookForm').then(m => ({ default: m.BookForm })));
 import { supabase, bookApi } from './services/supabase';
-import { BookOpen, BarChart2, Plus, Search, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, Menu, LogOut, Loader2, ExternalLink, Star } from 'lucide-react';
+import { BookOpen, BarChart2, Plus, Search, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, LogOut, Loader2, ExternalLink, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home } from 'lucide-react';
 import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
 import { App as CapApp } from '@capacitor/app';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -18,6 +18,7 @@ import { useToastActions } from './components/Toast';
 const APP_VERSION = '1.0.0';
 
 type SortOption = 'dateAdded' | 'rating' | 'title' | 'dateFinished';
+type TabView = 'home' | 'profile';
 
 export default function App() {
   // Auth State
@@ -38,10 +39,11 @@ export default function App() {
   });
 
   const [view, setView] = useState<ViewMode>('library');
+  const [activeTab, setActiveTab] = useState<TabView>('home');
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>('dateAdded');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Sidebar removed - using bottom navigation instead
   
   // Pagination State
   const BOOKS_PER_PAGE = 12;
@@ -118,11 +120,11 @@ export default function App() {
   useEffect(() => {
     const handleBackButton = async () => {
         CapApp.addListener('backButton', ({ canGoBack }) => {
-            if (isSidebarOpen) {
-                setIsSidebarOpen(false);
-            } else if (view !== 'library') {
+            if (view !== 'library') {
                 setView('library');
                 setEditingBook(null);
+            } else if (activeTab !== 'home') {
+                setActiveTab('home');
             } else {
                 CapApp.exitApp();
             }
@@ -133,7 +135,7 @@ export default function App() {
     return () => {
         CapApp.removeAllListeners();
     };
-  }, [isSidebarOpen, view]);
+  }, [view, activeTab]);
 
 
   // --- Handlers ---
@@ -294,7 +296,8 @@ export default function App() {
     setAiLoading(true);
     setAiMode(mode);
     setAiResponse(null);
-    setIsSidebarOpen(false); // Close sidebar to show results
+    setActiveTab('home'); // Switch to home tab to show results
+    setView('library');
     
     try {
         let text = "";
@@ -436,240 +439,276 @@ export default function App() {
     return <Auth />;
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row transition-colors duration-200">
-      {/* Mobile Menu Overlay */}
-      {isSidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 z-20 md:hidden" onClick={() => setIsSidebarOpen(false)} />
-      )}
-
-      {/* Sidebar Navigation */}
-      <aside className={`
-        fixed md:sticky top-0 left-0 z-30 h-screen w-64 pt-[env(safe-area-inset-top)]
-        bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800
-        transform transition-transform duration-200 ease-in-out
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        flex flex-col overflow-hidden
-      `}>
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
-               <BookOpen className="text-white h-5 w-5" />
+  // Profile Screen Component
+  const ProfileScreen = () => (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
+      {/* Profile Header */}
+      <div className="bg-brand-600 dark:bg-brand-700 pt-[env(safe-area-inset-top)] pb-8 px-4">
+        <h1 className="text-xl font-bold text-white text-center mb-6 pt-4">Profile</h1>
+        <div className="flex flex-col items-center">
+          <div className="relative mb-3">
+            <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center border-4 border-white/30">
+              <span className="text-3xl font-bold text-white">
+                {session.user.email?.charAt(0).toUpperCase()}
+              </span>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Libris</h1>
+            <button className="absolute bottom-0 right-0 w-8 h-8 bg-brand-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+              <Camera className="h-4 w-4 text-white" />
+            </button>
           </div>
-          <button className="md:hidden" onClick={() => setIsSidebarOpen(false)}>
-            <X className="h-6 w-6 text-slate-500 dark:text-slate-400" />
-          </button>
+          <h2 className="text-xl font-bold text-white">{session.user.email?.split('@')[0]}</h2>
+          <p className="text-brand-200 text-sm">{session.user.email}</p>
         </div>
-        
-        {/* Scrollable sidebar content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <nav className="p-4 space-y-2">
-          <button 
-            onClick={() => { setView('library'); setEditingBook(null); setIsSidebarOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${view === 'library' ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-          >
-            <BookOpen className="h-5 w-5" />
-            My Library
-          </button>
-          <button 
-             onClick={() => { setView('analytics'); setEditingBook(null); setIsSidebarOpen(false); }}
-             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${view === 'analytics' ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-          >
-            <BarChart2 className="h-5 w-5" />
-            Analytics
-          </button>
-           <button 
-             onClick={() => { setView('add'); setEditingBook(null); setIsSidebarOpen(false); }}
-             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${view === 'add' ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-          >
-            <Plus className="h-5 w-5" />
-            Add Book
-          </button>
-        </nav>
+      </div>
 
-        {/* Goal Tracker Widget */}
-        <div className="px-4 py-2">
-            <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-semibold text-xs uppercase tracking-wide">
-                        <Trophy className="h-3.5 w-3.5 text-amber-500" />
-                        <span>{new Date().getFullYear()} Challenge</span>
-                    </div>
-                    <button onClick={updateGoal} className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-700 font-medium">Edit</button>
-                </div>
-                <div className="flex items-end gap-1 mb-2">
-                    <span className="text-2xl font-bold text-slate-900 dark:text-white">{booksReadThisYear}</span>
-                    <span className="text-sm text-slate-500 dark:text-slate-400 mb-1">/ {readingGoal} books</span>
-                </div>
-                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
-                    <div 
-                        className="bg-brand-500 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min((booksReadThisYear / readingGoal) * 100, 100)}%` }}
-                    ></div>
-                </div>
-                {booksReadThisYear >= readingGoal && (
-                    <div className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> Goal reached!
-                    </div>
-                )}
+      {/* Profile Content */}
+      <div className="px-4 -mt-4">
+        {/* Stats Card */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="text-center flex-1">
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{books.length}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Total Books</p>
             </div>
+            <div className="w-px h-10 bg-slate-200 dark:bg-slate-700"></div>
+            <div className="text-center flex-1">
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{booksReadThisYear}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Read This Year</p>
+            </div>
+            <div className="w-px h-10 bg-slate-200 dark:bg-slate-700"></div>
+            <div className="text-center flex-1">
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{readingGoal}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Goal</p>
+            </div>
+          </div>
         </div>
 
-        <div className="p-4 space-y-4 border-t border-slate-100 dark:border-slate-800">
-             {/* User Info */}
-             {session && (
-               <div className="flex items-center gap-3 px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                 <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center">
-                   <span className="text-brand-600 dark:text-brand-400 font-semibold text-sm">
-                     {session.user.email?.charAt(0).toUpperCase()}
-                   </span>
-                 </div>
-                 <div className="flex-1 min-w-0">
-                   <p className="text-sm font-medium text-slate-900 dark:text-white">
-                     Hi, {session.user.email?.split('@')[0]}! 👋
-                   </p>
-                 </div>
-               </div>
-             )}
-
-             {/* AI Section */}
-             <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
-                <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-100 font-semibold mb-2">
-                    <BrainCircuit className="h-4 w-4" />
-                    <span>AI Assistant</span>
-                </div>
-                <p className="text-xs text-indigo-700 dark:text-indigo-300 mb-3">Get smart insights powered by Gemini 2.5.</p>
-                <div className="space-y-2">
-                    <Button size="sm" variant="secondary" className="w-full text-xs bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-700 dark:text-slate-200" onClick={() => handleGeminiAction('recommend')}>
-                        Recommend Books
-                    </Button>
-                    <Button size="sm" variant="secondary" className="w-full text-xs bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-700 dark:text-slate-200" onClick={() => handleGeminiAction('analyze')}>
-                        Analyze Habits
-                    </Button>
-                </div>
-             </div>
-             
-             {/* Theme Toggle */}
-             <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                {(['light', 'system', 'dark'] as Theme[]).map((t) => (
-                    <button
-                        key={t}
-                        onClick={() => setTheme(t)}
-                        className={`p-1.5 rounded-md transition-colors ${theme === t ? 'bg-white dark:bg-slate-600 shadow-sm text-brand-600 dark:text-white' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                        title={`${t} mode`}
-                    >
-                        {t === 'light' && <Sun className="h-4 w-4" />}
-                        {t === 'dark' && <Moon className="h-4 w-4" />}
-                        {t === 'system' && <Laptop className="h-4 w-4" />}
-                    </button>
-                ))}
-             </div>
-
-             {/* Feedback Section */}
-             <div className="space-y-1">
-               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-2 mb-2">Feedback</p>
-               <Button 
-                 variant="ghost" 
-                 size="sm" 
-                 onClick={handleRateApp} 
-                 className="w-full justify-between text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-               >
-                 <span className="flex items-center gap-2">
-                   <Star className="h-4 w-4" />
-                   Rate App
-                 </span>
-                 <ExternalLink className="h-3 w-3 opacity-50" />
-               </Button>
-             </div>
-
-             {/* Legal Section */}
-             <div className="space-y-1">
-               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-2 mb-2">Legal</p>
-               <Button 
-                 variant="ghost" 
-                 size="sm" 
-                 onClick={() => openExternalLink('https://libris-privacy.example.com')} 
-                 className="w-full justify-between text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-               >
-                 <span>Privacy Policy</span>
-                 <ExternalLink className="h-3 w-3 opacity-50" />
-               </Button>
-               <Button 
-                 variant="ghost" 
-                 size="sm" 
-                 onClick={() => openExternalLink('https://libris-terms.example.com')} 
-                 className="w-full justify-between text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-               >
-                 <span>Terms of Service</span>
-                 <ExternalLink className="h-3 w-3 opacity-50" />
-               </Button>
-             </div>
-
-             <Button variant="ghost" size="sm" onClick={handleExport} className="w-full justify-start text-slate-500 dark:text-slate-400">
-                <Download className="h-4 w-4 mr-2" /> Export CSV
-             </Button>
-
-             <Button variant="ghost" size="sm" onClick={handleSignOut} className="w-full justify-start text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                <LogOut className="h-4 w-4 mr-2" /> Sign Out
-             </Button>
-
-             {/* Version Info */}
-             <div className="text-center text-xs text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-200 dark:border-slate-700">
-               Version {APP_VERSION}
-             </div>
+        {/* Reading Goal Section */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-4 overflow-hidden">
+          <div className="p-4 border-b border-slate-100 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-amber-500" />
+                <span className="font-semibold text-slate-900 dark:text-white">{new Date().getFullYear()} Reading Challenge</span>
+              </div>
+              <button onClick={updateGoal} className="text-sm text-brand-600 dark:text-brand-400 font-medium">Edit</button>
+            </div>
+            <div className="flex items-end gap-1 mb-2">
+              <span className="text-3xl font-bold text-slate-900 dark:text-white">{booksReadThisYear}</span>
+              <span className="text-slate-500 dark:text-slate-400 mb-1">/ {readingGoal} books</span>
+            </div>
+            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+              <div 
+                className="bg-brand-500 h-full rounded-full transition-all duration-500"
+                style={{ width: `${Math.min((booksReadThisYear / readingGoal) * 100, 100)}%` }}
+              ></div>
+            </div>
+            {booksReadThisYear >= readingGoal && (
+              <div className="mt-2 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                <CheckCircle2 className="h-4 w-4" /> Goal reached! 🎉
+              </div>
+            )}
+          </div>
         </div>
-        </div> {/* End scrollable sidebar content */}
-      </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto h-screen w-full pt-[calc(2rem+env(safe-area-inset-top))]">
+        {/* AI Assistant Section */}
+        <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-sm p-4 mb-4">
+          <div className="flex items-center gap-2 text-white font-semibold mb-2">
+            <BrainCircuit className="h-5 w-5" />
+            <span>AI Assistant</span>
+          </div>
+          <p className="text-indigo-100 text-sm mb-3">Get smart insights powered by Gemini 2.5</p>
+          <div className="flex gap-2">
+            <Button size="sm" className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0" onClick={() => handleGeminiAction('recommend')}>
+              Recommend
+            </Button>
+            <Button size="sm" className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0" onClick={() => handleGeminiAction('analyze')}>
+              Analyze
+            </Button>
+          </div>
+        </div>
+
+        {/* Settings Section */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-4 overflow-hidden">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 pt-4 pb-2">Appearance</p>
+          <div className="px-4 pb-4">
+            <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+              {(['light', 'system', 'dark'] as Theme[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTheme(t)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md transition-colors ${
+                    theme === t 
+                      ? 'bg-white dark:bg-slate-600 shadow-sm text-brand-600 dark:text-white font-medium' 
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  {t === 'light' && <Sun className="h-4 w-4" />}
+                  {t === 'dark' && <Moon className="h-4 w-4" />}
+                  {t === 'system' && <Laptop className="h-4 w-4" />}
+                  <span className="text-sm capitalize">{t}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Data Section */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-4 overflow-hidden">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 pt-4 pb-2">Data</p>
+          <button 
+            onClick={handleExport}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Download className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+              <span className="text-slate-900 dark:text-white">Export Library</span>
+            </div>
+            <ChevronRight className="h-5 w-5 text-slate-400" />
+          </button>
+        </div>
+
+        {/* Feedback Section */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-4 overflow-hidden">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 pt-4 pb-2">Feedback</p>
+          <button 
+            onClick={handleRateApp}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Star className="h-5 w-5 text-amber-500" />
+              <span className="text-slate-900 dark:text-white">Rate App</span>
+            </div>
+            <ChevronRight className="h-5 w-5 text-slate-400" />
+          </button>
+          <div className="mx-4 border-t border-slate-100 dark:border-slate-700"></div>
+          <button 
+            onClick={() => openExternalLink('mailto:support@libris.app?subject=Feedback')}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <MessageSquare className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+              <span className="text-slate-900 dark:text-white">Send Feedback</span>
+            </div>
+            <ChevronRight className="h-5 w-5 text-slate-400" />
+          </button>
+        </div>
+
+        {/* Legal Section */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-4 overflow-hidden">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 pt-4 pb-2">Legal</p>
+          <button 
+            onClick={() => openExternalLink('https://libris-privacy.example.com')}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Shield className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+              <span className="text-slate-900 dark:text-white">Privacy Policy</span>
+            </div>
+            <ChevronRight className="h-5 w-5 text-slate-400" />
+          </button>
+          <div className="mx-4 border-t border-slate-100 dark:border-slate-700"></div>
+          <button 
+            onClick={() => openExternalLink('https://libris-terms.example.com')}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <BookOpen className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+              <span className="text-slate-900 dark:text-white">Terms of Service</span>
+            </div>
+            <ChevronRight className="h-5 w-5 text-slate-400" />
+          </button>
+        </div>
+
+        {/* Sign Out */}
+        <button 
+          onClick={handleSignOut}
+          className="w-full bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors mb-4"
+        >
+          <LogOut className="h-5 w-5" />
+          <span className="font-medium">Sign Out</span>
+        </button>
+
+        {/* Version */}
+        <div className="text-center text-sm text-slate-400 dark:text-slate-500 py-4">
+          <p>Libris v{APP_VERSION}</p>
+          <p className="text-xs mt-1">Made with ❤️ for book lovers</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Home Screen Component
+  const HomeScreen = () => (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
+      <main className="p-4 md:p-6 pt-[calc(1rem+env(safe-area-inset-top))]">
         
         {/* Header */}
-        <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <button className="md:hidden p-2 -ml-2 text-slate-600 dark:text-slate-300" onClick={() => setIsSidebarOpen(true)}>
-                <Menu className="h-6 w-6" />
-            </button>
+        <header className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/20">
+              <BookOpen className="text-white h-5 w-5" />
+            </div>
             <div>
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-white capitalize">
-                    {view === 'add' ? (editingBook ? 'Edit Book' : 'Add New Book') : view}
-                </h2>
-                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-                    {view === 'library' ? `${filteredAndSortedBooks.length} books found` : 'Track your reading progress'}
-                </p>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white">Libris</h1>
             </div>
           </div>
-
-          {view === 'library' && (
-            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                <div className="relative w-full md:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <input 
-                        type="text" 
-                        placeholder="Search..." 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent shadow-sm text-sm"
-                    />
-                </div>
-                <div className="relative w-full md:w-48">
-                    <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <select 
-                        value={sortOption}
-                        onChange={(e) => setSortOption(e.target.value as SortOption)}
-                        className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent shadow-sm text-sm appearance-none cursor-pointer"
-                    >
-                        <option value="dateAdded">Recently Added</option>
-                        <option value="rating">Highest Rated</option>
-                        <option value="dateFinished">Date Finished</option>
-                        <option value="title">Alphabetical</option>
-                    </select>
-                </div>
-            </div>
-          )}
         </header>
+
+        {/* Navigation Tabs */}
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+          <button
+            onClick={() => { setView('library'); setEditingBook(null); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              view === 'library' 
+                ? 'bg-brand-600 text-white shadow-md shadow-brand-500/20' 
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            <BookOpen className="h-4 w-4" />
+            Library
+          </button>
+          <button
+            onClick={() => { setView('analytics'); setEditingBook(null); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              view === 'analytics' 
+                ? 'bg-brand-600 text-white shadow-md shadow-brand-500/20' 
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            <BarChart2 className="h-4 w-4" />
+            Analytics
+          </button>
+        </div>
+
+        {/* Search & Sort - Only show in library view */}
+        {view === 'library' && (
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search books..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent shadow-sm text-sm"
+              />
+            </div>
+            <div className="relative w-full sm:w-44">
+              <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <select 
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value as SortOption)}
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent shadow-sm text-sm appearance-none cursor-pointer"
+              >
+                <option value="dateAdded">Recent</option>
+                <option value="rating">Rating</option>
+                <option value="dateFinished">Finished</option>
+                <option value="title">A-Z</option>
+              </select>
+            </div>
+          </div>
+        )}
 
         {/* AI Response Area */}
         {(aiResponse || aiLoading) && (
@@ -815,6 +854,49 @@ export default function App() {
           </div>
         )}
       </main>
+    </div>
+  );
+
+  return (
+    <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* Screen Content */}
+      {activeTab === 'home' ? <HomeScreen /> : <ProfileScreen />}
+
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] z-50">
+        <div className="flex items-center justify-around h-16">
+          <button
+            onClick={() => { setActiveTab('home'); setView('library'); }}
+            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
+              activeTab === 'home' 
+                ? 'text-brand-600 dark:text-brand-400' 
+                : 'text-slate-400 dark:text-slate-500'
+            }`}
+          >
+            <Home className="h-6 w-6" />
+            <span className="text-xs mt-1 font-medium">Home</span>
+          </button>
+          
+          <button
+            onClick={() => { setView('add'); setEditingBook(null); setActiveTab('home'); }}
+            className="flex items-center justify-center w-14 h-14 -mt-5 bg-brand-600 rounded-full text-white shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-colors"
+          >
+            <Plus className="h-7 w-7" />
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
+              activeTab === 'profile' 
+                ? 'text-brand-600 dark:text-brand-400' 
+                : 'text-slate-400 dark:text-slate-500'
+            }`}
+          >
+            <User className="h-6 w-6" />
+            <span className="text-xs mt-1 font-medium">Profile</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 }
