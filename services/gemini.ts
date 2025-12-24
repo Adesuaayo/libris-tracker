@@ -17,6 +17,32 @@ const checkApiKey = (): string | null => {
   return null;
 };
 
+// Helper to format errors in a user-friendly way
+const formatError = (error: any): string => {
+  const msg = error?.message || JSON.stringify(error) || '';
+  
+  // Rate limit / quota exceeded
+  if (msg.includes('429') || msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('rate')) {
+    // Try to extract retry time
+    const retryMatch = msg.match(/retry in (\d+)/i) || msg.match(/retryDelay.*?(\d+)/i);
+    const waitTime = retryMatch ? Math.ceil(parseInt(retryMatch[1])) : 60;
+    return `⏳ You're using AI features too quickly! The free tier allows 5 requests per minute. Please wait about ${waitTime} seconds and try again.`;
+  }
+  
+  // Network errors
+  if (msg.includes('network') || msg.includes('fetch') || msg.includes('Failed to fetch')) {
+    return `🌐 Connection issue. Please check your internet and try again.`;
+  }
+  
+  // API key issues
+  if (msg.includes('API key') || msg.includes('unauthorized') || msg.includes('401')) {
+    return `🔑 API authentication error. Please contact support.`;
+  }
+  
+  // Generic fallback
+  return `Something went wrong. Please try again in a moment.`;
+};
+
 export const getBookRecommendations = async (books: Book[]): Promise<string> => {
   const keyError = checkApiKey();
   if (keyError) return keyError;
@@ -62,7 +88,7 @@ export const getBookRecommendations = async (books: Book[]): Promise<string> => 
     return response.text || "[]";
   } catch (error: any) {
     console.error("Gemini Recommendation Error:", error);
-    return `Error: ${error.message || "Unknown error occurred"}`;
+    return formatError(error);
   }
 };
 
@@ -80,7 +106,7 @@ export const getBookSummary = async (title: string, author: string): Promise<str
     return response.text || "No summary available.";
   } catch (error: any) {
     console.error("Gemini Summary Error:", error);
-    return "Summary unavailable.";
+    return formatError(error);
   }
 };
 
@@ -105,6 +131,6 @@ export const analyzeReadingHabits = async (books: Book[]): Promise<string> => {
         return response.text || "Analysis unavailable.";
     } catch (error: any) {
         console.error("Gemini Analytics Error:", error);
-        return `Error: ${error.message || "Unknown error occurred"}`;
+        return formatError(error);
     }
 }
