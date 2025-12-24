@@ -8,6 +8,7 @@ export const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -21,7 +22,14 @@ export const Auth: React.FC = () => {
     setMessage(null);
 
     try {
-      if (isSignUp) {
+      if (isForgotPassword) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin,
+        });
+        if (error) throw error;
+        setMessage("Password reset link sent! Check your email.");
+        setIsForgotPassword(false);
+      } else if (isSignUp) {
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -139,21 +147,34 @@ export const Auth: React.FC = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                placeholder="••••••••"
-              />
+          {!isForgotPassword && (
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+                {!isSignUp && (
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotPassword(true)}
+                    className="text-xs text-brand-600 dark:text-brand-400 hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {error && (
              <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900 rounded-lg p-3 text-sm text-red-600 dark:text-red-400">
@@ -171,20 +192,32 @@ export const Auth: React.FC = () => {
           )}
 
           <Button type="submit" className="w-full" disabled={loading} isLoading={loading}>
-            {isSignUp ? 'Create Account' : 'Sign In'}
+            {isForgotPassword ? 'Send Reset Link' : isSignUp ? 'Create Account' : 'Sign In'}
           </Button>
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="ml-1 text-brand-600 dark:text-brand-400 font-medium hover:underline focus:outline-none"
-            >
-              {isSignUp ? 'Sign In' : 'Sign Up'}
-            </button>
-          </p>
+          {isForgotPassword ? (
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Remember your password?
+              <button
+                onClick={() => setIsForgotPassword(false)}
+                className="ml-1 text-brand-600 dark:text-brand-400 font-medium hover:underline focus:outline-none"
+              >
+                Sign In
+              </button>
+            </p>
+          ) : (
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+              <button
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="ml-1 text-brand-600 dark:text-brand-400 font-medium hover:underline focus:outline-none"
+              >
+                {isSignUp ? 'Sign In' : 'Sign Up'}
+              </button>
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -44,7 +44,7 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Pagination State
-  const BOOKS_PER_PAGE = 24;
+  const BOOKS_PER_PAGE = 12;
   const [displayCount, setDisplayCount] = useState(BOOKS_PER_PAGE);
   
   // AI State
@@ -527,11 +527,8 @@ export default function App() {
                    </span>
                  </div>
                  <div className="flex-1 min-w-0">
-                   <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                     {session.user.email?.split('@')[0]}
-                   </p>
-                   <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                     {session.user.email}
+                   <p className="text-sm font-medium text-slate-900 dark:text-white">
+                     Hi, {session.user.email?.split('@')[0]}! 👋
                    </p>
                  </div>
                </div>
