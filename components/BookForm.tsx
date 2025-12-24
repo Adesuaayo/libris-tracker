@@ -75,19 +75,44 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     }
   };
 
-  const selectBook = (item: any) => {
+  const selectBook = async (item: any) => {
     const info = item.volumeInfo;
     const coverUrl = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || '';
+    
     setFormData(prev => ({
       ...prev,
       title: info.title,
       author: info.authors ? info.authors[0] : 'Unknown',
       genre: info.categories ? info.categories[0] : 'General',
-      coverUrl: coverUrl,
+      coverUrl: '', // Will be set after upload
       notes: info.description?.substring(0, 200) + '...' || ''
     }));
-    setPreviewUrl(coverUrl);
-    setSelectedFile(null); // Clear any selected file since we're using a URL
+    
+    // Download Google Books image and convert to file for upload
+    // This ensures images work on Android (avoid CORS issues)
+    if (coverUrl) {
+      try {
+        const response = await fetch(coverUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
+        setSelectedFile(file);
+        // Create preview URL for display
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPreviewUrl(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        console.error('Failed to download Google Books cover:', error);
+        // Fallback to direct URL
+        setPreviewUrl(coverUrl);
+        setFormData(prev => ({ ...prev, coverUrl }));
+      }
+    } else {
+      setPreviewUrl('');
+      setSelectedFile(null);
+    }
+    
     setSearchResults([]);
     setSearchQuery('');
   };

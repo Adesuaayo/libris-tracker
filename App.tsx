@@ -10,6 +10,9 @@ import { supabase, bookApi } from './services/supabase';
 import { BookOpen, BarChart2, Plus, Search, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, Menu, LogOut, Loader2 } from 'lucide-react';
 import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
 import { App as CapApp } from '@capacitor/app';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 import { useToastActions } from './components/Toast';
 
 type SortOption = 'dateAdded' | 'rating' | 'title' | 'dateFinished';
@@ -192,7 +195,7 @@ export default function App() {
       }
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (books.length === 0) {
       toast.warning("No books to export.");
       return;
@@ -224,22 +227,53 @@ export default function App() {
     });
 
     const csvContent = [headers.join(','), ...csvRows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'my_library.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success(`Exported ${books.length} books to CSV!`);
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `libris_library_${timestamp}.csv`;
+
+    // For Android/iOS, use Capacitor Filesystem
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const result = await Filesystem.writeFile({
+          path: filename,
+          data: csvContent,
+          directory: Directory.Documents,
+          encoding: 'utf8'
+        });
+
+        // Share the file so user can save it
+        await Share.share({
+          title: 'Export Library',
+          text: `Library export with ${books.length} books`,
+          url: result.uri,
+          dialogTitle: 'Save your library export'
+        });
+
+        toast.success(`Exported ${books.length} books to CSV!`);
+      } catch (error: any) {
+        console.error('Export failed:', error);
+        toast.error(`Export failed: ${error.message}`);
+      }
+    } else {
+      // Web browser - use traditional download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${books.length} books to CSV!`);
+    }
   };
 
   const handleGeminiAction = async (mode: 'recommend' | 'analyze') => {
     setAiLoading(true);
     setAiMode(mode);
     setAiResponse(null);
+    setIsSidebarOpen(false); // Close sidebar to show results
+    
     try {
         let text = "";
         if (mode === 'recommend') {
