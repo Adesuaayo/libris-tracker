@@ -20,6 +20,10 @@ const config: CapacitorConfig = {
       androidSplashResourceName: "splash",
     },
   },
+  // Deep link configuration for password reset
+  android: {
+    appendUserAgent: 'Libris-Android',
+  },
 };
 
 export default config;

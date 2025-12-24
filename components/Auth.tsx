@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase, checkSupabaseConfig, supabaseConfigDebug } from '../services/supabase';
 import { Button } from './Button';
 import { BookOpen, Mail, Lock, AlertCircle, Settings, Check, X, KeyRound } from 'lucide-react';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 export const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -17,9 +19,11 @@ export const Auth: React.FC = () => {
   // Check configuration immediately
   const configError = checkSupabaseConfig();
 
-  // Listen for password recovery event
+  // Listen for password recovery event and deep links
   useEffect(() => {
+    // Supabase auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth event:', event);
       if (event === 'PASSWORD_RECOVERY') {
         setIsResetPassword(true);
         setIsForgotPassword(false);
@@ -27,14 +31,93 @@ export const Auth: React.FC = () => {
       }
     });
 
-    // Check URL hash for recovery token (some browsers)
-    const hash = window.location.hash;
-    if (hash && hash.includes('type=recovery')) {
-      setIsResetPassword(true);
+    // Check URL hash for recovery token (web browsers)
+    const checkUrlForRecovery = () => {
+      const hash = window.location.hash;
+      const search = window.location.search;
+      const fullUrl = window.location.href;
+      
+      console.log('Checking URL for recovery:', { hash, search, fullUrl });
+      
+      // Check hash parameters (Supabase default)
+      if (hash && (hash.includes('type=recovery') || hash.includes('type=signup'))) {
+        if (hash.includes('type=recovery')) {
+          setIsResetPassword(true);
+        }
+        return;
+      }
+      
+      // Check query parameters (alternative format)
+      if (search && search.includes('type=recovery')) {
+        setIsResetPassword(true);
+        return;
+      }
+      
+      // Check for access_token in hash (indicates auth callback)
+      if (hash && hash.includes('access_token') && hash.includes('type=recovery')) {
+        setIsResetPassword(true);
+      }
+    };
+
+    checkUrlForRecovery();
+
+    // Handle deep links on native platforms (Capacitor)
+    if (Capacitor.isNativePlatform()) {
+      // Check if app was opened with a URL
+      CapacitorApp.getLaunchUrl().then((result) => {
+        if (result?.url) {
+          console.log('App launched with URL:', result.url);
+          handleDeepLink(result.url);
+        }
+      });
+
+      // Listen for app URL open events (when app is already running)
+      const urlListener = CapacitorApp.addListener('appUrlOpen', (data) => {
+        console.log('App URL opened:', data.url);
+        handleDeepLink(data.url);
+      });
+
+      return () => {
+        subscription.unsubscribe();
+        urlListener.then(l => l.remove());
+      };
     }
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Handle deep link URLs
+  const handleDeepLink = async (url: string) => {
+    console.log('Processing deep link:', url);
+    
+    // Extract tokens from URL
+    const urlObj = new URL(url);
+    const hashParams = new URLSearchParams(urlObj.hash.substring(1));
+    const searchParams = urlObj.searchParams;
+    
+    const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
+    const type = hashParams.get('type') || searchParams.get('type');
+    
+    console.log('Deep link params:', { accessToken: !!accessToken, refreshToken: !!refreshToken, type });
+    
+    if (type === 'recovery' && accessToken) {
+      // Set the session with the tokens from the URL
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken || '',
+      });
+      
+      if (!error) {
+        setIsResetPassword(true);
+        setIsForgotPassword(false);
+        setIsSignUp(false);
+      } else {
+        console.error('Error setting session from deep link:', error);
+        setError('Invalid or expired reset link. Please request a new one.');
+      }
+    }
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,8 +143,13 @@ export const Auth: React.FC = () => {
         setPassword('');
         setConfirmPassword('');
       } else if (isForgotPassword) {
+        // Use custom scheme for native app, web origin for browser
+        const redirectUrl = Capacitor.isNativePlatform() 
+          ? 'libris://reset-password'
+          : window.location.origin;
+        
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin,
+          redirectTo: redirectUrl,
         });
         if (error) throw error;
         setMessage("Password reset link sent! Check your email.");
