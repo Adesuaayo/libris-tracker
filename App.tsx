@@ -277,6 +277,19 @@ export default function App() {
       return result;
   }, [books, searchTerm, sortOption]);
 
+  // Helper function to render text with basic markdown (bold) support
+  const renderFormattedText = (text: string) => {
+    // Split by **text** pattern and render bold parts
+    const parts = text.split(/\*\*(.*?)\*\*/g);
+    return parts.map((part, index) => {
+      // Odd indices are the content that was inside **
+      if (index % 2 === 1) {
+        return <strong key={index} className="font-semibold text-slate-900 dark:text-white">{part}</strong>;
+      }
+      return part;
+    });
+  };
+
   const renderAiContent = () => {
       if (!aiResponse) return null;
 
@@ -284,7 +297,7 @@ export default function App() {
           try {
               const recommendations = JSON.parse(aiResponse);
               if (!Array.isArray(recommendations)) {
-                  return <div className="prose prose-sm dark:prose-invert text-slate-700 dark:text-slate-300 whitespace-pre-line">{aiResponse}</div>;
+                  return <div className="prose prose-sm dark:prose-invert text-slate-700 dark:text-slate-300 whitespace-pre-line">{renderFormattedText(aiResponse)}</div>;
               }
 
               return (
@@ -299,12 +312,12 @@ export default function App() {
                   </div>
               );
           } catch (e) {
-              return <div className="prose prose-sm dark:prose-invert text-slate-700 dark:text-slate-300 whitespace-pre-line">{aiResponse}</div>;
+              return <div className="prose prose-sm dark:prose-invert text-slate-700 dark:text-slate-300 whitespace-pre-line">{renderFormattedText(aiResponse)}</div>;
           }
       }
       return (
           <div className="prose prose-sm dark:prose-invert text-slate-700 dark:text-slate-300 max-w-none whitespace-pre-line">
-              {aiResponse}
+              {renderFormattedText(aiResponse)}
           </div>
       );
   };
