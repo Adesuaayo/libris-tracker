@@ -121,13 +121,11 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         };
         reader.onerror = () => {
           console.error('FileReader failed');
-          toast.error('Failed to create image preview');
         };
         reader.readAsDataURL(file);
       } catch (error: any) {
         console.error('Failed to download Google Books cover:', error);
-        toast.warning('Could not download cover image. Using direct URL.');
-        // Fallback to direct URL (will be uploaded on submit if it works)
+        // Silently fallback to direct URL (will be uploaded on submit if it works)
         setPreviewUrl(coverUrl);
         setFormData(prev => ({ ...prev, coverUrl }));
         setSelectedFile(null);

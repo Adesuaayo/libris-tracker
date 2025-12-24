@@ -230,28 +230,39 @@ export default function App() {
     const timestamp = new Date().toISOString().split('T')[0];
     const filename = `libris_library_${timestamp}.csv`;
 
-    // For Android/iOS, use Capacitor Filesystem
+    // For Android/iOS, use Capacitor Share API directly
     if (Capacitor.isNativePlatform()) {
       try {
-        const result = await Filesystem.writeFile({
-          path: filename,
-          data: csvContent,
-          directory: Directory.Documents,
-          encoding: 'utf8'
-        });
+        // Try to write file and share
+        try {
+          const result = await Filesystem.writeFile({
+            path: filename,
+            data: csvContent,
+            directory: Directory.Cache,
+            encoding: 'utf8'
+          });
 
-        // Share the file so user can save it
-        await Share.share({
-          title: 'Export Library',
-          text: `Library export with ${books.length} books`,
-          url: result.uri,
-          dialogTitle: 'Save your library export'
-        });
+          // Share the file
+          await Share.share({
+            title: 'Export Library',
+            text: `Library export with ${books.length} books`,
+            url: result.uri,
+            dialogTitle: 'Save your library export'
+          });
+        } catch (fsError) {
+          console.warn('File write failed, using text share instead:', fsError);
+          // Fallback: Share as text if file write fails
+          await Share.share({
+            title: 'Export Library',
+            text: csvContent,
+            dialogTitle: 'Save your library export'
+          });
+        }
 
-        toast.success(`Exported ${books.length} books to CSV!`);
+        toast.success(`Exported ${books.length} books!`);
       } catch (error: any) {
         console.error('Export failed:', error);
-        toast.error(`Export failed: ${error.message}`);
+        toast.error(`Export failed: ${error.message || 'Unknown error'}`);
       }
     } else {
       // Web browser - use traditional download
