@@ -1,19 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase, checkSupabaseConfig, supabaseConfigDebug } from '../services/supabase';
 import { Button } from './Button';
-import { BookOpen, Mail, Lock, AlertCircle, Settings, Check, X } from 'lucide-react';
+import { BookOpen, Mail, Lock, AlertCircle, Settings, Check, X, KeyRound } from 'lucide-react';
 
 export const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isResetPassword, setIsResetPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   // Check configuration immediately
   const configError = checkSupabaseConfig();
+
+  // Listen for password recovery event
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsResetPassword(true);
+        setIsForgotPassword(false);
+        setIsSignUp(false);
+      }
+    });
+
+    // Check URL hash for recovery token (some browsers)
+    const hash = window.location.hash;
+    if (hash && hash.includes('type=recovery')) {
+      setIsResetPassword(true);
+    }
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +43,23 @@ export const Auth: React.FC = () => {
     setMessage(null);
 
     try {
-      if (isForgotPassword) {
+      if (isResetPassword) {
+        // Validate passwords match
+        if (password !== confirmPassword) {
+          throw new Error("Passwords do not match");
+        }
+        if (password.length < 6) {
+          throw new Error("Password must be at least 6 characters");
+        }
+        
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw error;
+        
+        setMessage("Password updated successfully! You can now sign in.");
+        setIsResetPassword(false);
+        setPassword('');
+        setConfirmPassword('');
+      } else if (isForgotPassword) {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: window.location.origin,
         });
@@ -122,32 +159,75 @@ export const Auth: React.FC = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center p-4">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-8">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 bg-brand-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-brand-500/30">
-            <BookOpen className="text-white h-7 w-7" />
+          <div className={`w-12 h-12 ${isResetPassword ? 'bg-amber-500' : 'bg-brand-600'} rounded-xl flex items-center justify-center mb-4 shadow-lg ${isResetPassword ? 'shadow-amber-500/30' : 'shadow-brand-500/30'}`}>
+            {isResetPassword ? <KeyRound className="text-white h-7 w-7" /> : <BookOpen className="text-white h-7 w-7" />}
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Welcome to Libris</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+            {isResetPassword ? 'Reset Password' : isForgotPassword ? 'Forgot Password' : 'Welcome to Libris'}
+          </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-2 text-center">
-            Your personal AI-powered reading companion
+            {isResetPassword 
+              ? 'Enter your new password below' 
+              : isForgotPassword 
+                ? "Enter your email and we'll send you a reset link"
+                : 'Your personal AI-powered reading companion'}
           </p>
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                placeholder="you@example.com"
-              />
+          {/* Reset Password Form */}
+          {isResetPassword ? (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">New Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Confirm Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Email Input - shown for login, signup, and forgot password */
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                  placeholder="you@example.com"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {!isForgotPassword && (
+          {!isForgotPassword && !isResetPassword && (
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
@@ -192,12 +272,28 @@ export const Auth: React.FC = () => {
           )}
 
           <Button type="submit" className="w-full" disabled={loading} isLoading={loading}>
-            {isForgotPassword ? 'Send Reset Link' : isSignUp ? 'Create Account' : 'Sign In'}
+            {isResetPassword ? 'Update Password' : isForgotPassword ? 'Send Reset Link' : isSignUp ? 'Create Account' : 'Sign In'}
           </Button>
         </form>
 
         <div className="mt-6 text-center">
-          {isForgotPassword ? (
+          {isResetPassword ? (
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Changed your mind?
+              <button
+                onClick={() => {
+                  setIsResetPassword(false);
+                  setPassword('');
+                  setConfirmPassword('');
+                  // Clear the hash from URL
+                  window.history.replaceState(null, '', window.location.pathname);
+                }}
+                className="ml-1 text-brand-600 dark:text-brand-400 font-medium hover:underline focus:outline-none"
+              >
+                Back to Sign In
+              </button>
+            </p>
+          ) : isForgotPassword ? (
             <p className="text-sm text-slate-600 dark:text-slate-400">
               Remember your password?
               <button
