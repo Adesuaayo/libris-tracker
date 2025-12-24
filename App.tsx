@@ -7,13 +7,15 @@ import { Auth } from './components/Auth';
 const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })));
 const BookForm = lazy(() => import('./components/BookForm').then(m => ({ default: m.BookForm })));
 import { supabase, bookApi } from './services/supabase';
-import { BookOpen, BarChart2, Plus, Search, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, Menu, LogOut, Loader2 } from 'lucide-react';
+import { BookOpen, BarChart2, Plus, Search, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, Menu, LogOut, Loader2, ExternalLink, Star } from 'lucide-react';
 import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
 import { App as CapApp } from '@capacitor/app';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { useToastActions } from './components/Toast';
+
+const APP_VERSION = '1.0.0';
 
 type SortOption = 'dateAdded' | 'rating' | 'title' | 'dateFinished';
 
@@ -181,6 +183,15 @@ export default function App() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+  };
+
+  const handleRateApp = () => {
+    const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.libris.app';
+    window.open(playStoreUrl, '_blank');
+  };
+
+  const openExternalLink = (url: string) => {
+    window.open(url, '_blank');
   };
 
   const handleEdit = (book: Book) => {
@@ -507,6 +518,25 @@ export default function App() {
         </div>
 
         <div className="p-4 space-y-4 border-t border-slate-100 dark:border-slate-800">
+             {/* User Info */}
+             {session && (
+               <div className="flex items-center gap-3 px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                 <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center">
+                   <span className="text-brand-600 dark:text-brand-400 font-semibold text-sm">
+                     {session.user.email?.charAt(0).toUpperCase()}
+                   </span>
+                 </div>
+                 <div className="flex-1 min-w-0">
+                   <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                     {session.user.email?.split('@')[0]}
+                   </p>
+                   <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                     {session.user.email}
+                   </p>
+                 </div>
+               </div>
+             )}
+
              {/* AI Section */}
              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
                 <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-100 font-semibold mb-2">
@@ -540,6 +570,46 @@ export default function App() {
                 ))}
              </div>
 
+             {/* Feedback Section */}
+             <div className="space-y-1">
+               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-2 mb-2">Feedback</p>
+               <Button 
+                 variant="ghost" 
+                 size="sm" 
+                 onClick={handleRateApp} 
+                 className="w-full justify-between text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+               >
+                 <span className="flex items-center gap-2">
+                   <Star className="h-4 w-4" />
+                   Rate App
+                 </span>
+                 <ExternalLink className="h-3 w-3 opacity-50" />
+               </Button>
+             </div>
+
+             {/* Legal Section */}
+             <div className="space-y-1">
+               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-2 mb-2">Legal</p>
+               <Button 
+                 variant="ghost" 
+                 size="sm" 
+                 onClick={() => openExternalLink('https://libris-privacy.example.com')} 
+                 className="w-full justify-between text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+               >
+                 <span>Privacy Policy</span>
+                 <ExternalLink className="h-3 w-3 opacity-50" />
+               </Button>
+               <Button 
+                 variant="ghost" 
+                 size="sm" 
+                 onClick={() => openExternalLink('https://libris-terms.example.com')} 
+                 className="w-full justify-between text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+               >
+                 <span>Terms of Service</span>
+                 <ExternalLink className="h-3 w-3 opacity-50" />
+               </Button>
+             </div>
+
              <Button variant="ghost" size="sm" onClick={handleExport} className="w-full justify-start text-slate-500 dark:text-slate-400">
                 <Download className="h-4 w-4 mr-2" /> Export CSV
              </Button>
@@ -547,6 +617,11 @@ export default function App() {
              <Button variant="ghost" size="sm" onClick={handleSignOut} className="w-full justify-start text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
                 <LogOut className="h-4 w-4 mr-2" /> Sign Out
              </Button>
+
+             {/* Version Info */}
+             <div className="text-center text-xs text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-200 dark:border-slate-700">
+               Version {APP_VERSION}
+             </div>
         </div>
         </div> {/* End scrollable sidebar content */}
       </aside>
