@@ -37,11 +37,24 @@ export const Auth: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Auth Error:", err);
-      // Helpful hint for the specific "Invalid API key" error
-      if (err.message && err.message.includes("Invalid API key")) {
-        setError("Invalid API Key. Please verify the key in your .env file matches the one below.");
+      // User-friendly error messages
+      const msg = err.message || '';
+      if (msg.includes("Invalid API key")) {
+        setError("Connection error. Please contact support.");
+      } else if (msg.includes("Invalid login credentials")) {
+        setError("Incorrect email or password. Please check and try again.");
+      } else if (msg.includes("Email not confirmed")) {
+        setError("Please check your email and click the confirmation link before signing in.");
+      } else if (msg.includes("User already registered")) {
+        setError("An account with this email already exists. Try signing in instead.");
+      } else if (msg.includes("Password should be at least")) {
+        setError("Password must be at least 6 characters long.");
+      } else if (msg.includes("Unable to validate email")) {
+        setError("Please enter a valid email address.");
+      } else if (msg.includes("rate limit") || msg.includes("too many requests")) {
+        setError("Too many attempts. Please wait a few minutes and try again.");
       } else {
-        setError(err.message);
+        setError(msg || "Something went wrong. Please try again.");
       }
     } finally {
       setLoading(false);
