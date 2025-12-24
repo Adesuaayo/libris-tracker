@@ -1,9 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Book, ReadingStatus, ViewMode, Theme } from './types';
-import { Analytics } from './components/Analytics';
-import { BookForm } from './components/BookForm';
 import { Button } from './components/Button';
 import { Auth } from './components/Auth';
+
+// Lazy load heavy components for better initial load time
+const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })));
+const BookForm = lazy(() => import('./components/BookForm').then(m => ({ default: m.BookForm })));
 import { supabase, bookApi } from './services/supabase';
 import { BookOpen, BarChart2, Plus, Search, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, Menu, LogOut, Loader2 } from 'lucide-react';
 import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
@@ -35,6 +37,10 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>('dateAdded');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  // Pagination State
+  const BOOKS_PER_PAGE = 24;
+  const [displayCount, setDisplayCount] = useState(BOOKS_PER_PAGE);
   
   // AI State
   const [aiResponse, setAiResponse] = useState<string | null>(null);
@@ -299,6 +305,22 @@ export default function App() {
       return result;
   }, [books, searchTerm, sortOption]);
 
+  // Paginated books for display
+  const paginatedBooks = useMemo(() => {
+      return filteredAndSortedBooks.slice(0, displayCount);
+  }, [filteredAndSortedBooks, displayCount]);
+
+  const hasMoreBooks = filteredAndSortedBooks.length > displayCount;
+
+  // Reset pagination when search/sort changes
+  useEffect(() => {
+      setDisplayCount(BOOKS_PER_PAGE);
+  }, [searchTerm, sortOption]);
+
+  const loadMoreBooks = () => {
+      setDisplayCount(prev => prev + BOOKS_PER_PAGE);
+  };
+
   // Helper function to render text with basic markdown (bold) support
   const renderFormattedText = (text: string) => {
     // Split by **text** pattern and render bold parts
@@ -559,14 +581,28 @@ export default function App() {
         )}
 
         {/* View Content */}
-        {view === 'analytics' && <Analytics books={books} />}
+        {view === 'analytics' && (
+          <Suspense fallback={
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 text-brand-600 animate-spin" />
+            </div>
+          }>
+            <Analytics books={books} />
+          </Suspense>
+        )}
         
         {view === 'add' && (
-          <BookForm 
-            initialData={editingBook || undefined} 
-            onSubmit={handleAddBook} 
-            onCancel={() => { setView('library'); setEditingBook(null); }} 
-          />
+          <Suspense fallback={
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 text-brand-600 animate-spin" />
+            </div>
+          }>
+            <BookForm 
+              initialData={editingBook || undefined} 
+              onSubmit={handleAddBook} 
+              onCancel={() => { setView('library'); setEditingBook(null); }} 
+            />
+          </Suspense>
         )}
 
         {view === 'library' && (
@@ -575,7 +611,7 @@ export default function App() {
                <div className="col-span-full flex justify-center py-12">
                    <Loader2 className="h-8 w-8 text-brand-600 animate-spin" />
                </div>
-            ) : filteredAndSortedBooks.map(book => (
+            ) : paginatedBooks.map(book => (
               <div key={book.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
                 <div className="p-4 flex gap-4">
                   <div className="w-20 h-28 flex-shrink-0 bg-slate-200 dark:bg-slate-700 rounded shadow-sm overflow-hidden relative group">
@@ -641,6 +677,22 @@ export default function App() {
                     <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-20" />
                     <p>No books found matching your criteria.</p>
                     {books.length === 0 && <p className="text-sm mt-2">Add a book to get started!</p>}
+                </div>
+            )}
+
+            {/* Load More Button */}
+            {!isLoadingBooks && hasMoreBooks && (
+                <div className="col-span-full flex flex-col items-center gap-2 py-8">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Showing {paginatedBooks.length} of {filteredAndSortedBooks.length} books
+                    </p>
+                    <Button 
+                        onClick={loadMoreBooks}
+                        variant="secondary"
+                        className="min-w-[200px]"
+                    >
+                        Load More Books
+                    </Button>
                 </div>
             )}
           </div>

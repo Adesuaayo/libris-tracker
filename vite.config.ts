@@ -53,6 +53,21 @@ export const ENV_CONFIG = {
       'import.meta.env.PROD': mode === 'production' ? 'true' : 'false',
       'import.meta.env.SSR': 'false',
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Vendor chunks - split large dependencies
+            'vendor-react': ['react', 'react-dom'],
+            'vendor-supabase': ['@supabase/supabase-js'],
+            'vendor-charts': ['recharts'],
+            'vendor-ai': ['@google/genai'],
+          },
+        },
+      },
+      // Increase chunk size warning limit since we're code splitting
+      chunkSizeWarningLimit: 600,
+    },
     server: {
       port: 3000
     }
