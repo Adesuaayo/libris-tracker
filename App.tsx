@@ -355,13 +355,13 @@ export default function App() {
 
       {/* Sidebar Navigation */}
       <aside className={`
-        fixed md:sticky top-0 left-0 z-30 h-full w-64 pt-[env(safe-area-inset-top)]
+        fixed md:sticky top-0 left-0 z-30 h-screen w-64 pt-[env(safe-area-inset-top)]
         bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800
         transform transition-transform duration-200 ease-in-out
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        flex flex-col
+        flex flex-col overflow-hidden
       `}>
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
                <BookOpen className="text-white h-5 w-5" />
@@ -373,6 +373,8 @@ export default function App() {
           </button>
         </div>
         
+        {/* Scrollable sidebar content */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <nav className="p-4 space-y-2">
           <button 
             onClick={() => { setView('library'); setEditingBook(null); setIsSidebarOpen(false); }}
@@ -425,7 +427,7 @@ export default function App() {
             </div>
         </div>
 
-        <div className="p-4 mt-auto space-y-4 border-t border-slate-100 dark:border-slate-800 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <div className="p-4 space-y-4 border-t border-slate-100 dark:border-slate-800">
              {/* AI Section */}
              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
                 <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-100 font-semibold mb-2">
@@ -467,6 +469,7 @@ export default function App() {
                 <LogOut className="h-4 w-4 mr-2" /> Sign Out
              </Button>
         </div>
+        </div> {/* End scrollable sidebar content */}
       </aside>
 
       {/* Main Content */}
