@@ -195,6 +195,16 @@ export default function App() {
         let val = book[key];
         if (val === undefined || val === null) val = '';
         let cell = String(val);
+        
+        // Skip base64 image data for coverUrl - it's too large for CSV
+        if (key === 'coverUrl' && cell.startsWith('data:')) {
+          cell = '[Local Image]';
+        }
+        // Truncate very long strings (like notes) to prevent CSV issues
+        if (cell.length > 500) {
+          cell = cell.substring(0, 500) + '...';
+        }
+        
         if (cell.includes('"') || cell.includes(',') || cell.includes('\n')) {
           cell = `"${cell.replace(/"/g, '""')}"`;
         }
