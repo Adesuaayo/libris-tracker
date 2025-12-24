@@ -3,6 +3,7 @@ import { Book, BookFormat, ReadingStatus } from '../types';
 import { Button } from './Button';
 import { Search, Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { storageApi } from '../services/supabase';
+import { useToastActions } from './Toast';
 
 interface BookFormProps {
   initialData?: Book;
@@ -28,6 +29,7 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(initialData?.coverUrl || '');
   const [isUploading, setIsUploading] = useState(false);
+  const toast = useToastActions();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -38,7 +40,7 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     const file = e.target.files?.[0];
     if (file) {
         if (file.size > 5 * 1024 * 1024) {
-            alert("File is too large. Please select an image under 5MB.");
+            toast.error("File is too large. Please select an image under 5MB.");
             return;
         }
         setSelectedFile(file);
@@ -107,7 +109,7 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         } catch (uploadError: any) {
           console.error('Cover upload failed:', uploadError);
           // If upload fails, continue without cover (or keep existing)
-          alert(`Cover upload failed: ${uploadError.message}. Saving book without new cover.`);
+          toast.warning(`Cover upload failed. Saving book without new cover.`);
           coverUrl = initialData?.coverUrl || '';
         }
       }

@@ -8,6 +8,7 @@ import { supabase, bookApi } from './services/supabase';
 import { BookOpen, BarChart2, Plus, Search, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, Menu, LogOut, Loader2 } from 'lucide-react';
 import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
 import { App as CapApp } from '@capacitor/app';
+import { useToastActions } from './components/Toast';
 
 type SortOption = 'dateAdded' | 'rating' | 'title' | 'dateFinished';
 
@@ -39,6 +40,9 @@ export default function App() {
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMode, setAiMode] = useState<'recommend' | 'analyze' | null>(null);
+
+  // Toast
+  const toast = useToastActions();
 
   // --- Auth & Data Loading Effects ---
 
@@ -141,10 +145,10 @@ export default function App() {
       }
       setView('library');
       setEditingBook(null);
+      toast.success(editingBook ? 'Book updated successfully!' : 'Book added to your library!');
     } catch (error: any) {
       console.error("Error saving book:", error);
-      // Show the real error message from Supabase
-      alert(`Failed to save book: ${error.message || error.details || "Unknown error"}`);
+      toast.error(`Failed to save book: ${error.message || error.details || "Unknown error"}`);
       loadBooks(); // Revert on error
     }
   };
@@ -157,9 +161,10 @@ export default function App() {
       
       try {
         await bookApi.deleteBook(id);
+        toast.success('Book deleted successfully!');
       } catch (error: any) {
         console.error("Error deleting book:", error);
-        alert(`Failed to delete book: ${error.message || error.details || "Unknown error"}`);
+        toast.error(`Failed to delete book: ${error.message || error.details || "Unknown error"}`);
         setBooks(previousBooks);
       }
     }
@@ -183,7 +188,7 @@ export default function App() {
 
   const handleExport = () => {
     if (books.length === 0) {
-      alert("No books to export.");
+      toast.warning("No books to export.");
       return;
     }
 
@@ -222,6 +227,7 @@ export default function App() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    toast.success(`Exported ${books.length} books to CSV!`);
   };
 
   const handleGeminiAction = async (mode: 'recommend' | 'analyze') => {
@@ -245,9 +251,15 @@ export default function App() {
   };
 
   const handleBookSummary = async (book: Book) => {
-      if(window.confirm(`Generate summary for ${book.title} using AI?`)) {
+      toast.info(`Generating summary for "${book.title}"...`);
+      try {
         const summary = await getBookSummary(book.title, book.author);
-        alert(`AI Summary for ${book.title}:\n\n${summary}`);
+        // For long content, we'll show a brief success message
+        // The full summary could be displayed in a modal in the future
+        toast.success(`Summary generated! Check console for details.`);
+        console.log(`AI Summary for ${book.title}:\n\n${summary}`);
+      } catch (e: any) {
+        toast.error(`Failed to generate summary: ${e.message}`);
       }
   }
 
