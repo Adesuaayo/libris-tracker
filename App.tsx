@@ -55,9 +55,7 @@ export default function App() {
   const [aiMode, setAiMode] = useState<'recommend' | 'analyze' | null>(null);
 
   // Profile Picture State
-  const [profilePicture, setProfilePicture] = useState<string | null>(() => {
-    return localStorage.getItem('libris-profile-picture');
-  });
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [uploadingProfilePic, setUploadingProfilePic] = useState(false);
 
   // Toast
@@ -73,6 +71,8 @@ export default function App() {
           console.log("[App] Session found:", session.user.email);
           setSession(session);
           loadBooks();
+          // Load profile picture from user metadata
+          loadProfilePicture(session);
       } else {
           console.log("[App] No active session found.");
       }
@@ -84,13 +84,30 @@ export default function App() {
       setSession(session);
       if (session) {
           loadBooks();
+          // Load profile picture from user metadata on auth change
+          loadProfilePicture(session);
       } else {
           setBooks([]);
+          setProfilePicture(null); // Clear profile picture on logout
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Load profile picture from Supabase user metadata
+  const loadProfilePicture = (session: any) => {
+    const avatarUrl = session?.user?.user_metadata?.avatar_url;
+    if (avatarUrl) {
+      setProfilePicture(avatarUrl);
+    } else {
+      // Fallback to localStorage for existing users (migration)
+      const localAvatar = localStorage.getItem('libris-profile-picture');
+      if (localAvatar) {
+        setProfilePicture(localAvatar);
+      }
+    }
+  };
 
   const loadBooks = async () => {
     setIsLoadingBooks(true);
@@ -257,7 +274,17 @@ export default function App() {
         .from('book-covers')
         .getPublicUrl(fileName);
 
-      // Save to localStorage and state
+      // Save to Supabase user metadata (persists across sessions)
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl }
+      });
+
+      if (updateError) {
+        console.error('Failed to update user metadata:', updateError);
+        // Still save locally as fallback
+      }
+
+      // Also save to localStorage as backup
       localStorage.setItem('libris-profile-picture', publicUrl);
       setProfilePicture(publicUrl);
       toast.success('Profile picture updated!');
@@ -599,7 +626,7 @@ export default function App() {
               Recommend
             </Button>
             <Button size="sm" className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0" onClick={() => handleGeminiAction('analyze')}>
-              Analyze
+              Analyze Habits
             </Button>
           </div>
         </div>
