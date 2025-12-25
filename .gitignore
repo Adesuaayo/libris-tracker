@@ -28,3 +28,4 @@ package-lock.json
 *.keystore
 *.jks
 keystore.properties
+keystore-base64.txt
