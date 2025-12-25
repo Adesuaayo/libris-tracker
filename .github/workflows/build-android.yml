@@ -55,6 +55,15 @@ jobs:
             npx cap add android
           fi
 
+      - name: Get SHA-1 Fingerprint
+        working-directory: ./android
+        run: |
+          chmod +x gradlew
+          echo "=========================================="
+          echo "DEBUG SIGNING INFO (SHA-1 FINGERPRINT):"
+          echo "=========================================="
+          ./gradlew signingReport
+
       - name: Build APK with Gradle
         working-directory: ./android
         run: |
