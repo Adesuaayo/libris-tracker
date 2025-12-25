@@ -1,0 +1,25 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="120" height="120" rx="24" fill="#0d9488"/>
+  
+  <!-- Book icon -->
+  <g transform="translate(25, 28)">
+    <!-- Left page -->
+    <path d="M35 8C28.5 5 20 4 10 6C8 6.5 6 8 6 10.5V54C6 56.5 8 58.5 10.5 58C20 56 28 57 35 60V8Z" fill="white" fill-opacity="0.95"/>
+    
+    <!-- Right page -->
+    <path d="M35 8C41.5 5 50 4 60 6C62 6.5 64 8 64 10.5V54C64 56.5 62 58.5 59.5 58C50 56 42 57 35 60V8Z" fill="white" fill-opacity="0.85"/>
+    
+    <!-- Center binding -->
+    <path d="M35 8V60" stroke="#0d9488" stroke-width="2" stroke-linecap="round"/>
+    
+    <!-- Sparkle/AI indicator -->
+    <g transform="translate(45, -2)">
+      <circle cx="8" cy="8" r="8" fill="#fbbf24"/>
+      <path d="M8 4V12M4 8H12M5.5 5.5L10.5 10.5M10.5 5.5L5.5 10.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+    </g>
+  </g>
+  
+  <!-- App name -->
+  <text x="60" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="16" fill="white">LIBRIS</text>
+</svg>
