@@ -7,7 +7,7 @@ import { Auth } from './components/Auth';
 const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })));
 const BookForm = lazy(() => import('./components/BookForm').then(m => ({ default: m.BookForm })));
 import { supabase, bookApi } from './services/supabase';
-import { BookOpen, BarChart2, Plus, Search, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, LogOut, Loader2, ExternalLink, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home } from 'lucide-react';
+import { BookOpen, BarChart2, Plus, Search, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, LogOut, Loader2, ExternalLink, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText } from 'lucide-react';
 import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
 import { App as CapApp } from '@capacitor/app';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -18,7 +18,7 @@ import { useToastActions } from './components/Toast';
 const APP_VERSION = '1.0.0';
 
 type SortOption = 'dateAdded' | 'rating' | 'title' | 'dateFinished';
-type TabView = 'home' | 'profile';
+type TabView = 'home' | 'profile' | 'privacy' | 'terms';
 
 export default function App() {
   // Auth State
@@ -674,7 +674,7 @@ export default function App() {
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-4 overflow-hidden">
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 pt-4 pb-2">Legal</p>
           <button 
-            onClick={() => openExternalLink('https://libris-privacy.example.com')}
+            onClick={() => setActiveTab('privacy')}
             className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
           >
             <div className="flex items-center gap-3">
@@ -685,11 +685,11 @@ export default function App() {
           </button>
           <div className="mx-4 border-t border-slate-100 dark:border-slate-700"></div>
           <button 
-            onClick={() => openExternalLink('https://libris-terms.example.com')}
+            onClick={() => setActiveTab('terms')}
             className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <BookOpen className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+              <FileText className="h-5 w-5 text-slate-500 dark:text-slate-400" />
               <span className="text-slate-900 dark:text-white">Terms of Service</span>
             </div>
             <ChevronRight className="h-5 w-5 text-slate-400" />
@@ -709,6 +709,224 @@ export default function App() {
         <div className="text-center text-sm text-slate-400 dark:text-slate-500 py-4">
           <p>Libris v{APP_VERSION}</p>
           <p className="text-xs mt-1">Made with ❤️ for book lovers</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Privacy Policy Screen
+  const PrivacyPolicyScreen = () => (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
+      {/* Header */}
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+        <div className="flex items-center gap-3 px-4 py-4">
+          <button 
+            onClick={() => setActiveTab('profile')}
+            className="p-2 -ml-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white">Privacy Policy</h1>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="px-4 py-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900 rounded-lg flex items-center justify-center">
+              <BookOpen className="h-5 w-5 text-brand-600 dark:text-brand-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Privacy Policy for Libris</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: December 2025</p>
+            </div>
+          </div>
+
+          <div className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Introduction</h3>
+            <p className="mb-4">
+              Libris ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application (the "App").
+            </p>
+            <p className="mb-4">
+              Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the App.
+            </p>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Information We Collect</h3>
+            <p className="mb-4">
+              <strong>Personal Information:</strong> When you create an account, we collect your email address and any profile information you choose to provide.
+            </p>
+            <p className="mb-4">
+              <strong>Book Data:</strong> We collect information about the books you add to your library, including titles, authors, ratings, reading status, and notes you create.
+            </p>
+            <p className="mb-4">
+              <strong>Usage Data:</strong> We may collect information about how you use the App, including your reading goals and preferences.
+            </p>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">How We Use Your Information</h3>
+            <p className="mb-4">We use the information we collect to:</p>
+            <ul className="list-disc pl-6 mb-4 space-y-2">
+              <li>Provide, maintain, and improve the App</li>
+              <li>Store and sync your book library across devices</li>
+              <li>Provide AI-powered book recommendations and reading insights</li>
+              <li>Send you updates and notifications (with your consent)</li>
+              <li>Respond to your comments and questions</li>
+            </ul>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Data Storage & Security</h3>
+            <p className="mb-4">
+              Your data is securely stored using Supabase, a trusted cloud infrastructure provider. We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.
+            </p>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Third-Party Services</h3>
+            <p className="mb-4">
+              We use Google's Gemini AI to provide book recommendations and reading analysis. When using these features, relevant book data is processed by Google's AI services in accordance with their privacy policies.
+            </p>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Your Rights</h3>
+            <p className="mb-4">You have the right to:</p>
+            <ul className="list-disc pl-6 mb-4 space-y-2">
+              <li>Access and export your personal data</li>
+              <li>Request deletion of your account and data</li>
+              <li>Opt out of non-essential data collection</li>
+              <li>Update or correct your personal information</li>
+            </ul>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Children's Privacy</h3>
+            <p className="mb-4">
+              The App is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.
+            </p>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Changes to This Policy</h3>
+            <p className="mb-4">
+              We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.
+            </p>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Contact Us</h3>
+            <p className="mb-4">
+              If you have questions or concerns about this Privacy Policy, please contact us at:
+            </p>
+            <p className="text-brand-600 dark:text-brand-400 font-medium">support@libris.app</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Terms of Service Screen
+  const TermsOfServiceScreen = () => (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
+      {/* Header */}
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+        <div className="flex items-center gap-3 px-4 py-4">
+          <button 
+            onClick={() => setActiveTab('profile')}
+            className="p-2 -ml-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white">Terms of Service</h1>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="px-4 py-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900 rounded-lg flex items-center justify-center">
+              <FileText className="h-5 w-5 text-brand-600 dark:text-brand-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Terms of Service</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: December 2025</p>
+            </div>
+          </div>
+
+          <div className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">1. Acceptance of Terms</h3>
+            <p className="mb-4">
+              Welcome to Libris. By accessing or using our mobile application ("App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use the App.
+            </p>
+            <p className="mb-4">
+              These Terms constitute a legally binding agreement between you and Libris ("we," "us," or "our"). By creating an account or using the App, you acknowledge that you have read, understood, and agree to be bound by these Terms.
+            </p>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">2. Description of Service</h3>
+            <p className="mb-4">
+              Libris is a personal book tracking application that allows users to:
+            </p>
+            <ul className="list-disc pl-6 mb-4 space-y-2">
+              <li>Track books they are reading, have read, or want to read</li>
+              <li>Set and monitor reading goals</li>
+              <li>Rate and review books</li>
+              <li>Receive AI-powered book recommendations</li>
+              <li>Analyze reading habits and patterns</li>
+              <li>Export their book library data</li>
+            </ul>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">3. User Accounts</h3>
+            <p className="mb-4">
+              To use certain features of the App, you must create an account. You are responsible for:
+            </p>
+            <ul className="list-disc pl-6 mb-4 space-y-2">
+              <li>Providing accurate and complete information</li>
+              <li>Maintaining the security of your account credentials</li>
+              <li>All activities that occur under your account</li>
+              <li>Notifying us immediately of any unauthorized use</li>
+            </ul>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">4. User Content</h3>
+            <p className="mb-4">
+              You retain ownership of any content you submit to the App, including book notes, reviews, and profile information. By submitting content, you grant us a non-exclusive license to use, store, and display that content as necessary to provide the Service.
+            </p>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">5. Acceptable Use</h3>
+            <p className="mb-4">You agree not to:</p>
+            <ul className="list-disc pl-6 mb-4 space-y-2">
+              <li>Use the App for any illegal purpose</li>
+              <li>Violate any intellectual property rights</li>
+              <li>Attempt to gain unauthorized access to our systems</li>
+              <li>Interfere with or disrupt the App's functionality</li>
+              <li>Upload malicious code or content</li>
+              <li>Create multiple accounts for abusive purposes</li>
+            </ul>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">6. AI Features</h3>
+            <p className="mb-4">
+              The App includes AI-powered features for book recommendations and reading analysis. These features are provided "as is" and recommendations are for informational purposes only. We do not guarantee the accuracy or suitability of AI-generated content.
+            </p>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">7. Intellectual Property</h3>
+            <p className="mb-4">
+              The App and its original content, features, and functionality are owned by Libris and are protected by international copyright, trademark, and other intellectual property laws.
+            </p>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">8. Termination</h3>
+            <p className="mb-4">
+              We may terminate or suspend your account and access to the App immediately, without prior notice, for any reason, including breach of these Terms. Upon termination, your right to use the App will cease immediately.
+            </p>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">9. Disclaimer of Warranties</h3>
+            <p className="mb-4">
+              THE APP IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND. WE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+            </p>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">10. Limitation of Liability</h3>
+            <p className="mb-4">
+              IN NO EVENT SHALL LIBRIS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM YOUR USE OF THE APP.
+            </p>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">11. Changes to Terms</h3>
+            <p className="mb-4">
+              We reserve the right to modify these Terms at any time. We will notify users of any material changes by updating the "Last Updated" date. Continued use of the App after changes constitutes acceptance of the modified Terms.
+            </p>
+
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">12. Contact Information</h3>
+            <p className="mb-4">
+              For questions about these Terms, please contact us at:
+            </p>
+            <p className="text-brand-600 dark:text-brand-400 font-medium">support@libris.app</p>
+          </div>
         </div>
       </div>
     </div>
@@ -936,43 +1154,48 @@ export default function App() {
   return (
     <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Screen Content */}
-      {activeTab === 'home' ? <HomeScreen /> : <ProfileScreen />}
+      {activeTab === 'home' && <HomeScreen />}
+      {activeTab === 'profile' && <ProfileScreen />}
+      {activeTab === 'privacy' && <PrivacyPolicyScreen />}
+      {activeTab === 'terms' && <TermsOfServiceScreen />}
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] z-50">
-        <div className="flex items-center justify-around h-16">
-          <button
-            onClick={() => { setActiveTab('home'); setView('library'); }}
-            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-              activeTab === 'home' 
-                ? 'text-brand-600 dark:text-brand-400' 
-                : 'text-slate-400 dark:text-slate-500'
-            }`}
-          >
-            <Home className="h-6 w-6" />
-            <span className="text-xs mt-1 font-medium">Home</span>
-          </button>
-          
-          <button
-            onClick={() => { setView('add'); setEditingBook(null); setActiveTab('home'); }}
-            className="flex items-center justify-center w-14 h-14 -mt-5 bg-brand-600 rounded-full text-white shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-colors"
-          >
-            <Plus className="h-7 w-7" />
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-              activeTab === 'profile' 
-                ? 'text-brand-600 dark:text-brand-400' 
-                : 'text-slate-400 dark:text-slate-500'
-            }`}
-          >
-            <User className="h-6 w-6" />
-            <span className="text-xs mt-1 font-medium">Profile</span>
-          </button>
-        </div>
-      </nav>
+      {/* Bottom Navigation - Hide on legal pages */}
+      {(activeTab === 'home' || activeTab === 'profile') && (
+        <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] z-50">
+          <div className="flex items-center justify-around h-16">
+            <button
+              onClick={() => { setActiveTab('home'); setView('library'); }}
+              className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
+                activeTab === 'home' 
+                  ? 'text-brand-600 dark:text-brand-400' 
+                  : 'text-slate-400 dark:text-slate-500'
+              }`}
+            >
+              <Home className="h-6 w-6" />
+              <span className="text-xs mt-1 font-medium">Home</span>
+            </button>
+            
+            <button
+              onClick={() => { setView('add'); setEditingBook(null); setActiveTab('home'); }}
+              className="flex items-center justify-center w-14 h-14 -mt-5 bg-brand-600 rounded-full text-white shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-colors"
+            >
+              <Plus className="h-7 w-7" />
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
+                activeTab === 'profile' 
+                  ? 'text-brand-600 dark:text-brand-400' 
+                  : 'text-slate-400 dark:text-slate-500'
+              }`}
+            >
+              <User className="h-6 w-6" />
+              <span className="text-xs mt-1 font-medium">Profile</span>
+            </button>
+          </div>
+        </nav>
+      )}
     </div>
   );
 }
