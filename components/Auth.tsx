@@ -113,8 +113,32 @@ export const Auth: React.FC = () => {
     
     console.log('Deep link params:', { accessToken: !!accessToken, refreshToken: !!refreshToken, type });
     
-    if (type === 'recovery' && accessToken) {
+    // Handle OAuth callback (Google Sign-In, etc.)
+    if (accessToken && refreshToken) {
       // Set the session with the tokens from the URL
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      
+      if (error) {
+        console.error('Error setting session from OAuth callback:', error);
+        setError('Failed to sign in. Please try again.');
+        setGoogleLoading(false);
+      } else {
+        console.log('Successfully authenticated via OAuth');
+        // Close the browser if it's still open (on native)
+        if (Capacitor.isNativePlatform()) {
+          try {
+            await Browser.close();
+          } catch (e) {
+            console.log('Browser already closed');
+          }
+        }
+        setGoogleLoading(false);
+      }
+    } else if (type === 'recovery' && accessToken) {
+      // Handle password recovery
       const { error } = await supabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken || '',
