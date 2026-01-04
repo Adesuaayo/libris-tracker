@@ -35,7 +35,7 @@ Now environment variables are added directly in Vercel's UI (the correct way).
    │ Variable 1: GEMINI_API_KEY                                  │
    ├─────────────────────────────────────────────────────────────┤
    │ Name:  GEMINI_API_KEY                                       │
-   │ Value: AIzaSyAJNLoBBYbDjwLJBpNm2Fuf_UYjA0oUFLs             │
+   │ Value: <YOUR_API_KEY_HERE>                                  │
    │ ☑ Production   ☑ Preview                                    │
    │ [Save]                                                      │
    └─────────────────────────────────────────────────────────────┘

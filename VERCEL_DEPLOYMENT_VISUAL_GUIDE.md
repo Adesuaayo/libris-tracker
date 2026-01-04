@@ -71,9 +71,9 @@ Add these three:
 ```
 NAME                          VALUE
 ─────────────────────────────────────────────────────────────
-GEMINI_API_KEY               AIzaSy...
+GEMINI_API_KEY               <YOUR_API_KEY_HERE>
 VITE_SUPABASE_URL            https://xxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY       eyJ...
+VITE_SUPABASE_ANON_KEY       <YOUR_ANON_KEY_HERE>
 ```
 
 **IMPORTANT**: Set each to both **Production** and **Preview**
