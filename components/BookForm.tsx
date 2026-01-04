@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Book, BookFormat, ReadingStatus } from '../types';
 import { Button } from './Button';
-import { Search, Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { storageApi } from '../services/supabase';
 import { useToastActions } from './Toast';
+import { BookSearch } from './BookSearch';
 
 interface BookFormProps {
   initialData?: Book;
@@ -23,10 +24,6 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     coverUrl: ''
   });
   
-  // Use ref instead of state for search query to prevent re-renders on Android
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(initialData?.coverUrl || '');
   const [isUploading, setIsUploading] = useState(false);
@@ -60,24 +57,8 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     setFormData(prev => ({ ...prev, coverUrl: '' }));
   };
 
-  const searchGoogleBooks = async () => {
-    const query = searchInputRef.current?.value?.trim() || '';
-    if (!query) return;
-    setIsSearching(true);
-    try {
-      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`);
-      const data = await res.json();
-      if (data.items) {
-        setSearchResults(data.items);
-      }
-    } catch (error) {
-      console.error("Error fetching books", error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const selectBook = async (item: any) => {
+  // Handle book selection from search - called by BookSearch component
+  const handleBookSelect = async (item: any) => {
     const info = item.volumeInfo;
     let coverUrl = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || '';
     
@@ -96,7 +77,6 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     }));
     
     // Download Google Books image and convert to file for upload
-    // This ensures images work on Android (avoid CORS issues)
     if (coverUrl) {
       try {
         console.log('Downloading cover from:', coverUrl);
@@ -110,24 +90,16 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         }
         
         const blob = await response.blob();
-        console.log('Downloaded blob:', blob.size, 'bytes, type:', blob.type);
-        
         const file = new File([blob], 'cover.jpg', { type: blob.type || 'image/jpeg' });
         setSelectedFile(file);
         
-        // Create preview URL for display
         const reader = new FileReader();
         reader.onloadend = () => {
           setPreviewUrl(reader.result as string);
-          console.log('Preview URL set successfully');
-        };
-        reader.onerror = () => {
-          console.error('FileReader failed');
         };
         reader.readAsDataURL(file);
       } catch (error: any) {
         console.error('Failed to download Google Books cover:', error);
-        // Silently fallback to direct URL (will be uploaded on submit if it works)
         setPreviewUrl(coverUrl);
         setFormData(prev => ({ ...prev, coverUrl }));
         setSelectedFile(null);
@@ -135,12 +107,6 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     } else {
       setPreviewUrl('');
       setSelectedFile(null);
-    }
-    
-    setSearchResults([]);
-    // Clear search input using ref
-    if (searchInputRef.current) {
-      searchInputRef.current.value = '';
     }
   };
 
@@ -191,60 +157,7 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
       <div className="mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
         <h2 className="text-xl font-bold text-slate-800 dark:text-white">{initialData ? 'Edit Book' : 'Add New Book'}</h2>
         {!initialData && (
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Auto-fill from Google Books</label>
-            <div className="flex gap-2">
-              <input 
-                ref={searchInputRef}
-                type="text"
-                inputMode="search"
-                enterKeyHint="search"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck={false}
-                defaultValue=""
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    searchGoogleBooks();
-                  }
-                }}
-                placeholder="Search by title or ISBN..."
-                className="flex-1 rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border"
-              />
-              <Button type="button" onClick={searchGoogleBooks} disabled={isSearching} variant="secondary">
-                {isSearching ? <Loader2 className="animate-spin h-4 w-4" /> : <Search className="h-4 w-4" />}
-              </Button>
-            </div>
-            {searchResults.length > 0 && (
-              <ul className="mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-800 max-h-48 overflow-y-auto">
-                {searchResults.map((item) => {
-                  let thumbnailUrl = item.volumeInfo.imageLinks?.smallThumbnail || '';
-                  // Convert to https for Android security
-                  if (thumbnailUrl && thumbnailUrl.startsWith('http://')) {
-                    thumbnailUrl = thumbnailUrl.replace('http://', 'https://');
-                  }
-                  
-                  return (
-                    <li 
-                      key={item.id} 
-                      className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-3"
-                      onClick={() => selectBook(item)}
-                    >
-                      {thumbnailUrl && (
-                        <img src={thumbnailUrl} alt="" className="w-8 h-12 object-cover rounded" />
-                      )}
-                      <div className="text-sm">
-                        <p className="font-medium text-slate-800 dark:text-slate-100">{item.volumeInfo.title}</p>
-                        <p className="text-slate-500 dark:text-slate-400">{item.volumeInfo.authors?.join(', ')}</p>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
+          <BookSearch onSelectBook={handleBookSelect} />
         )}
       </div>
 
