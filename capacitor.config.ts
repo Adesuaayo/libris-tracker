@@ -9,8 +9,7 @@ const config: CapacitorConfig = {
   },
   plugins: {
     Keyboard: {
-      resize: 'body',
-      style: 'dark',
+      resize: 'native',
       resizeOnFullScreen: true,
     },
     SplashScreen: {

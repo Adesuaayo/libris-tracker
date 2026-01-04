@@ -190,9 +190,20 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Auto-fill from Google Books</label>
             <div className="flex gap-2">
               <input 
-                type="text" 
+                type="text"
+                inputMode="text"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchGoogleBooks();
+                  }
+                }}
                 placeholder="Search by title or ISBN..."
                 className="flex-1 rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border"
               />
