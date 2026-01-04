@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import { Book, BookFormat, ReadingStatus } from '../types';
 import { Button } from './Button';
 import { Search, Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
@@ -23,21 +23,14 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     coverUrl: ''
   });
   
-  const [searchQuery, setSearchQuery] = useState('');
+  // Use ref instead of state for search query to prevent re-renders on Android
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(initialData?.coverUrl || '');
   const [isUploading, setIsUploading] = useState(false);
   const toast = useToastActions();
-  
-  // Ref for search input to maintain focus on Android
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  
-  // Memoized handler to prevent re-renders
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -68,10 +61,11 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
   };
 
   const searchGoogleBooks = async () => {
-    if (!searchQuery.trim()) return;
+    const query = searchInputRef.current?.value?.trim() || '';
+    if (!query) return;
     setIsSearching(true);
     try {
-      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=5`);
+      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`);
       const data = await res.json();
       if (data.items) {
         setSearchResults(data.items);
@@ -144,7 +138,10 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     }
     
     setSearchResults([]);
-    setSearchQuery('');
+    // Clear search input using ref
+    if (searchInputRef.current) {
+      searchInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -206,20 +203,11 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
                 autoCorrect="off"
                 autoCapitalize="off"
                 spellCheck={false}
-                value={searchQuery}
-                onChange={handleSearchChange}
+                defaultValue=""
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
                     searchGoogleBooks();
-                  }
-                }}
-                onBlur={(e) => {
-                  // Prevent keyboard from dismissing on Android by refocusing if still typing
-                  if (searchQuery && document.activeElement !== e.target) {
-                    setTimeout(() => {
-                      searchInputRef.current?.focus();
-                    }, 100);
                   }
                 }}
                 placeholder="Search by title or ISBN..."
