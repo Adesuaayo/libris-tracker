@@ -1,0 +1,38 @@
+📚 Libris - Your Personal Book Tracking Companion
+
+Transform your reading habits with Libris, the intelligent book tracker that helps you discover, organize, and analyze your reading journey.
+
+🔍 DISCOVER & ADD BOOKS
+• Search millions of books via Google Books integration
+• Add books instantly with cover art, author info, and descriptions
+• Manually add books not in the database
+
+📊 POWERFUL READING ANALYTICS
+• Track books by status: Reading, Completed, Want to Read, On Hold
+• Visualize your reading progress with beautiful charts
+• See your reading stats: books completed, pages read, reading streaks
+• Monthly and yearly reading summaries
+
+🤖 AI-POWERED INSIGHTS (Powered by Gemini)
+• Get personalized book recommendations based on your reading history
+• Receive intelligent insights about your reading patterns
+• Discover new genres and authors tailored to your taste
+
+⭐ KEY FEATURES
+• Clean, intuitive interface designed for book lovers
+• Rate and review your books
+• Track reading progress with page counts
+• Add personal notes to each book
+• Secure cloud sync with Google Sign-In
+• Works offline - sync when connected
+
+📱 BUILT FOR READERS
+Whether you're a casual reader or a bookworm tackling 100+ books a year, Libris adapts to your reading style. Set reading goals, track your progress, and celebrate your achievements.
+
+🔒 PRIVACY FIRST
+Your reading data is yours. We use secure authentication and never share your personal information.
+
+Start your reading journey today with Libris - because every book deserves to be remembered.
+
+---
+Libris is free to use with AI features powered by Google's Gemini technology.

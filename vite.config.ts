@@ -40,7 +40,14 @@ export const ENV_CONFIG = {
 };
 `;
 
-  const configPath = path.join(process.cwd(), 'src', 'config.ts');
+  const srcDir = path.join(process.cwd(), 'src');
+  const configPath = path.join(srcDir, 'config.ts');
+  
+  // Ensure src directory exists
+  if (!fs.existsSync(srcDir)) {
+    fs.mkdirSync(srcDir, { recursive: true });
+  }
+  
   fs.writeFileSync(configPath, configContent);
   console.log('[Vite] Generated src/config.ts with environment variables');
 
