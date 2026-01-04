@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense, useCallback } from 'react';
 import { Book, ReadingStatus, ViewMode, Theme } from './types';
 import { Button } from './components/Button';
 import { Auth } from './components/Auth';
@@ -71,8 +71,8 @@ export default function App() {
           console.log("[App] Session found:", session.user.email);
           setSession(session);
           loadBooks();
-          // Load profile picture from user metadata
-          loadProfilePicture(session);
+          // Load user settings (profile picture + reading goal) from metadata
+          loadUserSettings(session);
       } else {
           console.log("[App] No active session found.");
       }
@@ -84,28 +84,37 @@ export default function App() {
       setSession(session);
       if (session) {
           loadBooks();
-          // Load profile picture from user metadata on auth change
-          loadProfilePicture(session);
+          // Load user settings from metadata on auth change
+          loadUserSettings(session);
       } else {
           setBooks([]);
           setProfilePicture(null); // Clear profile picture on logout
+          setReadingGoal(12); // Reset to default on logout
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Load profile picture from Supabase user metadata
-  const loadProfilePicture = (session: any) => {
-    const avatarUrl = session?.user?.user_metadata?.avatar_url;
-    if (avatarUrl) {
-      setProfilePicture(avatarUrl);
+  // Load profile picture and reading goal from Supabase user metadata
+  const loadUserSettings = (session: any) => {
+    const metadata = session?.user?.user_metadata;
+    
+    // Load avatar
+    if (metadata?.avatar_url) {
+      setProfilePicture(metadata.avatar_url);
     } else {
       // Fallback to localStorage for existing users (migration)
       const localAvatar = localStorage.getItem('libris-profile-picture');
       if (localAvatar) {
         setProfilePicture(localAvatar);
       }
+    }
+    
+    // Load reading goal from user metadata (synced across devices)
+    if (metadata?.reading_goal) {
+      setReadingGoal(metadata.reading_goal);
+      localStorage.setItem('libris-goal', metadata.reading_goal.toString());
     }
   };
 
@@ -224,10 +233,20 @@ export default function App() {
     setView('add');
   };
 
-  const updateGoal = () => {
+  const updateGoal = async () => {
       const newGoal = prompt("Set your yearly reading goal:", readingGoal.toString());
       if (newGoal && !isNaN(parseInt(newGoal))) {
-          setReadingGoal(parseInt(newGoal));
+          const goalValue = parseInt(newGoal);
+          setReadingGoal(goalValue);
+          
+          // Save to Supabase user metadata for cross-device sync
+          try {
+            await supabase.auth.updateUser({
+              data: { reading_goal: goalValue }
+            });
+          } catch (error) {
+            console.error('Failed to sync reading goal:', error);
+          }
       }
   };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Book, BookFormat, ReadingStatus } from '../types';
 import { Button } from './Button';
 import { Search, Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
@@ -30,6 +30,14 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
   const [previewUrl, setPreviewUrl] = useState<string>(initialData?.coverUrl || '');
   const [isUploading, setIsUploading] = useState(false);
   const toast = useToastActions();
+  
+  // Ref for search input to maintain focus on Android
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Memoized handler to prevent re-renders
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -190,18 +198,28 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Auto-fill from Google Books</label>
             <div className="flex gap-2">
               <input 
+                ref={searchInputRef}
                 type="text"
-                inputMode="text"
+                inputMode="search"
+                enterKeyHint="search"
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"
                 spellCheck={false}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
                     searchGoogleBooks();
+                  }
+                }}
+                onBlur={(e) => {
+                  // Prevent keyboard from dismissing on Android by refocusing if still typing
+                  if (searchQuery && document.activeElement !== e.target) {
+                    setTimeout(() => {
+                      searchInputRef.current?.focus();
+                    }, 100);
                   }
                 }}
                 placeholder="Search by title or ISBN..."
@@ -209,6 +227,7 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
               />
               <Button type="button" onClick={searchGoogleBooks} disabled={isSearching} variant="secondary">
                 {isSearching ? <Loader2 className="animate-spin h-4 w-4" /> : <Search className="h-4 w-4" />}
+              </Button>
               </Button>
             </div>
             {searchResults.length > 0 && (
