@@ -228,7 +228,6 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
               <Button type="button" onClick={searchGoogleBooks} disabled={isSearching} variant="secondary">
                 {isSearching ? <Loader2 className="animate-spin h-4 w-4" /> : <Search className="h-4 w-4" />}
               </Button>
-              </Button>
             </div>
             {searchResults.length > 0 && (
               <ul className="mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-800 max-h-48 overflow-y-auto">
