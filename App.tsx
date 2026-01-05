@@ -1,13 +1,14 @@
-import { useState, useEffect, useMemo, lazy, Suspense, useCallback } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense, useCallback, useRef } from 'react';
 import { Book, ReadingStatus, ViewMode, Theme } from './types';
 import { Button } from './components/Button';
 import { Auth } from './components/Auth';
+import { LibrarySearch } from './components/LibrarySearch';
 
 // Lazy load heavy components for better initial load time
 const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })));
 const BookForm = lazy(() => import('./components/BookForm').then(m => ({ default: m.BookForm })));
 import { supabase, bookApi } from './services/supabase';
-import { BookOpen, BarChart2, Plus, Search, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, LogOut, Loader2, ExternalLink, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText } from 'lucide-react';
+import { BookOpen, BarChart2, Plus, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, LogOut, Loader2, ExternalLink, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText } from 'lucide-react';
 import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
 import { App as CapApp } from '@capacitor/app';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -1024,16 +1025,10 @@ export default function App() {
         {/* Search & Sort - Only show in library view */}
         {view === 'library' && (
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search books..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent shadow-sm text-sm"
-              />
-            </div>
+            <LibrarySearch 
+              onSearchChange={setSearchTerm}
+              initialValue={searchTerm}
+            />
             <div className="relative w-full sm:w-44">
               <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <select 
