@@ -1025,10 +1025,7 @@ export default function App() {
         {/* Search & Sort - Only show in library view */}
         {view === 'library' && (
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <LibrarySearch 
-              onSearchChange={setSearchTerm}
-              initialValue={searchTerm}
-            />
+            <LibrarySearch onSearchChange={setSearchTerm} />
             <div className="relative w-full sm:w-44">
               <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <select 

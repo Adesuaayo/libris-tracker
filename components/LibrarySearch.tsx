@@ -1,36 +1,20 @@
-import React, { useRef, memo, useEffect } from 'react';
+import React, { useRef, memo, useCallback } from 'react';
 import { Search } from 'lucide-react';
 
 interface LibrarySearchProps {
   onSearchChange: (term: string) => void;
-  initialValue?: string;
 }
 
 // Isolated search component to prevent keyboard dismissal on Android
-// Uses uncontrolled input with debounced callback
-export const LibrarySearch: React.FC<LibrarySearchProps> = memo(({ onSearchChange, initialValue = '' }) => {
+// Does NOT update parent on every keystroke - only on blur or Enter
+export const LibrarySearch: React.FC<LibrarySearchProps> = memo(({ onSearchChange }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Set initial value on mount
-  useEffect(() => {
-    if (inputRef.current && initialValue) {
-      inputRef.current.value = initialValue;
-    }
-  }, []);
-
-  const handleInput = () => {
+  // Only update parent when user is done typing (blur or Enter)
+  const commitSearch = useCallback(() => {
     const value = inputRef.current?.value || '';
-    
-    // Debounce the callback to parent
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-    
-    debounceRef.current = setTimeout(() => {
-      onSearchChange(value);
-    }, 300); // 300ms debounce
-  };
+    onSearchChange(value);
+  }, [onSearchChange]);
 
   return (
     <div className="relative flex-1">
@@ -45,8 +29,15 @@ export const LibrarySearch: React.FC<LibrarySearchProps> = memo(({ onSearchChang
         autoCapitalize="off"
         spellCheck={false}
         placeholder="Search books..."
-        defaultValue={initialValue}
-        onInput={handleInput}
+        defaultValue=""
+        onBlur={commitSearch}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            commitSearch();
+            inputRef.current?.blur();
+          }
+        }}
         className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent shadow-sm text-sm"
       />
     </div>
