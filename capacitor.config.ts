@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.libris.app',
+  appId: 'com.librisbooks.tracker',
   appName: 'Libris',
   webDir: 'dist',
   server: {

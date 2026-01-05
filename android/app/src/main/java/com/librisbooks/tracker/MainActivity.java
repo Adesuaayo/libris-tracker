@@ -1,4 +1,4 @@
-package com.libris.app;
+package com.librisbooks.tracker;
 
 import com.getcapacitor.BridgeActivity;
 
