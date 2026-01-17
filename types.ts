@@ -165,6 +165,37 @@ export const DEFAULT_STREAK: ReadingStreak = {
   streakHistory: [],
 };
 
+// Reading Analytics & Insights
+export interface ReadingAnalytics {
+  // Overview stats
+  totalBooksRead: number;
+  totalPagesRead: number;
+  totalReadingMinutes: number;
+  averageRating: number;
+  
+  // Time-based analysis
+  booksThisYear: number;
+  booksThisMonth: number;
+  averageCompletionDays: number;
+  
+  // Pace analysis
+  averagePagesPerDay: number;
+  averageMinutesPerSession: number;
+  longestSession: number;
+  
+  // Reading patterns
+  preferredReadingTime: 'morning' | 'afternoon' | 'evening' | 'night' | 'varied';
+  mostProductiveDay: string;
+  
+  // Genre insights
+  topGenres: { genre: string; count: number; percentage: number }[];
+  genreDiversity: number; // 0-100 score
+  
+  // Monthly trends
+  monthlyBooks: { month: string; count: number; year: number }[];
+  monthlyMinutes: { month: string; minutes: number; year: number }[];
+}
+
 export type ViewMode = 'library' | 'analytics' | 'add' | 'details';
 
 export type Theme = 'light' | 'dark' | 'system';

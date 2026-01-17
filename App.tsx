@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, lazy, Suspense, useCallback, useRef } from 'react';
-import { Book, ReadingStatus, ViewMode, Theme, ReadingPreferences, DEFAULT_PREFERENCES, BookNote, ReadingGoal, ReadingStreak, DEFAULT_STREAK, Achievement, ACHIEVEMENTS, AchievementId } from './types';
+import { Book, ReadingStatus, ViewMode, Theme, ReadingPreferences, DEFAULT_PREFERENCES, BookNote, ReadingGoal, ReadingStreak, DEFAULT_STREAK, Achievement, ACHIEVEMENTS, AchievementId, ReadingSession } from './types';
 import { Button } from './components/Button';
 import { Auth } from './components/Auth';
 import { LibrarySearch } from './components/LibrarySearch';
@@ -9,6 +9,7 @@ import { BookDetailModal } from './components/BookDetailModal';
 import { ReadingGoals } from './components/ReadingGoals';
 import { Achievements } from './components/Achievements';
 import { StreakTracker } from './components/StreakTracker';
+import { ReadingInsights } from './components/ReadingInsights';
 
 // Lazy load heavy components for better initial load time
 const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })));
@@ -97,6 +98,12 @@ export default function App() {
   // Achievements State
   const [unlockedAchievements, setUnlockedAchievements] = useState<Achievement[]>(() => {
     const saved = localStorage.getItem('libris-achievements');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Reading Sessions State (for analytics)
+  const [readingSessions, setReadingSessions] = useState<ReadingSession[]>(() => {
+    const saved = localStorage.getItem('libris-reading-sessions');
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -344,6 +351,23 @@ export default function App() {
 
   // Handle reading timer session complete
   const handleReadingSessionComplete = async (bookId: string, durationMinutes: number) => {
+    // Create a new reading session record
+    const newSession: ReadingSession = {
+      id: `session-${Date.now()}`,
+      bookId,
+      startTime: Date.now() - (durationMinutes * 60 * 1000),
+      endTime: Date.now(),
+      durationMinutes,
+      date: new Date().toISOString().split('T')[0]
+    };
+    
+    // Add to sessions list
+    setReadingSessions(prev => {
+      const updated = [...prev, newSession].slice(-500); // Keep last 500 sessions
+      localStorage.setItem('libris-reading-sessions', JSON.stringify(updated));
+      return updated;
+    });
+    
     // Update the book's total reading time
     const updatedBooks = books.map(book => {
       if (book.id === bookId) {
@@ -946,6 +970,14 @@ export default function App() {
             totalNotes={bookNotes.filter(n => n.type === 'note').length}
             totalQuotes={bookNotes.filter(n => n.type === 'quote').length}
             uniqueGenres={uniqueGenresCount}
+          />
+        </div>
+
+        {/* Reading Insights & Analytics */}
+        <div className="mb-4">
+          <ReadingInsights
+            books={books}
+            readingSessions={readingSessions}
           />
         </div>
 
