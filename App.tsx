@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo, lazy, Suspense, useCallback, useRef } from 'react';
-import { Book, ReadingStatus, ViewMode, Theme, ReadingPreferences, DEFAULT_PREFERENCES, BookNote } from './types';
+import { Book, ReadingStatus, ViewMode, Theme, ReadingPreferences, DEFAULT_PREFERENCES, BookNote, ReadingGoal, ReadingStreak, DEFAULT_STREAK, Achievement, ACHIEVEMENTS, AchievementId } from './types';
 import { Button } from './components/Button';
 import { Auth } from './components/Auth';
 import { LibrarySearch } from './components/LibrarySearch';
 import { OnboardingQuiz } from './components/OnboardingQuiz';
 import { ReadingReminders } from './components/ReadingReminders';
 import { BookDetailModal } from './components/BookDetailModal';
+import { ReadingGoals } from './components/ReadingGoals';
+import { Achievements } from './components/Achievements';
+import { StreakTracker } from './components/StreakTracker';
 
 // Lazy load heavy components for better initial load time
 const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })));
@@ -78,6 +81,24 @@ export default function App() {
 
   // Selected book for details view
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+
+  // Reading Goals State
+  const [readingGoals, setReadingGoals] = useState<ReadingGoal[]>(() => {
+    const saved = localStorage.getItem('libris-reading-goals');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Reading Streak State
+  const [readingStreak, setReadingStreak] = useState<ReadingStreak>(() => {
+    const saved = localStorage.getItem('libris-reading-streak');
+    return saved ? JSON.parse(saved) : DEFAULT_STREAK;
+  });
+
+  // Achievements State
+  const [unlockedAchievements, setUnlockedAchievements] = useState<Achievement[]>(() => {
+    const saved = localStorage.getItem('libris-achievements');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // Toast
   const toast = useToastActions();
@@ -336,6 +357,12 @@ export default function App() {
     
     setBooks(updatedBooks);
     
+    // Update reading streak
+    updateReadingStreak();
+    
+    // Check for achievements
+    checkAchievements(updatedBooks, durationMinutes);
+    
     // Find and update the book in the database
     const book = books.find(b => b.id === bookId);
     if (book) {
@@ -350,6 +377,162 @@ export default function App() {
       }
     }
   };
+
+  // Update reading streak when user reads
+  const updateReadingStreak = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    
+    setReadingStreak(prev => {
+      // If already read today, no update needed
+      if (prev.lastReadDate === today) {
+        return prev;
+      }
+      
+      let newStreak = prev.currentStreak;
+      
+      // If last read was yesterday, continue streak
+      if (prev.lastReadDate === yesterday) {
+        newStreak = prev.currentStreak + 1;
+      } 
+      // If last read was before yesterday, reset streak
+      else if (prev.lastReadDate !== today) {
+        newStreak = 1;
+      }
+      
+      const updatedStreak = {
+        currentStreak: newStreak,
+        longestStreak: Math.max(prev.longestStreak, newStreak),
+        lastReadDate: today,
+        streakHistory: prev.streakHistory.includes(today) 
+          ? prev.streakHistory 
+          : [...prev.streakHistory, today].slice(-365) // Keep last 365 days
+      };
+      
+      // Save to localStorage
+      localStorage.setItem('libris-reading-streak', JSON.stringify(updatedStreak));
+      
+      return updatedStreak;
+    });
+  };
+
+  // Check and unlock achievements
+  const checkAchievements = (currentBooks: Book[], sessionMinutes?: number) => {
+    const completedBooks = currentBooks.filter(b => b.status === ReadingStatus.COMPLETED).length;
+    const totalMinutes = currentBooks.reduce((sum, b) => sum + (b.totalReadingMinutes || 0), 0);
+    const uniqueGenres = new Set(currentBooks.filter(b => b.status === ReadingStatus.COMPLETED).map(b => b.genre)).size;
+    const totalNotesQuotes = bookNotes.length;
+    const totalQuotes = bookNotes.filter(n => n.type === 'quote').length;
+    
+    const newAchievements: Achievement[] = [];
+    const unlockedIds = new Set(unlockedAchievements.map(a => a.id));
+    
+    const checkAndUnlock = (id: AchievementId, condition: boolean) => {
+      if (!unlockedIds.has(id) && condition) {
+        const achievement = ACHIEVEMENTS.find(a => a.id === id);
+        if (achievement) {
+          newAchievements.push({ ...achievement, unlockedAt: Date.now() });
+        }
+      }
+    };
+    
+    // Book count achievements
+    checkAndUnlock('first_book', completedBooks >= 1);
+    checkAndUnlock('bookworm_5', completedBooks >= 5);
+    checkAndUnlock('bibliophile_25', completedBooks >= 25);
+    checkAndUnlock('century_reader_100', completedBooks >= 100);
+    
+    // Streak achievements
+    checkAndUnlock('streak_7', readingStreak.currentStreak >= 7);
+    checkAndUnlock('streak_30', readingStreak.currentStreak >= 30);
+    checkAndUnlock('streak_100', readingStreak.currentStreak >= 100);
+    
+    // Genre achievements
+    checkAndUnlock('genre_explorer_5', uniqueGenres >= 5);
+    checkAndUnlock('genre_master_10', uniqueGenres >= 10);
+    
+    // Reading time achievements
+    checkAndUnlock('marathon_reader', totalMinutes >= 3000);
+    if (sessionMinutes) {
+      checkAndUnlock('speed_reader', sessionMinutes >= 120);
+      
+      // Time-based achievements
+      const hour = new Date().getHours();
+      checkAndUnlock('night_owl', hour >= 0 && hour < 5);
+      checkAndUnlock('early_bird', hour >= 5 && hour < 6);
+    }
+    
+    // Note achievements
+    checkAndUnlock('note_taker_10', totalNotesQuotes >= 10);
+    checkAndUnlock('quote_collector_25', totalQuotes >= 25);
+    
+    // Goal achievement - check if yearly goal is met
+    const currentYear = new Date().getFullYear();
+    const yearlyGoal = readingGoals.find(g => g.type === 'yearly' && g.year === currentYear);
+    const booksThisYear = currentBooks.filter(b => 
+      b.status === ReadingStatus.COMPLETED && 
+      b.dateFinished && 
+      new Date(b.dateFinished).getFullYear() === currentYear
+    ).length;
+    checkAndUnlock('goal_crusher', yearlyGoal ? booksThisYear >= yearlyGoal.target : false);
+    
+    if (newAchievements.length > 0) {
+      const updated = [...unlockedAchievements, ...newAchievements];
+      setUnlockedAchievements(updated);
+      localStorage.setItem('libris-achievements', JSON.stringify(updated));
+      
+      // Show toast for each new achievement
+      newAchievements.forEach(achievement => {
+        toast.success(`🏆 Achievement Unlocked: ${achievement.name}!`);
+      });
+    }
+  };
+
+  // Handle creating a new reading goal
+  const handleCreateGoal = (goalData: Omit<ReadingGoal, 'id' | 'createdAt' | 'progress'>) => {
+    const newGoal: ReadingGoal = {
+      ...goalData,
+      id: `goal-${Date.now()}`,
+      progress: 0,
+      createdAt: Date.now()
+    };
+    
+    const updated = [...readingGoals, newGoal];
+    setReadingGoals(updated);
+    localStorage.setItem('libris-reading-goals', JSON.stringify(updated));
+    toast.success(`${goalData.type === 'yearly' ? 'Yearly' : 'Monthly'} goal set!`);
+  };
+
+  // Handle updating a reading goal
+  const handleUpdateGoal = (goal: ReadingGoal) => {
+    const updated = readingGoals.map(g => g.id === goal.id ? goal : g);
+    setReadingGoals(updated);
+    localStorage.setItem('libris-reading-goals', JSON.stringify(updated));
+  };
+
+  // Calculate books completed this month
+  const booksCompletedThisMonth = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    return books.filter(book => 
+      book.status === ReadingStatus.COMPLETED &&
+      book.dateFinished &&
+      new Date(book.dateFinished).getMonth() === currentMonth &&
+      new Date(book.dateFinished).getFullYear() === currentYear
+    ).length;
+  }, [books]);
+
+  // Calculate total reading minutes across all books
+  const totalReadingMinutes = useMemo(() => {
+    return books.reduce((sum, book) => sum + (book.totalReadingMinutes || 0), 0);
+  }, [books]);
+
+  // Calculate unique genres from completed books
+  const uniqueGenresCount = useMemo(() => {
+    return new Set(books.filter(b => b.status === ReadingStatus.COMPLETED).map(b => b.genre)).size;
+  }, [books]);
 
   const handleRateApp = () => {
     const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.libris.app';
@@ -731,38 +914,39 @@ export default function App() {
             </div>
             <div className="w-px h-10 bg-slate-200 dark:bg-slate-700"></div>
             <div className="text-center flex-1">
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{readingGoal}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Goal</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{readingStreak.currentStreak}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Day Streak</p>
             </div>
           </div>
         </div>
 
-        {/* Reading Goal Section */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-4 overflow-hidden">
-          <div className="p-4 border-b border-slate-100 dark:border-slate-700">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-amber-500" />
-                <span className="font-semibold text-slate-900 dark:text-white">{new Date().getFullYear()} Reading Challenge</span>
-              </div>
-              <button onClick={updateGoal} className="text-sm text-brand-600 dark:text-brand-400 font-medium">Edit</button>
-            </div>
-            <div className="flex items-end gap-1 mb-2">
-              <span className="text-3xl font-bold text-slate-900 dark:text-white">{booksReadThisYear}</span>
-              <span className="text-slate-500 dark:text-slate-400 mb-1">/ {readingGoal} books</span>
-            </div>
-            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
-              <div 
-                className="bg-brand-500 h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min((booksReadThisYear / readingGoal) * 100, 100)}%` }}
-              ></div>
-            </div>
-            {booksReadThisYear >= readingGoal && (
-              <div className="mt-2 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                <CheckCircle2 className="h-4 w-4" /> Goal reached! 🎉
-              </div>
-            )}
-          </div>
+        {/* Reading Streak */}
+        <div className="mb-4">
+          <StreakTracker streak={readingStreak} />
+        </div>
+
+        {/* Reading Goals */}
+        <div className="mb-4">
+          <ReadingGoals
+            goals={readingGoals}
+            completedBooks={booksReadThisYear}
+            completedThisMonth={booksCompletedThisMonth}
+            onUpdateGoal={handleUpdateGoal}
+            onCreateGoal={handleCreateGoal}
+          />
+        </div>
+
+        {/* Achievements */}
+        <div className="mb-4">
+          <Achievements
+            unlockedAchievements={unlockedAchievements}
+            totalBooks={books.filter(b => b.status === ReadingStatus.COMPLETED).length}
+            currentStreak={readingStreak.currentStreak}
+            totalReadingMinutes={totalReadingMinutes}
+            totalNotes={bookNotes.filter(n => n.type === 'note').length}
+            totalQuotes={bookNotes.filter(n => n.type === 'quote').length}
+            uniqueGenres={uniqueGenresCount}
+          />
         </div>
 
         {/* AI Assistant Section */}
