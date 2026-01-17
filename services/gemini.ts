@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Book, ReadingStatus } from "../types";
+import { Book, ReadingStatus, ReadingPreferences } from "../types";
 import { ENV_CONFIG } from "../src/config";
 
 // Get the API key from the generated config (set at build time)
@@ -43,27 +43,56 @@ const formatError = (error: any): string => {
   return `Something went wrong. Please try again in a moment.`;
 };
 
-export const getBookRecommendations = async (books: Book[]): Promise<string> => {
+export const getBookRecommendations = async (books: Book[], preferences?: ReadingPreferences): Promise<string> => {
   const keyError = checkApiKey();
   if (keyError) return keyError;
 
-  if (books.length === 0) {
+  // Build preference context
+  let preferenceContext = '';
+  if (preferences && preferences.hasCompletedOnboarding) {
+    const genresList = preferences.favoriteGenres.length > 0 
+      ? `My favorite genres are: ${preferences.favoriteGenres.join(', ')}.` 
+      : '';
+    const moodsList = preferences.preferredMoods.length > 0 
+      ? `I prefer books that feel: ${preferences.preferredMoods.join(', ')}.` 
+      : '';
+    const paceContext = preferences.readingPace === 'casual' 
+      ? 'I read casually (1-5 books/year), so recommend accessible, engaging books.'
+      : preferences.readingPace === 'avid' 
+        ? 'I\'m an avid reader (20+ books/year), so feel free to recommend challenging or longer reads.'
+        : 'I read regularly throughout the year.';
+    const lengthPref = preferences.bookLengthPreference !== 'any' 
+      ? `I prefer ${preferences.bookLengthPreference} books.` 
+      : '';
+    
+    preferenceContext = `
+    MY READING PREFERENCES:
+    ${genresList}
+    ${moodsList}
+    ${paceContext}
+    ${lengthPref}
+    `;
+  }
+
+  if (books.length === 0 && !preferences?.hasCompletedOnboarding) {
     return JSON.stringify([{ title: "No books yet", author: "System", reason: "Please add some books to your library so I can understand your taste!" }]);
   }
 
   const completedBooks = books
     .filter(b => b.status === ReadingStatus.COMPLETED)
-    .map(b => `${b.title} by ${b.author} (Rated: ${b.rating || 'N/A'}/5)`)
+    .map(b => `${b.title} by ${b.author} (Genre: ${b.genre}, Rated: ${b.rating || 'N/A'}/5)`)
     .join(', ');
 
   const booksToAnalyze = completedBooks || books.map(b => `${b.title} (${b.genre})`).join(', ');
 
   const prompt = `
-    Based on the following books I have read:
-    ${booksToAnalyze}
+    ${preferenceContext}
+    
+    ${books.length > 0 ? `Based on the following books I have read: ${booksToAnalyze}` : 'I haven\'t added books yet, but use my preferences above.'}
 
     Please recommend 3 new books I might enjoy. 
     For each book, provide the title, author, and a brief, compelling reason why it fits my taste.
+    Make sure to consider my genre preferences and reading mood preferences.
   `;
 
   try {

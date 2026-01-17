@@ -1,12 +1,16 @@
 import { useState, useEffect, useMemo, lazy, Suspense, useCallback, useRef } from 'react';
-import { Book, ReadingStatus, ViewMode, Theme } from './types';
+import { Book, ReadingStatus, ViewMode, Theme, ReadingPreferences, DEFAULT_PREFERENCES, BookNote } from './types';
 import { Button } from './components/Button';
 import { Auth } from './components/Auth';
 import { LibrarySearch } from './components/LibrarySearch';
+import { OnboardingQuiz } from './components/OnboardingQuiz';
+import { ReadingReminders } from './components/ReadingReminders';
+import { BookDetailModal } from './components/BookDetailModal';
 
 // Lazy load heavy components for better initial load time
 const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })));
 const BookForm = lazy(() => import('./components/BookForm').then(m => ({ default: m.BookForm })));
+const BookNotes = lazy(() => import('./components/BookNotes').then(m => ({ default: m.BookNotes })));
 import { supabase, bookApi } from './services/supabase';
 import { BookOpen, BarChart2, Plus, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, LogOut, Loader2, ExternalLink, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText } from 'lucide-react';
 import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
@@ -58,6 +62,22 @@ export default function App() {
   // Profile Picture State
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [uploadingProfilePic, setUploadingProfilePic] = useState(false);
+
+  // Reading Preferences State (for AI recommendations)
+  const [readingPreferences, setReadingPreferences] = useState<ReadingPreferences>(() => {
+    const saved = localStorage.getItem('libris-reading-preferences');
+    return saved ? JSON.parse(saved) : DEFAULT_PREFERENCES;
+  });
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Book Notes State
+  const [bookNotes, setBookNotes] = useState<BookNote[]>(() => {
+    const saved = localStorage.getItem('libris-book-notes');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Selected book for details view
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   // Toast
   const toast = useToastActions();
@@ -116,6 +136,24 @@ export default function App() {
     if (metadata?.reading_goal) {
       setReadingGoal(metadata.reading_goal);
       localStorage.setItem('libris-goal', metadata.reading_goal.toString());
+    }
+
+    // Load reading preferences from user metadata
+    if (metadata?.reading_preferences) {
+      setReadingPreferences(metadata.reading_preferences);
+      localStorage.setItem('libris-reading-preferences', JSON.stringify(metadata.reading_preferences));
+    } else {
+      // Check if onboarding is needed (first time user)
+      const localPrefs = localStorage.getItem('libris-reading-preferences');
+      if (!localPrefs || !JSON.parse(localPrefs).hasCompletedOnboarding) {
+        setShowOnboarding(true);
+      }
+    }
+
+    // Load book notes from user metadata
+    if (metadata?.book_notes) {
+      setBookNotes(metadata.book_notes);
+      localStorage.setItem('libris-book-notes', JSON.stringify(metadata.book_notes));
     }
   };
 
@@ -218,6 +256,99 @@ export default function App() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+  };
+
+  // Handle onboarding completion
+  const handleOnboardingComplete = async (preferences: ReadingPreferences) => {
+    setReadingPreferences(preferences);
+    setShowOnboarding(false);
+    localStorage.setItem('libris-reading-preferences', JSON.stringify(preferences));
+    
+    // Sync to Supabase
+    try {
+      await supabase.auth.updateUser({
+        data: { reading_preferences: preferences }
+      });
+      toast.success('Preferences saved! AI recommendations are now personalized.');
+    } catch (error) {
+      console.error('Failed to sync preferences:', error);
+    }
+  };
+
+  const handleOnboardingSkip = async () => {
+    const skippedPrefs = { ...DEFAULT_PREFERENCES, hasCompletedOnboarding: true };
+    setReadingPreferences(skippedPrefs);
+    setShowOnboarding(false);
+    localStorage.setItem('libris-reading-preferences', JSON.stringify(skippedPrefs));
+  };
+
+  // Handle adding book notes
+  const handleAddBookNote = async (note: Omit<BookNote, 'id' | 'createdAt'>) => {
+    const newNote: BookNote = {
+      ...note,
+      id: crypto.randomUUID(),
+      createdAt: Date.now()
+    };
+    
+    const updatedNotes = [...bookNotes, newNote];
+    setBookNotes(updatedNotes);
+    localStorage.setItem('libris-book-notes', JSON.stringify(updatedNotes));
+    
+    // Sync to Supabase
+    try {
+      await supabase.auth.updateUser({
+        data: { book_notes: updatedNotes }
+      });
+    } catch (error) {
+      console.error('Failed to sync notes:', error);
+    }
+    
+    toast.success('Note saved!');
+  };
+
+  const handleDeleteBookNote = async (noteId: string) => {
+    const updatedNotes = bookNotes.filter(n => n.id !== noteId);
+    setBookNotes(updatedNotes);
+    localStorage.setItem('libris-book-notes', JSON.stringify(updatedNotes));
+    
+    // Sync to Supabase
+    try {
+      await supabase.auth.updateUser({
+        data: { book_notes: updatedNotes }
+      });
+    } catch (error) {
+      console.error('Failed to sync notes:', error);
+    }
+  };
+
+  // Handle reading timer session complete
+  const handleReadingSessionComplete = async (bookId: string, durationMinutes: number) => {
+    // Update the book's total reading time
+    const updatedBooks = books.map(book => {
+      if (book.id === bookId) {
+        return {
+          ...book,
+          totalReadingMinutes: (book.totalReadingMinutes || 0) + durationMinutes
+        };
+      }
+      return book;
+    });
+    
+    setBooks(updatedBooks);
+    
+    // Find and update the book in the database
+    const book = books.find(b => b.id === bookId);
+    if (book) {
+      try {
+        await bookApi.updateBook({
+          ...book,
+          totalReadingMinutes: (book.totalReadingMinutes || 0) + durationMinutes
+        });
+        toast.success(`Added ${durationMinutes} minutes to your reading time!`);
+      } catch (error) {
+        console.error('Failed to update reading time:', error);
+      }
+    }
   };
 
   const handleRateApp = () => {
@@ -410,8 +541,8 @@ export default function App() {
     try {
         let text = "";
         if (mode === 'recommend') {
-            // getBookRecommendations already returns a JSON string
-            text = await getBookRecommendations(books);
+            // Pass reading preferences for better recommendations
+            text = await getBookRecommendations(books, readingPreferences);
         } else {
             text = await analyzeReadingHabits(books);
         }
@@ -686,6 +817,33 @@ export default function App() {
             <div className="flex items-center gap-3">
               <Download className="h-5 w-5 text-slate-500 dark:text-slate-400" />
               <span className="text-slate-900 dark:text-white">Export Library</span>
+            </div>
+            <ChevronRight className="h-5 w-5 text-slate-400" />
+          </button>
+        </div>
+
+        {/* Reading Reminders Section */}
+        <div className="mb-4">
+          <ReadingReminders />
+        </div>
+
+        {/* Reading Preferences Section */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-4 overflow-hidden">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 pt-4 pb-2">Personalization</p>
+          <button 
+            onClick={() => setShowOnboarding(true)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <BrainCircuit className="h-5 w-5 text-purple-500" />
+              <div className="text-left">
+                <span className="text-slate-900 dark:text-white block">Update Reading Preferences</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  {readingPreferences.hasCompletedOnboarding 
+                    ? `${readingPreferences.favoriteGenres.length} genres selected` 
+                    : 'Set up for better AI recommendations'}
+                </span>
+              </div>
             </div>
             <ChevronRight className="h-5 w-5 text-slate-400" />
           </button>
@@ -1100,7 +1258,11 @@ export default function App() {
                    <Loader2 className="h-8 w-8 text-brand-600 animate-spin" />
                </div>
             ) : paginatedBooks.map(book => (
-              <div key={book.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
+              <div 
+                key={book.id} 
+                className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden hover:shadow-md transition-shadow flex flex-col cursor-pointer"
+                onClick={() => setSelectedBook(book)}
+              >
                 <div className="p-4 flex gap-4">
                   <div className="w-20 h-28 flex-shrink-0 bg-slate-200 dark:bg-slate-700 rounded shadow-sm overflow-hidden relative group">
                     {book.coverUrl ? (
@@ -1138,7 +1300,7 @@ export default function App() {
                     </div>
                 )}
 
-                <div className="mt-auto bg-slate-50 dark:bg-slate-900/50 px-4 py-2 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                <div className="mt-auto bg-slate-50 dark:bg-slate-900/50 px-4 py-2 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center" onClick={(e) => e.stopPropagation()}>
                    <Button variant="ghost" size="sm" className="text-xs h-7 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 p-0" onClick={() => handleBookSummary(book)}>
                       AI Summary
                    </Button>
@@ -1233,6 +1395,30 @@ export default function App() {
             </button>
           </div>
         </nav>
+      )}
+
+      {/* Book Detail Modal */}
+      {selectedBook && (
+        <BookDetailModal
+          book={selectedBook}
+          notes={bookNotes}
+          onClose={() => setSelectedBook(null)}
+          onEdit={(book) => {
+            setSelectedBook(null);
+            handleEdit(book);
+          }}
+          onSessionComplete={handleReadingSessionComplete}
+          onAddNote={handleAddBookNote}
+          onDeleteNote={handleDeleteBookNote}
+        />
+      )}
+
+      {/* Onboarding Quiz Modal */}
+      {showOnboarding && (
+        <OnboardingQuiz 
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+        />
       )}
     </div>
   );
