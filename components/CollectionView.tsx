@@ -34,7 +34,7 @@ export function CollectionView({
 
   // Books not in this collection
   const availableBooks = allBooks.filter(
-    book => !collection.bookIds.includes(book.id)
+    book => !(collection.bookIds || []).includes(book.id)
   );
 
   const filteredAvailableBooks = availableBooks.filter(book =>

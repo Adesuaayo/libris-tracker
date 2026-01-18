@@ -112,7 +112,15 @@ export default function App() {
   // Collections State
   const [collections, setCollections] = useState<BookCollection[]>(() => {
     const saved = localStorage.getItem('libris-collections');
-    return saved ? JSON.parse(saved) : DEFAULT_COLLECTIONS;
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    // Initialize default collections with required fields
+    return DEFAULT_COLLECTIONS.map(c => ({
+      ...c,
+      bookIds: [],
+      createdAt: Date.now(),
+    }));
   });
   const [selectedCollection, setSelectedCollection] = useState<BookCollection | null>(null);
 
@@ -585,9 +593,9 @@ export default function App() {
   const handleAddBooksToCollection = (collectionId: string, bookIds: string[]) => {
     setCollections(prev => prev.map(c => {
       if (c.id === collectionId) {
-        const existingIds = new Set(c.bookIds);
+        const existingIds = new Set(c.bookIds || []);
         const newIds = bookIds.filter(id => !existingIds.has(id));
-        return { ...c, bookIds: [...c.bookIds, ...newIds] };
+        return { ...c, bookIds: [...(c.bookIds || []), ...newIds] };
       }
       return c;
     }));
@@ -595,11 +603,11 @@ export default function App() {
     if (selectedCollection?.id === collectionId) {
       const updatedCollection = collections.find(c => c.id === collectionId);
       if (updatedCollection) {
-        const existingIds = new Set(updatedCollection.bookIds);
+        const existingIds = new Set(updatedCollection.bookIds || []);
         const newIds = bookIds.filter(id => !existingIds.has(id));
         setSelectedCollection({
           ...updatedCollection,
-          bookIds: [...updatedCollection.bookIds, ...newIds]
+          bookIds: [...(updatedCollection.bookIds || []), ...newIds]
         });
       }
     }
@@ -609,7 +617,7 @@ export default function App() {
   const handleRemoveBookFromCollection = (collectionId: string, bookId: string) => {
     setCollections(prev => prev.map(c => {
       if (c.id === collectionId) {
-        return { ...c, bookIds: c.bookIds.filter(id => id !== bookId) };
+        return { ...c, bookIds: (c.bookIds || []).filter(id => id !== bookId) };
       }
       return c;
     }));
@@ -617,7 +625,7 @@ export default function App() {
     if (selectedCollection?.id === collectionId) {
       setSelectedCollection(prev => prev ? {
         ...prev,
-        bookIds: prev.bookIds.filter(id => id !== bookId)
+        bookIds: (prev.bookIds || []).filter(id => id !== bookId)
       } : null);
     }
   };

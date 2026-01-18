@@ -37,11 +37,11 @@ export function BookCollections({
   const [showIconPicker, setShowIconPicker] = useState(false);
 
   const getBookCountForCollection = (collection: BookCollection) => {
-    return collection.bookIds.filter(id => books.some(b => b.id === id)).length;
+    return (collection.bookIds || []).filter(id => books.some(b => b.id === id)).length;
   };
 
   const getCollectionPreviewBooks = (collection: BookCollection) => {
-    return collection.bookIds
+    return (collection.bookIds || [])
       .map(id => books.find(b => b.id === id))
       .filter((b): b is Book => !!b)
       .slice(0, 3);
