@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Book, BookFormat, ReadingStatus } from '../types';
 import { Button } from './Button';
 import { Loader2, Upload, X, Image as ImageIcon, FileText, BookOpen } from 'lucide-react';
@@ -7,6 +7,9 @@ import { ebookStorage } from '../services/ebookStorage';
 import { useToastActions } from './Toast';
 import { BookSearch } from './BookSearch';
 
+// Session storage key for persisting eBook data across potential re-renders
+const EBOOK_SESSION_KEY = 'libris-temp-ebook';
+
 interface BookFormProps {
   initialData?: Book;
   onSubmit: (book: Book) => void;
@@ -14,15 +17,20 @@ interface BookFormProps {
 }
 
 export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCancel }) => {
-  const [formData, setFormData] = useState<Partial<Book>>(initialData || {
-    title: '',
-    author: '',
-    genre: 'Fiction',
-    status: ReadingStatus.TO_READ,
-    format: BookFormat.PHYSICAL,
-    rating: 0,
-    notes: '',
-    coverUrl: ''
+  console.log('[BookForm] Component rendering, initialData:', initialData?.id);
+  
+  const [formData, setFormData] = useState<Partial<Book>>(() => {
+    console.log('[BookForm] Initializing formData state');
+    return initialData || {
+      title: '',
+      author: '',
+      genre: 'Fiction',
+      status: ReadingStatus.TO_READ,
+      format: BookFormat.PHYSICAL,
+      rating: 0,
+      notes: '',
+      coverUrl: ''
+    };
   });
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -35,7 +43,33 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
   // Use ref to persist eBook data across potential re-renders from file picker
   const ebookDataRef = useRef<{file: string; name: string; type: 'epub' | 'pdf'} | null>(null);
   
+  // Also persist form data in ref
+  const formDataRef = useRef<Partial<Book>>(formData);
+  
   const toast = useToastActions();
+
+  // Sync formData to ref whenever it changes
+  useEffect(() => {
+    formDataRef.current = formData;
+    console.log('[BookForm] formData updated:', formData.title, formData.author);
+  }, [formData]);
+
+  // On mount, check sessionStorage for any persisted eBook data
+  useEffect(() => {
+    const savedEbook = sessionStorage.getItem(EBOOK_SESSION_KEY);
+    if (savedEbook) {
+      try {
+        const parsed = JSON.parse(savedEbook);
+        console.log('[BookForm] Restored eBook from sessionStorage:', parsed.name);
+        setEbookFile(parsed.file);
+        setEbookFileName(parsed.name);
+        setEbookFileType(parsed.type);
+        ebookDataRef.current = parsed;
+      } catch (e) {
+        console.error('[BookForm] Failed to parse saved eBook data');
+      }
+    }
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -66,8 +100,11 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
   };
 
   const handleEbookFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('[BookForm] handleEbookFileChange called');
     const file = e.target.files?.[0];
     if (file) {
+      console.log('[BookForm] File selected:', file.name, file.size);
+      
       // Check file size (50MB limit for eBooks)
       if (file.size > 50 * 1024 * 1024) {
         toast.error("eBook file is too large. Please select a file under 50MB.");
@@ -87,20 +124,33 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64Data = reader.result as string;
-        console.log('[BookForm] eBook file read successfully:', file.name, 'Type:', fileType, 'Size:', file.size);
+        console.log('[BookForm] eBook file read successfully:', file.name, 'Type:', fileType, 'Size:', file.size, 'Base64 length:', base64Data.length);
         
-        // Store in both state AND ref for persistence
+        // Store in state
         setEbookFile(base64Data);
         setEbookFileName(file.name);
         setEbookFileType(fileType);
+        
+        // Store in ref
         ebookDataRef.current = { file: base64Data, name: file.name, type: fileType };
+        
+        // Store in sessionStorage for persistence across re-renders
+        try {
+          sessionStorage.setItem(EBOOK_SESSION_KEY, JSON.stringify({ file: base64Data, name: file.name, type: fileType }));
+          console.log('[BookForm] Saved eBook to sessionStorage');
+        } catch (e) {
+          console.error('[BookForm] Failed to save to sessionStorage (might be too large):', e);
+        }
         
         toast.success(`${fileType.toUpperCase()} file attached!`);
       };
-      reader.onerror = () => {
+      reader.onerror = (error) => {
+        console.error('[BookForm] FileReader error:', error);
         toast.error("Failed to read the file. Please try again.");
       };
       reader.readAsDataURL(file);
+    } else {
+      console.log('[BookForm] No file in event');
     }
   };
 
@@ -109,6 +159,8 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     setEbookFileName(null);
     setEbookFileType(null);
     ebookDataRef.current = null;
+    sessionStorage.removeItem(EBOOK_SESSION_KEY);
+    console.log('[BookForm] Removed eBook file');
   };
 
   // Handle book selection from search - called by BookSearch component
@@ -188,11 +240,28 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
 
       // Save eBook file to localStorage if present
       // Use ref as backup in case state was lost during file picker
-      const finalEbookFile = ebookFile || ebookDataRef.current?.file;
-      const finalEbookFileName = ebookFileName || ebookDataRef.current?.name;
-      const finalEbookFileType = ebookFileType || ebookDataRef.current?.type;
+      // Also check sessionStorage as ultimate backup
+      let finalEbookFile = ebookFile || ebookDataRef.current?.file;
+      let finalEbookFileName = ebookFileName || ebookDataRef.current?.name;
+      let finalEbookFileType = ebookFileType || ebookDataRef.current?.type;
       
-      console.log('[BookForm] eBook state check - ebookFile:', !!ebookFile, 'ref:', !!ebookDataRef.current);
+      // Check sessionStorage as final fallback
+      if (!finalEbookFile) {
+        const savedEbook = sessionStorage.getItem(EBOOK_SESSION_KEY);
+        if (savedEbook) {
+          try {
+            const parsed = JSON.parse(savedEbook);
+            finalEbookFile = parsed.file;
+            finalEbookFileName = parsed.name;
+            finalEbookFileType = parsed.type;
+            console.log('[BookForm] Recovered eBook from sessionStorage:', parsed.name);
+          } catch (e) {
+            console.error('[BookForm] Failed to parse sessionStorage eBook');
+          }
+        }
+      }
+      
+      console.log('[BookForm] eBook state check - state:', !!ebookFile, 'ref:', !!ebookDataRef.current, 'final:', !!finalEbookFile);
       
       if (finalEbookFile && finalEbookFileName && finalEbookFileType) {
         console.log('[BookForm] Saving eBook to localStorage with bookId:', bookId);
@@ -202,9 +271,11 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
           toast.warning('eBook file could not be saved. Storage may be full.');
         } else {
           console.log('[BookForm] eBook saved successfully. Storage keys:', ebookStorage.list());
+          // Clear sessionStorage after successful save
+          sessionStorage.removeItem(EBOOK_SESSION_KEY);
         }
       } else {
-        console.log('[BookForm] No eBook to save. ebookFile:', !!finalEbookFile, 'ebookFileName:', finalEbookFileName, 'ebookFileType:', finalEbookFileType);
+        console.log('[BookForm] No eBook to save. finalEbookFile:', !!finalEbookFile, 'finalEbookFileName:', finalEbookFileName, 'finalEbookFileType:', finalEbookFileType);
       }
       
       const newBook: Book = {
@@ -232,6 +303,16 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
 
   return (
     <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg max-w-2xl mx-auto border border-slate-100 dark:border-slate-700">
+      {/* Debug Panel */}
+      <div className="mb-4 p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-[10px] text-yellow-800 dark:text-yellow-200 space-y-1">
+        <p><strong>DEBUG:</strong></p>
+        <p>Title: "{formData.title}" | Author: "{formData.author}"</p>
+        <p>eBook State: {ebookFile ? `YES (${(ebookFile.length/1024).toFixed(0)}KB)` : 'NO'}</p>
+        <p>eBook Ref: {ebookDataRef.current ? `YES (${ebookDataRef.current.name})` : 'NO'}</p>
+        <p>eBook Session: {sessionStorage.getItem(EBOOK_SESSION_KEY) ? 'YES' : 'NO'}</p>
+        <p>FileName: {ebookFileName || 'none'}</p>
+      </div>
+
       <div className="mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
         <h2 className="text-xl font-bold text-slate-800 dark:text-white">{initialData ? 'Edit Book' : 'Add New Book'}</h2>
         {!initialData && (
