@@ -1,9 +1,10 @@
-import { memo } from 'react';
-import { X, BookOpen, Clock, Star, FileText, Tag, Calendar } from 'lucide-react';
+import { memo, useState } from 'react';
+import { X, BookOpen, Clock, Star, FileText, Tag, Calendar, Globe } from 'lucide-react';
 import { Book, BookNote, ReadingStatus } from '../types';
 import { Button } from './Button';
 import { ReadingTimer } from './ReadingTimer';
 import { BookNotes } from './BookNotes';
+import { ReadOnline } from './ReadOnline';
 
 interface BookDetailModalProps {
   book: Book;
@@ -24,6 +25,7 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
   onAddNote,
   onDeleteNote
 }) => {
+  const [showReadOnline, setShowReadOnline] = useState(false);
   const bookNotes = notes.filter((n: BookNote) => n.bookId === book.id);
   
   const formatTotalTime = (minutes: number) => {
@@ -150,15 +152,34 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
         </div>
         
         {/* Footer */}
-        <div className="border-t border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-900/50 flex justify-between">
+        <div className="border-t border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-900/50 flex justify-between gap-2">
           <Button variant="secondary" onClick={onClose}>
             Close
           </Button>
-          <Button onClick={() => onEdit(book)}>
-            Edit Book
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="secondary" 
+              onClick={() => setShowReadOnline(true)}
+              className="flex items-center gap-2"
+            >
+              <Globe className="w-4 h-4" />
+              Read Online
+            </Button>
+            <Button onClick={() => onEdit(book)}>
+              Edit Book
+            </Button>
+          </div>
         </div>
       </div>
+
+      {/* Read Online Modal */}
+      {showReadOnline && (
+        <ReadOnline
+          bookTitle={book.title}
+          bookAuthor={book.author}
+          onClose={() => setShowReadOnline(false)}
+        />
+      )}
     </div>
   );
 });
