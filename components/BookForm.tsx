@@ -9,6 +9,7 @@ import { BookSearch } from './BookSearch';
 
 // Session storage key for persisting eBook data across potential re-renders
 const EBOOK_SESSION_KEY = 'libris-temp-ebook';
+const FORM_SESSION_KEY = 'libris-temp-form';
 
 interface BookFormProps {
   initialData?: Book;
@@ -21,6 +22,19 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
   
   const [formData, setFormData] = useState<Partial<Book>>(() => {
     console.log('[BookForm] Initializing formData state');
+    // Try to restore from sessionStorage first (for re-renders)
+    if (!initialData) {
+      const saved = sessionStorage.getItem(FORM_SESSION_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          console.log('[BookForm] Restored formData from sessionStorage:', parsed.title);
+          return parsed;
+        } catch (e) {
+          console.error('[BookForm] Failed to parse saved form data');
+        }
+      }
+    }
     return initialData || {
       title: '',
       author: '',
@@ -48,10 +62,14 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
   
   const toast = useToastActions();
 
-  // Sync formData to ref whenever it changes
+  // Sync formData to ref and sessionStorage whenever it changes
   useEffect(() => {
     formDataRef.current = formData;
     console.log('[BookForm] formData updated:', formData.title, formData.author);
+    // Save to sessionStorage for persistence
+    if (formData.title || formData.author) {
+      sessionStorage.setItem(FORM_SESSION_KEY, JSON.stringify(formData));
+    }
   }, [formData]);
 
   // On mount, check sessionStorage for any persisted eBook data
@@ -295,6 +313,11 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         ebookFileName: finalEbookFileName || initialData?.ebookFileName || undefined,
         ebookFileType: finalEbookFileType || initialData?.ebookFileType || undefined,
       };
+      
+      // Clear sessionStorage after successful save
+      sessionStorage.removeItem(FORM_SESSION_KEY);
+      sessionStorage.removeItem(EBOOK_SESSION_KEY);
+      
       onSubmit(newBook);
     } finally {
       setIsUploading(false);
@@ -310,6 +333,7 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         <p>eBook State: {ebookFile ? `YES (${(ebookFile.length/1024).toFixed(0)}KB)` : 'NO'}</p>
         <p>eBook Ref: {ebookDataRef.current ? `YES (${ebookDataRef.current.name})` : 'NO'}</p>
         <p>eBook Session: {sessionStorage.getItem(EBOOK_SESSION_KEY) ? 'YES' : 'NO'}</p>
+        <p>Form Session: {sessionStorage.getItem(FORM_SESSION_KEY) ? 'YES' : 'NO'}</p>
         <p>FileName: {ebookFileName || 'none'}</p>
       </div>
 

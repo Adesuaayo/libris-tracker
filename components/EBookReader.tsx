@@ -8,9 +8,14 @@ import {
   Moon,
   Type,
   Loader2,
-  List
+  List,
+  ExternalLink,
+  FileText
 } from 'lucide-react';
 import ePub, { Book as EpubBook, Rendition, NavItem } from 'epubjs';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Browser } from '@capacitor/browser';
 
 interface EBookReaderProps {
   fileData: string; // Base64 encoded file
@@ -247,6 +252,49 @@ export function EBookReader({
   };
 
   if (fileType === 'pdf') {
+    const isNative = Capacitor.isNativePlatform();
+    
+    const openPdfExternally = async () => {
+      try {
+        if (isNative) {
+          // On native, save to temp file and open with system PDF viewer
+          const base64Data = fileData.includes(',') ? fileData.split(',')[1] : fileData;
+          const fileName = `libris-temp-${Date.now()}.pdf`;
+          
+          // Write to cache directory
+          await Filesystem.writeFile({
+            path: fileName,
+            data: base64Data,
+            directory: Directory.Cache,
+          });
+          
+          // Get the file URI
+          const fileUri = await Filesystem.getUri({
+            path: fileName,
+            directory: Directory.Cache,
+          });
+          
+          // Open with system viewer
+          await Browser.open({ url: fileUri.uri });
+        } else {
+          // On web, open in new tab
+          const newWindow = window.open();
+          if (newWindow) {
+            newWindow.document.write(`
+              <html>
+                <head><title>${bookTitle}</title></head>
+                <body style="margin:0;padding:0;">
+                  <embed src="${fileData}" type="application/pdf" width="100%" height="100%" />
+                </body>
+              </html>
+            `);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to open PDF:', error);
+      }
+    };
+
     return (
       <div className="fixed inset-0 z-[80] bg-slate-900 flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 bg-slate-800 text-white">
@@ -254,15 +302,52 @@ export function EBookReader({
             <X className="w-5 h-5" />
           </button>
           <h3 className="text-sm font-medium truncate max-w-[60%]">{bookTitle}</h3>
-          <div className="w-10" />
+          <button onClick={openPdfExternally} className="p-2 hover:bg-slate-700 rounded-lg" title="Open externally">
+            <ExternalLink className="w-5 h-5" />
+          </button>
         </div>
-        <div className="flex-1 overflow-auto">
-          <iframe
-            src={fileData}
-            className="w-full h-full"
-            title={bookTitle}
-          />
-        </div>
+        
+        {isNative ? (
+          // On Android, show a message to open externally since iframe doesn't work well
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+            <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-6">
+              <FileText className="w-12 h-12 text-red-400" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3">PDF Viewer</h3>
+            <p className="text-slate-400 mb-6 max-w-sm">
+              For the best reading experience, open this PDF in your device's PDF reader app.
+            </p>
+            <button
+              onClick={openPdfExternally}
+              className="px-6 py-3 bg-violet-600 text-white rounded-lg font-medium flex items-center gap-2 hover:bg-violet-700 transition-colors"
+            >
+              <ExternalLink className="w-5 h-5" />
+              Open PDF Reader
+            </button>
+            <p className="text-xs text-slate-500 mt-4">
+              Tap the button above to open with your device's PDF app
+            </p>
+          </div>
+        ) : (
+          // On web, use object tag which works better than iframe
+          <div className="flex-1 overflow-auto bg-slate-800">
+            <object
+              data={fileData}
+              type="application/pdf"
+              className="w-full h-full"
+            >
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <p className="text-slate-400 mb-4">Unable to display PDF inline.</p>
+                <button
+                  onClick={openPdfExternally}
+                  className="px-4 py-2 bg-violet-600 text-white rounded-lg font-medium"
+                >
+                  Open PDF
+                </button>
+              </div>
+            </object>
+          </div>
+        )}
       </div>
     );
   }
