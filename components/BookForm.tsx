@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Book, BookFormat, ReadingStatus } from '../types';
 import { Button } from './Button';
 import { Loader2, Upload, X, Image as ImageIcon, FileText, BookOpen } from 'lucide-react';
@@ -28,9 +28,13 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(initialData?.coverUrl || '');
   const [isUploading, setIsUploading] = useState(false);
-  const [ebookFile, setEbookFile] = useState<string | null>(initialData?.ebookFile || null);
+  const [ebookFile, setEbookFile] = useState<string | null>(null);
   const [ebookFileName, setEbookFileName] = useState<string | null>(initialData?.ebookFileName || null);
   const [ebookFileType, setEbookFileType] = useState<'epub' | 'pdf' | null>(initialData?.ebookFileType || null);
+  
+  // Use ref to persist eBook data across potential re-renders from file picker
+  const ebookDataRef = useRef<{file: string; name: string; type: 'epub' | 'pdf'} | null>(null);
+  
   const toast = useToastActions();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -82,10 +86,15 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
       // Convert to base64 for storage
       const reader = new FileReader();
       reader.onloadend = () => {
+        const base64Data = reader.result as string;
         console.log('[BookForm] eBook file read successfully:', file.name, 'Type:', fileType, 'Size:', file.size);
-        setEbookFile(reader.result as string);
+        
+        // Store in both state AND ref for persistence
+        setEbookFile(base64Data);
         setEbookFileName(file.name);
         setEbookFileType(fileType);
+        ebookDataRef.current = { file: base64Data, name: file.name, type: fileType };
+        
         toast.success(`${fileType.toUpperCase()} file attached!`);
       };
       reader.onerror = () => {
@@ -99,6 +108,7 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     setEbookFile(null);
     setEbookFileName(null);
     setEbookFileType(null);
+    ebookDataRef.current = null;
   };
 
   // Handle book selection from search - called by BookSearch component
@@ -177,9 +187,16 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
       }
 
       // Save eBook file to localStorage if present
-      if (ebookFile && ebookFileName && ebookFileType) {
+      // Use ref as backup in case state was lost during file picker
+      const finalEbookFile = ebookFile || ebookDataRef.current?.file;
+      const finalEbookFileName = ebookFileName || ebookDataRef.current?.name;
+      const finalEbookFileType = ebookFileType || ebookDataRef.current?.type;
+      
+      console.log('[BookForm] eBook state check - ebookFile:', !!ebookFile, 'ref:', !!ebookDataRef.current);
+      
+      if (finalEbookFile && finalEbookFileName && finalEbookFileType) {
         console.log('[BookForm] Saving eBook to localStorage with bookId:', bookId);
-        const saved = ebookStorage.save(bookId, ebookFileName, ebookFileType, ebookFile);
+        const saved = ebookStorage.save(bookId, finalEbookFileName, finalEbookFileType, finalEbookFile);
         console.log('[BookForm] eBook save result:', saved, 'Has check:', ebookStorage.has(bookId));
         if (!saved) {
           toast.warning('eBook file could not be saved. Storage may be full.');
@@ -187,7 +204,7 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
           console.log('[BookForm] eBook saved successfully. Storage keys:', ebookStorage.list());
         }
       } else {
-        console.log('[BookForm] No eBook to save. ebookFile:', !!ebookFile, 'ebookFileName:', ebookFileName, 'ebookFileType:', ebookFileType);
+        console.log('[BookForm] No eBook to save. ebookFile:', !!finalEbookFile, 'ebookFileName:', finalEbookFileName, 'ebookFileType:', finalEbookFileType);
       }
       
       const newBook: Book = {
@@ -204,8 +221,8 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         coverUrl: coverUrl,
         addedAt: initialData?.addedAt || Date.now(),
         // Store just metadata - actual file is in localStorage
-        ebookFileName: ebookFileName || initialData?.ebookFileName || undefined,
-        ebookFileType: ebookFileType || initialData?.ebookFileType || undefined,
+        ebookFileName: finalEbookFileName || initialData?.ebookFileName || undefined,
+        ebookFileType: finalEbookFileType || initialData?.ebookFileType || undefined,
       };
       onSubmit(newBook);
     } finally {
@@ -327,18 +344,18 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
               Attach an EPUB or PDF file to read directly in the app
             </p>
             
-            {ebookFileName ? (
+            {(ebookFileName || ebookDataRef.current?.name) ? (
               <div className="flex items-center gap-3 bg-white dark:bg-slate-800 rounded-lg p-3 border border-violet-200 dark:border-violet-700">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                  ebookFileType === 'epub' 
+                  (ebookFileType || ebookDataRef.current?.type) === 'epub' 
                     ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' 
                     : 'bg-red-100 dark:bg-red-900/30 text-red-600'
                 }`}>
                   <FileText className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{ebookFileName}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase">{ebookFileType} file</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{ebookFileName || ebookDataRef.current?.name}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase">{ebookFileType || ebookDataRef.current?.type} file</p>
                 </div>
                 <button
                   type="button"
