@@ -34,7 +34,10 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
 
   // Check if book has an eBook file
   useEffect(() => {
+    console.log('[BookDetailModal] Checking for eBook. book.id:', book.id);
+    console.log('[BookDetailModal] All stored eBooks:', ebookStorage.list());
     const stored = ebookStorage.get(book.id);
+    console.log('[BookDetailModal] Found stored eBook:', !!stored, stored?.fileName);
     if (stored) {
       setHasEbook(true);
       setEbookData({
@@ -169,6 +172,11 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
               onDeleteNote={onDeleteNote}
             />
           </div>
+        </div>
+        
+        {/* Debug info - remove later */}
+        <div className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-[9px] text-yellow-800 dark:text-yellow-200">
+          Debug: hasEbook={hasEbook ? 'YES' : 'NO'}, bookId={book.id?.substring(0, 8)}..., storedBooks={ebookStorage.list().length}
         </div>
         
         {/* Footer */}

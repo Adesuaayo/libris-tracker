@@ -82,6 +82,7 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
       // Convert to base64 for storage
       const reader = new FileReader();
       reader.onloadend = () => {
+        console.log('[BookForm] eBook file read successfully:', file.name, 'Type:', fileType, 'Size:', file.size);
         setEbookFile(reader.result as string);
         setEbookFileName(file.name);
         setEbookFileType(fileType);
@@ -177,10 +178,16 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
 
       // Save eBook file to localStorage if present
       if (ebookFile && ebookFileName && ebookFileType) {
+        console.log('[BookForm] Saving eBook to localStorage with bookId:', bookId);
         const saved = ebookStorage.save(bookId, ebookFileName, ebookFileType, ebookFile);
+        console.log('[BookForm] eBook save result:', saved, 'Has check:', ebookStorage.has(bookId));
         if (!saved) {
           toast.warning('eBook file could not be saved. Storage may be full.');
+        } else {
+          console.log('[BookForm] eBook saved successfully. Storage keys:', ebookStorage.list());
         }
+      } else {
+        console.log('[BookForm] No eBook to save. ebookFile:', !!ebookFile, 'ebookFileName:', ebookFileName, 'ebookFileType:', ebookFileType);
       }
       
       const newBook: Book = {
