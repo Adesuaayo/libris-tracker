@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Book, BookFormat, ReadingStatus } from '../types';
 import { Button } from './Button';
-import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Upload, X, Image as ImageIcon, FileText, BookOpen } from 'lucide-react';
 import { storageApi } from '../services/supabase';
+import { ebookStorage } from '../services/ebookStorage';
 import { useToastActions } from './Toast';
 import { BookSearch } from './BookSearch';
 
@@ -27,6 +28,9 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(initialData?.coverUrl || '');
   const [isUploading, setIsUploading] = useState(false);
+  const [ebookFile, setEbookFile] = useState<string | null>(initialData?.ebookFile || null);
+  const [ebookFileName, setEbookFileName] = useState<string | null>(initialData?.ebookFileName || null);
+  const [ebookFileType, setEbookFileType] = useState<'epub' | 'pdf' | null>(initialData?.ebookFileType || null);
   const toast = useToastActions();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -55,6 +59,45 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     setSelectedFile(null);
     setPreviewUrl('');
     setFormData(prev => ({ ...prev, coverUrl: '' }));
+  };
+
+  const handleEbookFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size (50MB limit for eBooks)
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error("eBook file is too large. Please select a file under 50MB.");
+        return;
+      }
+
+      // Check file type
+      const fileName = file.name.toLowerCase();
+      if (!fileName.endsWith('.epub') && !fileName.endsWith('.pdf')) {
+        toast.error("Only EPUB and PDF files are supported.");
+        return;
+      }
+
+      const fileType: 'epub' | 'pdf' = fileName.endsWith('.epub') ? 'epub' : 'pdf';
+
+      // Convert to base64 for storage
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEbookFile(reader.result as string);
+        setEbookFileName(file.name);
+        setEbookFileType(fileType);
+        toast.success(`${fileType.toUpperCase()} file attached!`);
+      };
+      reader.onerror = () => {
+        toast.error("Failed to read the file. Please try again.");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeEbookFile = () => {
+    setEbookFile(null);
+    setEbookFileName(null);
+    setEbookFileType(null);
   };
 
   // Handle book selection from search - called by BookSearch component
@@ -131,6 +174,14 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
           coverUrl = initialData?.coverUrl || '';
         }
       }
+
+      // Save eBook file to localStorage if present
+      if (ebookFile && ebookFileName && ebookFileType) {
+        const saved = ebookStorage.save(bookId, ebookFileName, ebookFileType, ebookFile);
+        if (!saved) {
+          toast.warning('eBook file could not be saved. Storage may be full.');
+        }
+      }
       
       const newBook: Book = {
         id: bookId,
@@ -145,6 +196,9 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         notes: formData.notes,
         coverUrl: coverUrl,
         addedAt: initialData?.addedAt || Date.now(),
+        // Store just metadata - actual file is in localStorage
+        ebookFileName: ebookFileName || initialData?.ebookFileName || undefined,
+        ebookFileType: ebookFileType || initialData?.ebookFileType || undefined,
       };
       onSubmit(newBook);
     } finally {
@@ -254,6 +308,59 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
                     </div>
                 </div>
             </div>
+        </div>
+
+        {/* eBook File Section */}
+        <div className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 p-4 rounded-lg border border-violet-100 dark:border-violet-800">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <BookOpen className="w-4 h-4 inline mr-2" />
+              eBook File (EPUB/PDF)
+            </label>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+              Attach an EPUB or PDF file to read directly in the app
+            </p>
+            
+            {ebookFileName ? (
+              <div className="flex items-center gap-3 bg-white dark:bg-slate-800 rounded-lg p-3 border border-violet-200 dark:border-violet-700">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  ebookFileType === 'epub' 
+                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' 
+                    : 'bg-red-100 dark:bg-red-900/30 text-red-600'
+                }`}>
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{ebookFileName}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase">{ebookFileType} file</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={removeEbookFile}
+                  className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  title="Remove file"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div>
+                <input
+                  type="file"
+                  accept=".epub,.pdf"
+                  onChange={handleEbookFileChange}
+                  className="hidden"
+                  id="ebook-upload"
+                />
+                <label
+                  htmlFor="ebook-upload"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-violet-300 dark:border-violet-600 text-sm font-medium rounded-lg text-violet-700 dark:text-violet-300 bg-white/50 dark:bg-slate-800/50 hover:bg-violet-50 dark:hover:bg-violet-900/20 cursor-pointer transition-colors w-full justify-center"
+                >
+                  <Upload className="w-4 h-4" />
+                  Choose EPUB or PDF File
+                </label>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 text-center">Max 50MB. Stored locally on your device.</p>
+              </div>
+            )}
         </div>
 
         {/* Genre & Format */}

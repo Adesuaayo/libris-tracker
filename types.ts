@@ -68,6 +68,9 @@ export interface Book {
   totalReadingMinutes?: number;
   currentPage?: number;
   totalPages?: number;
+  // eBook file metadata (actual file stored in localStorage via ebookStorage)
+  ebookFileName?: string; // Original file name
+  ebookFileType?: 'epub' | 'pdf'; // File type
 }
 
 export interface Stats {

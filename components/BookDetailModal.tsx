@@ -1,10 +1,11 @@
-import { memo, useState } from 'react';
-import { X, BookOpen, Clock, Star, FileText, Tag, Calendar, Globe } from 'lucide-react';
+import { memo, useState, useEffect } from 'react';
+import { X, BookOpen, Clock, Star, FileText, Tag, Calendar, Globe, Pencil, BookMarked } from 'lucide-react';
 import { Book, BookNote, ReadingStatus } from '../types';
-import { Button } from './Button';
 import { ReadingTimer } from './ReadingTimer';
 import { BookNotes } from './BookNotes';
 import { ReadOnline } from './ReadOnline';
+import { EBookReader } from './EBookReader';
+import { ebookStorage } from '../services/ebookStorage';
 
 interface BookDetailModalProps {
   book: Book;
@@ -26,7 +27,26 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
   onDeleteNote
 }) => {
   const [showReadOnline, setShowReadOnline] = useState(false);
+  const [showEBookReader, setShowEBookReader] = useState(false);
+  const [hasEbook, setHasEbook] = useState(false);
+  const [ebookData, setEbookData] = useState<{ data: string; fileName: string; fileType: 'epub' | 'pdf' } | null>(null);
   const bookNotes = notes.filter((n: BookNote) => n.bookId === book.id);
+
+  // Check if book has an eBook file
+  useEffect(() => {
+    const stored = ebookStorage.get(book.id);
+    if (stored) {
+      setHasEbook(true);
+      setEbookData({
+        data: stored.data,
+        fileName: stored.fileName,
+        fileType: stored.fileType
+      });
+    } else {
+      setHasEbook(false);
+      setEbookData(null);
+    }
+  }, [book.id]);
   
   const formatTotalTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -152,32 +172,38 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
         </div>
         
         {/* Footer */}
-        <div className="border-t border-slate-200 dark:border-slate-700 p-3 bg-slate-50 dark:bg-slate-900/50">
-          <div className="flex gap-2">
-            <Button 
-              variant="secondary" 
+        <div className="border-t border-slate-200 dark:border-slate-700 p-2 bg-slate-50 dark:bg-slate-900/50">
+          <div className="flex gap-1">
+            <button 
               onClick={onClose}
-              size="sm"
-              className="flex-1"
+              className="p-2 text-slate-600 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+              title="Close"
             >
-              Close
-            </Button>
-            <Button 
-              variant="secondary" 
+              <X className="w-4 h-4" />
+            </button>
+            {hasEbook && (
+              <button 
+                onClick={() => setShowEBookReader(true)}
+                className="flex-1 py-1.5 px-2 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors flex items-center justify-center gap-1"
+              >
+                <BookMarked className="w-3 h-3" />
+                <span>Read Book</span>
+              </button>
+            )}
+            <button 
               onClick={() => setShowReadOnline(true)}
-              size="sm"
-              className="flex-1 flex items-center justify-center gap-1"
+              className="flex-1 py-1.5 px-2 text-[10px] font-medium text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30 rounded-lg hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors flex items-center justify-center gap-1"
             >
-              <Globe className="w-3.5 h-3.5" />
-              <span className="text-xs">Read Online</span>
-            </Button>
-            <Button 
+              <Globe className="w-3 h-3" />
+              <span>Find Online</span>
+            </button>
+            <button 
               onClick={() => onEdit(book)}
-              size="sm"
-              className="flex-1"
+              className="p-2 text-white bg-brand-600 rounded-lg hover:bg-brand-700 transition-colors"
+              title="Edit"
             >
-              Edit Book
-            </Button>
+              <Pencil className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -188,6 +214,17 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
           bookTitle={book.title}
           bookAuthor={book.author}
           onClose={() => setShowReadOnline(false)}
+        />
+      )}
+
+      {/* eBook Reader */}
+      {showEBookReader && ebookData && (
+        <EBookReader
+          fileData={ebookData.data}
+          fileType={ebookData.fileType}
+          fileName={ebookData.fileName}
+          bookTitle={book.title}
+          onClose={() => setShowEBookReader(false)}
         />
       )}
     </div>

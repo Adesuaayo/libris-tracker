@@ -30,10 +30,12 @@
     "@google/genai": "latest",
     "@supabase/supabase-js": "^2.39.0",
     "cors": "^2.8.5",
+    "epubjs": "^0.3.93",
     "express": "^4.18.2",
     "lucide-react": "^0.344.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-pdf": "^10.3.0",
     "recharts": "^2.12.0"
   },
   "devDependencies": {
