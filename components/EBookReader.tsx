@@ -9,13 +9,15 @@ import {
   Type,
   Loader2,
   List,
-  ExternalLink,
+  ZoomIn,
+  ZoomOut,
   FileText
 } from 'lucide-react';
 import ePub, { Book as EpubBook, Rendition, NavItem } from 'epubjs';
-import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Browser } from '@capacitor/browser';
+import { Document, Page, pdfjs } from 'react-pdf';
+
+// Set up PDF.js worker from CDN
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface EBookReaderProps {
   fileData: string; // Base64 encoded file
@@ -37,6 +39,233 @@ const DEFAULT_SETTINGS: ReaderSettings = {
   theme: 'light',
   fontFamily: 'serif'
 };
+
+// PDF Viewer Component - renders PDFs using PDF.js (works on Android!)
+interface PDFViewerProps {
+  fileData: string;
+  bookTitle: string;
+  onClose: () => void;
+  onProgressUpdate?: (currentPage: number, totalPages: number) => void;
+}
+
+function PDFViewer({ fileData, bookTitle, onClose, onProgressUpdate }: PDFViewerProps) {
+  const [numPages, setNumPages] = useState<number>(0);
+  const [pageNumber, setPageNumber] = useState<number>(1);
+  const [scale, setScale] = useState<number>(1.0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
+
+  // Measure container width for responsive page sizing
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.clientWidth - 32); // subtract padding
+      }
+    };
+    
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') goToPrev();
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goToNext();
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [numPages, pageNumber, onClose]);
+
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    setIsLoading(false);
+    
+    // Restore last position
+    const savedPage = localStorage.getItem(`libris-pdf-page-${bookTitle}`);
+    if (savedPage) {
+      const page = parseInt(savedPage, 10);
+      if (page > 0 && page <= numPages) {
+        setPageNumber(page);
+      }
+    }
+  };
+
+  const onDocumentLoadError = (error: Error) => {
+    console.error('Error loading PDF:', error);
+    setError('Failed to load PDF. The file might be corrupted.');
+    setIsLoading(false);
+  };
+
+  const goToPrev = () => {
+    if (pageNumber > 1) {
+      const newPage = pageNumber - 1;
+      setPageNumber(newPage);
+      localStorage.setItem(`libris-pdf-page-${bookTitle}`, String(newPage));
+      onProgressUpdate?.(newPage, numPages);
+    }
+  };
+
+  const goToNext = () => {
+    if (pageNumber < numPages) {
+      const newPage = pageNumber + 1;
+      setPageNumber(newPage);
+      localStorage.setItem(`libris-pdf-page-${bookTitle}`, String(newPage));
+      onProgressUpdate?.(newPage, numPages);
+    }
+  };
+
+  const zoomIn = () => setScale(prev => Math.min(prev + 0.25, 3.0));
+  const zoomOut = () => setScale(prev => Math.max(prev - 0.25, 0.5));
+
+  // Handle swipe gestures
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const diffX = touchStartX.current - touchEndX;
+    const diffY = touchStartY.current - touchEndY;
+    
+    // Only handle horizontal swipes (ignore vertical scrolling)
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+      if (diffX > 0) {
+        goToNext();
+      } else {
+        goToPrev();
+      }
+    }
+  };
+
+  const progress = numPages > 0 ? Math.round((pageNumber / numPages) * 100) : 0;
+
+  return (
+    <div className="fixed inset-0 z-[80] bg-slate-900 flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-800 text-white shrink-0">
+        <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg">
+          <X className="w-5 h-5" />
+        </button>
+        <h3 className="text-sm font-medium truncate max-w-[50%]">{bookTitle}</h3>
+        <div className="flex items-center gap-1">
+          <button onClick={zoomOut} className="p-2 hover:bg-slate-700 rounded-lg" title="Zoom out">
+            <ZoomOut className="w-5 h-5" />
+          </button>
+          <span className="text-xs w-12 text-center">{Math.round(scale * 100)}%</span>
+          <button onClick={zoomIn} className="p-2 hover:bg-slate-700 rounded-lg" title="Zoom in">
+            <ZoomIn className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* PDF Content */}
+      <div 
+        ref={containerRef}
+        className="flex-1 overflow-auto bg-slate-800 p-4"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {isLoading && (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin text-violet-500 mx-auto mb-3" />
+              <p className="text-sm text-slate-400">Loading PDF...</p>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center max-w-sm">
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-8 h-8 text-red-400" />
+              </div>
+              <h3 className="font-medium text-lg text-white mb-2">Error Loading PDF</h3>
+              <p className="text-sm text-slate-400">{error}</p>
+              <button
+                onClick={onClose}
+                className="mt-4 px-4 py-2 bg-violet-500 text-white rounded-lg hover:bg-violet-600"
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        )}
+
+        <Document
+          file={fileData}
+          onLoadSuccess={onDocumentLoadSuccess}
+          onLoadError={onDocumentLoadError}
+          loading=""
+          className="flex justify-center"
+        >
+          <Page
+            pageNumber={pageNumber}
+            scale={scale}
+            width={containerWidth > 0 ? Math.min(containerWidth, 800) : undefined}
+            loading=""
+            className="shadow-2xl"
+            renderTextLayer={true}
+            renderAnnotationLayer={true}
+          />
+        </Document>
+      </div>
+
+      {/* Footer Navigation */}
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-800 border-t border-slate-700 shrink-0">
+        <button 
+          onClick={goToPrev}
+          disabled={pageNumber <= 1}
+          className={`p-3 rounded-lg transition-colors ${
+            pageNumber <= 1 
+              ? 'opacity-40 cursor-not-allowed' 
+              : 'hover:bg-slate-700 text-white'
+          }`}
+        >
+          <ChevronLeft className="w-6 h-6 text-white" />
+        </button>
+
+        {/* Progress */}
+        <div className="flex-1 mx-4">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <span className="text-sm text-white">
+              {pageNumber} / {numPages}
+            </span>
+          </div>
+          <div className="h-1 bg-slate-700 rounded-full">
+            <div 
+              className="h-full bg-violet-500 rounded-full transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="text-xs text-center mt-1 text-slate-400">{progress}%</p>
+        </div>
+
+        <button 
+          onClick={goToNext}
+          disabled={pageNumber >= numPages}
+          className={`p-3 rounded-lg transition-colors ${
+            pageNumber >= numPages 
+              ? 'opacity-40 cursor-not-allowed' 
+              : 'hover:bg-slate-700 text-white'
+          }`}
+        >
+          <ChevronRight className="w-6 h-6 text-white" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function EBookReader({ 
   fileData, 
@@ -252,103 +481,13 @@ export function EBookReader({
   };
 
   if (fileType === 'pdf') {
-    const isNative = Capacitor.isNativePlatform();
-    
-    const openPdfExternally = async () => {
-      try {
-        if (isNative) {
-          // On native, save to temp file and open with system PDF viewer
-          const base64Data = fileData.includes(',') ? fileData.split(',')[1] : fileData;
-          const fileName = `libris-temp-${Date.now()}.pdf`;
-          
-          // Write to cache directory
-          await Filesystem.writeFile({
-            path: fileName,
-            data: base64Data,
-            directory: Directory.Cache,
-          });
-          
-          // Get the file URI
-          const fileUri = await Filesystem.getUri({
-            path: fileName,
-            directory: Directory.Cache,
-          });
-          
-          // Open with system viewer
-          await Browser.open({ url: fileUri.uri });
-        } else {
-          // On web, open in new tab
-          const newWindow = window.open();
-          if (newWindow) {
-            newWindow.document.write(`
-              <html>
-                <head><title>${bookTitle}</title></head>
-                <body style="margin:0;padding:0;">
-                  <embed src="${fileData}" type="application/pdf" width="100%" height="100%" />
-                </body>
-              </html>
-            `);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to open PDF:', error);
-      }
-    };
-
     return (
-      <div className="fixed inset-0 z-[80] bg-slate-900 flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 bg-slate-800 text-white">
-          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg">
-            <X className="w-5 h-5" />
-          </button>
-          <h3 className="text-sm font-medium truncate max-w-[60%]">{bookTitle}</h3>
-          <button onClick={openPdfExternally} className="p-2 hover:bg-slate-700 rounded-lg" title="Open externally">
-            <ExternalLink className="w-5 h-5" />
-          </button>
-        </div>
-        
-        {isNative ? (
-          // On Android, show a message to open externally since iframe doesn't work well
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-            <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-6">
-              <FileText className="w-12 h-12 text-red-400" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-3">PDF Viewer</h3>
-            <p className="text-slate-400 mb-6 max-w-sm">
-              For the best reading experience, open this PDF in your device's PDF reader app.
-            </p>
-            <button
-              onClick={openPdfExternally}
-              className="px-6 py-3 bg-violet-600 text-white rounded-lg font-medium flex items-center gap-2 hover:bg-violet-700 transition-colors"
-            >
-              <ExternalLink className="w-5 h-5" />
-              Open PDF Reader
-            </button>
-            <p className="text-xs text-slate-500 mt-4">
-              Tap the button above to open with your device's PDF app
-            </p>
-          </div>
-        ) : (
-          // On web, use object tag which works better than iframe
-          <div className="flex-1 overflow-auto bg-slate-800">
-            <object
-              data={fileData}
-              type="application/pdf"
-              className="w-full h-full"
-            >
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-                <p className="text-slate-400 mb-4">Unable to display PDF inline.</p>
-                <button
-                  onClick={openPdfExternally}
-                  className="px-4 py-2 bg-violet-600 text-white rounded-lg font-medium"
-                >
-                  Open PDF
-                </button>
-              </div>
-            </object>
-          </div>
-        )}
-      </div>
+      <PDFViewer 
+        fileData={fileData} 
+        bookTitle={bookTitle} 
+        onClose={onClose}
+        onProgressUpdate={onProgressUpdate}
+      />
     );
   }
 
