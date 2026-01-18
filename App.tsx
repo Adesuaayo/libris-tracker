@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, lazy, Suspense, useCallback, useRef } from 'react';
-import { Book, ReadingStatus, ViewMode, Theme, ReadingPreferences, DEFAULT_PREFERENCES, BookNote, ReadingGoal, ReadingStreak, DEFAULT_STREAK, Achievement, ACHIEVEMENTS, AchievementId, ReadingSession } from './types';
+import { Book, ReadingStatus, ViewMode, Theme, ReadingPreferences, DEFAULT_PREFERENCES, BookNote, ReadingGoal, ReadingStreak, DEFAULT_STREAK, Achievement, ACHIEVEMENTS, AchievementId, ReadingSession, BookCollection, DEFAULT_COLLECTIONS } from './types';
 import { Button } from './components/Button';
 import { Auth } from './components/Auth';
 import { LibrarySearch } from './components/LibrarySearch';
@@ -10,6 +10,8 @@ import { ReadingGoals } from './components/ReadingGoals';
 import { Achievements } from './components/Achievements';
 import { StreakTracker } from './components/StreakTracker';
 import { ReadingInsights } from './components/ReadingInsights';
+import { BookCollections } from './components/BookCollections';
+import { CollectionView } from './components/CollectionView';
 
 // Lazy load heavy components for better initial load time
 const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })));
@@ -106,6 +108,13 @@ export default function App() {
     const saved = localStorage.getItem('libris-reading-sessions');
     return saved ? JSON.parse(saved) : [];
   });
+
+  // Collections State
+  const [collections, setCollections] = useState<BookCollection[]>(() => {
+    const saved = localStorage.getItem('libris-collections');
+    return saved ? JSON.parse(saved) : DEFAULT_COLLECTIONS;
+  });
+  const [selectedCollection, setSelectedCollection] = useState<BookCollection | null>(null);
 
   // Toast
   const toast = useToastActions();
@@ -215,11 +224,20 @@ export default function App() {
       localStorage.setItem('libris-goal', readingGoal.toString());
   }, [readingGoal]);
 
+  // Persist collections to localStorage
+  useEffect(() => {
+    localStorage.setItem('libris-collections', JSON.stringify(collections));
+  }, [collections]);
+
   // --- Mobile Back Button Handling ---
   useEffect(() => {
     const handleBackButton = async () => {
         CapApp.addListener('backButton', ({ canGoBack }) => {
-            if (view !== 'library') {
+            if (view === 'collection') {
+                setView('library');
+                setSelectedCollection(null);
+                setActiveTab('profile');
+            } else if (view !== 'library') {
                 setView('library');
                 setEditingBook(null);
             } else if (activeTab !== 'home') {
@@ -532,6 +550,81 @@ export default function App() {
     const updated = readingGoals.map(g => g.id === goal.id ? goal : g);
     setReadingGoals(updated);
     localStorage.setItem('libris-reading-goals', JSON.stringify(updated));
+  };
+
+  // Collection Handlers
+  const handleCreateCollection = (collectionData: Omit<BookCollection, 'id' | 'createdAt' | 'bookIds'>) => {
+    const newCollection: BookCollection = {
+      ...collectionData,
+      id: Date.now().toString(),
+      bookIds: [],
+      createdAt: Date.now(),
+    };
+    setCollections(prev => [...prev, newCollection]);
+    toast.success(`Collection "${collectionData.name}" created!`);
+  };
+
+  const handleUpdateCollection = (collection: BookCollection) => {
+    setCollections(prev => prev.map(c => c.id === collection.id ? collection : c));
+    if (selectedCollection?.id === collection.id) {
+      setSelectedCollection(collection);
+    }
+  };
+
+  const handleDeleteCollection = (collectionId: string) => {
+    const collection = collections.find(c => c.id === collectionId);
+    setCollections(prev => prev.filter(c => c.id !== collectionId));
+    if (selectedCollection?.id === collectionId) {
+      setSelectedCollection(null);
+    }
+    if (collection) {
+      toast.success(`Collection "${collection.name}" deleted`);
+    }
+  };
+
+  const handleAddBooksToCollection = (collectionId: string, bookIds: string[]) => {
+    setCollections(prev => prev.map(c => {
+      if (c.id === collectionId) {
+        const existingIds = new Set(c.bookIds);
+        const newIds = bookIds.filter(id => !existingIds.has(id));
+        return { ...c, bookIds: [...c.bookIds, ...newIds] };
+      }
+      return c;
+    }));
+    // Update selectedCollection if it's the one being modified
+    if (selectedCollection?.id === collectionId) {
+      const updatedCollection = collections.find(c => c.id === collectionId);
+      if (updatedCollection) {
+        const existingIds = new Set(updatedCollection.bookIds);
+        const newIds = bookIds.filter(id => !existingIds.has(id));
+        setSelectedCollection({
+          ...updatedCollection,
+          bookIds: [...updatedCollection.bookIds, ...newIds]
+        });
+      }
+    }
+    toast.success(`Added ${bookIds.length} book${bookIds.length > 1 ? 's' : ''} to collection`);
+  };
+
+  const handleRemoveBookFromCollection = (collectionId: string, bookId: string) => {
+    setCollections(prev => prev.map(c => {
+      if (c.id === collectionId) {
+        return { ...c, bookIds: c.bookIds.filter(id => id !== bookId) };
+      }
+      return c;
+    }));
+    // Update selectedCollection if it's the one being modified
+    if (selectedCollection?.id === collectionId) {
+      setSelectedCollection(prev => prev ? {
+        ...prev,
+        bookIds: prev.bookIds.filter(id => id !== bookId)
+      } : null);
+    }
+  };
+
+  const handleViewCollection = (collection: BookCollection) => {
+    setSelectedCollection(collection);
+    setView('collection');
   };
 
   // Calculate books completed this month
@@ -978,6 +1071,18 @@ export default function App() {
           <ReadingInsights
             books={books}
             readingSessions={readingSessions}
+          />
+        </div>
+
+        {/* Book Collections */}
+        <div className="mb-4">
+          <BookCollections
+            collections={collections}
+            books={books}
+            onCreateCollection={handleCreateCollection}
+            onUpdateCollection={handleUpdateCollection}
+            onDeleteCollection={handleDeleteCollection}
+            onViewCollection={handleViewCollection}
           />
         </div>
 
@@ -1465,6 +1570,18 @@ export default function App() {
               onCancel={() => { setView('library'); setEditingBook(null); }} 
             />
           </Suspense>
+        )}
+
+        {view === 'collection' && selectedCollection && (
+          <CollectionView
+            collection={selectedCollection}
+            books={books.filter(book => selectedCollection.bookIds.includes(book.id))}
+            allBooks={books}
+            onBack={() => { setView('library'); setSelectedCollection(null); setActiveTab('profile'); }}
+            onAddBooks={(bookIds) => handleAddBooksToCollection(selectedCollection.id, bookIds)}
+            onRemoveBook={(bookId) => handleRemoveBookFromCollection(selectedCollection.id, bookId)}
+            onViewBook={setSelectedBook}
+          />
         )}
 
         {view === 'library' && (

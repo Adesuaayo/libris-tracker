@@ -196,6 +196,36 @@ export interface ReadingAnalytics {
   monthlyMinutes: { month: string; minutes: number; year: number }[];
 }
 
-export type ViewMode = 'library' | 'analytics' | 'add' | 'details';
+// Book Collections / Custom Shelves
+export interface BookCollection {
+  id: string;
+  name: string;
+  description?: string;
+  color: string; // Tailwind color class like 'rose', 'blue', 'emerald'
+  icon: string; // Emoji icon
+  bookIds: string[];
+  createdAt: number;
+  isDefault?: boolean; // For system collections like "Favorites"
+}
+
+export const DEFAULT_COLLECTIONS: Omit<BookCollection, 'bookIds' | 'createdAt'>[] = [
+  { id: 'favorites', name: 'Favorites', icon: '❤️', color: 'rose', isDefault: true },
+  { id: 'tbr-priority', name: 'Priority TBR', icon: '⭐', color: 'amber', isDefault: true },
+  { id: 'book-club', name: 'Book Club', icon: '👥', color: 'blue', isDefault: true },
+];
+
+export const COLLECTION_COLORS = [
+  'rose', 'pink', 'fuchsia', 'purple', 'violet', 'indigo', 
+  'blue', 'sky', 'cyan', 'teal', 'emerald', 'green', 
+  'lime', 'yellow', 'amber', 'orange', 'red', 'slate'
+];
+
+export const COLLECTION_ICONS = [
+  '📚', '❤️', '⭐', '🔥', '✨', '💎', '🎯', '🏆', 
+  '📖', '👥', '🌟', '💫', '🎨', '🌈', '☀️', '🌙',
+  '🎭', '🎬', '🎵', '💡', '🔮', '🌸', '🍂', '❄️'
+];
+
+export type ViewMode = 'library' | 'analytics' | 'add' | 'details' | 'collection';
 
 export type Theme = 'light' | 'dark' | 'system';
