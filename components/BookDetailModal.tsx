@@ -152,20 +152,30 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
         </div>
         
         {/* Footer */}
-        <div className="border-t border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-900/50 flex justify-between gap-2">
-          <Button variant="secondary" onClick={onClose}>
-            Close
-          </Button>
+        <div className="border-t border-slate-200 dark:border-slate-700 p-3 bg-slate-50 dark:bg-slate-900/50">
           <div className="flex gap-2">
             <Button 
               variant="secondary" 
-              onClick={() => setShowReadOnline(true)}
-              className="flex items-center gap-2"
+              onClick={onClose}
+              size="sm"
+              className="flex-1"
             >
-              <Globe className="w-4 h-4" />
-              Read Online
+              Close
             </Button>
-            <Button onClick={() => onEdit(book)}>
+            <Button 
+              variant="secondary" 
+              onClick={() => setShowReadOnline(true)}
+              size="sm"
+              className="flex-1 flex items-center justify-center gap-1"
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span className="text-xs">Read Online</span>
+            </Button>
+            <Button 
+              onClick={() => onEdit(book)}
+              size="sm"
+              className="flex-1"
+            >
               Edit Book
             </Button>
           </div>

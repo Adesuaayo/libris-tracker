@@ -6,7 +6,10 @@ import {
   Loader2,
   Headphones,
   Library,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft,
+  RotateCcw,
+  Maximize2
 } from 'lucide-react';
 import { 
   getBookSources, 
@@ -37,6 +40,8 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
     loading: true
   });
   const [openingSource, setOpeningSource] = useState<string | null>(null);
+  const [inAppUrl, setInAppUrl] = useState<string | null>(null);
+  const [iframeLoading, setIframeLoading] = useState(false);
 
   useEffect(() => {
     const checkAvailability = async () => {
@@ -60,7 +65,7 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
     checkAvailability();
   }, [bookTitle, bookAuthor]);
 
-  const handleOpenSource = async (source: BookSource) => {
+  const handleOpenSource = async (source: BookSource, openInApp: boolean = false) => {
     setOpeningSource(source.id);
     
     try {
@@ -73,6 +78,15 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
         url = availability.openLibrary.readUrl;
       }
 
+      // Open in-app using iframe (for web-like experience)
+      if (openInApp) {
+        setIframeLoading(true);
+        setInAppUrl(url);
+        setOpeningSource(null);
+        return;
+      }
+
+      // Open in external browser
       if (Capacitor.isNativePlatform()) {
         await Browser.open({ 
           url,
@@ -86,6 +100,20 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
       console.error('Error opening source:', error);
     } finally {
       setOpeningSource(null);
+    }
+  };
+
+  const handleOpenExternal = async () => {
+    if (inAppUrl) {
+      if (Capacitor.isNativePlatform()) {
+        await Browser.open({ 
+          url: inAppUrl,
+          presentationStyle: 'popover',
+          toolbarColor: '#6366f1'
+        });
+      } else {
+        window.open(inAppUrl, '_blank');
+      }
     }
   };
 
@@ -184,41 +212,60 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
           )}
 
           {sources.map((source) => (
-            <button
+            <div
               key={source.id}
-              onClick={() => handleOpenSource(source)}
-              disabled={openingSource !== null}
-              className="w-full flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left group disabled:opacity-50"
+              className="bg-slate-50 dark:bg-slate-700/50 rounded-xl overflow-hidden"
             >
-              <div className={`p-3 rounded-xl ${
-                source.id === 'google-books' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
-                source.id === 'open-library' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' :
-                source.id === 'project-gutenberg' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' :
-                source.id === 'internet-archive' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' :
-                'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'
-              }`}>
-                {getSourceIcon(source)}
+              <div className="flex items-center gap-4 p-4">
+                <div className={`p-3 rounded-xl ${
+                  source.id === 'google-books' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
+                  source.id === 'open-library' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' :
+                  source.id === 'project-gutenberg' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' :
+                  source.id === 'internet-archive' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' :
+                  source.id === 'annas-archive' ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' :
+                  'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'
+                }`}>
+                  {getSourceIcon(source)}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-slate-900 dark:text-white">
+                      {source.name}
+                    </span>
+                    <span className="text-lg">{source.icon}</span>
+                    {getAvailabilityBadge(source)}
+                  </div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {source.description}
+                  </p>
+                </div>
               </div>
               
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium text-slate-900 dark:text-white">
-                    {source.name}
-                  </span>
-                  <span className="text-lg">{source.icon}</span>
-                  {getAvailabilityBadge(source)}
-                </div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {source.description}
-                </p>
+              {/* Action Buttons */}
+              <div className="flex border-t border-slate-200 dark:border-slate-600">
+                <button
+                  onClick={() => handleOpenSource(source, true)}
+                  disabled={openingSource !== null}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors disabled:opacity-50 border-r border-slate-200 dark:border-slate-600"
+                >
+                  {openingSource === source.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <BookOpen className="w-4 h-4" />
+                  )}
+                  Read In-App
+                </button>
+                <button
+                  onClick={() => handleOpenSource(source, false)}
+                  disabled={openingSource !== null}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors disabled:opacity-50"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open External
+                </button>
               </div>
-
-              {openingSource === source.id ? (
-                <Loader2 className="w-5 h-5 animate-spin text-violet-500" />
-              ) : (
-                <ExternalLink className="w-5 h-5 text-slate-400 group-hover:text-violet-500 transition-colors" />
-              )}
-            </button>
+            </div>
           ))}
         </div>
 
@@ -232,6 +279,65 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
           </button>
         </div>
       </div>
+
+      {/* In-App Reader */}
+      {inAppUrl && (
+        <div className="fixed inset-0 z-[70] bg-white dark:bg-slate-900 flex flex-col">
+          {/* Reader Header */}
+          <div className="flex items-center justify-between px-4 py-3 bg-violet-600 text-white safe-area-top">
+            <button
+              onClick={() => setInAppUrl(null)}
+              className="flex items-center gap-2 text-white/90 hover:text-white"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="text-sm font-medium">Back</span>
+            </button>
+            
+            <h3 className="text-sm font-medium truncate max-w-[40%]">{bookTitle}</h3>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setIframeLoading(true);
+                  const iframe = document.getElementById('reader-iframe') as HTMLIFrameElement;
+                  if (iframe) iframe.src = iframe.src;
+                }}
+                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                title="Refresh"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleOpenExternal}
+                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                title="Open in browser"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Loading indicator */}
+          {iframeLoading && (
+            <div className="absolute inset-0 top-14 flex items-center justify-center bg-white dark:bg-slate-900 z-10">
+              <div className="text-center">
+                <Loader2 className="w-8 h-8 animate-spin text-violet-500 mx-auto mb-3" />
+                <p className="text-sm text-slate-500 dark:text-slate-400">Loading reader...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Iframe Reader */}
+          <iframe
+            id="reader-iframe"
+            src={inAppUrl}
+            className="flex-1 w-full border-0"
+            onLoad={() => setIframeLoading(false)}
+            allow="fullscreen"
+            sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-downloads"
+          />
+        </div>
+      )}
     </div>
   );
 }

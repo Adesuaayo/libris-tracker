@@ -45,6 +45,12 @@ export const getLibriVoxUrl = (title: string, author: string): string => {
   return `https://librivox.org/search?q=${query}&search_form=advanced`;
 };
 
+// Build Anna's Archive search URL (shadow library)
+export const getAnnasArchiveUrl = (title: string, author: string): string => {
+  const query = encodeURIComponent(`${title} ${author}`);
+  return `https://annas-archive.li/search?q=${query}`;
+};
+
 // Get all available reading sources for a book
 export const getBookSources = (title: string, author: string): BookSource[] => {
   return [
@@ -87,6 +93,14 @@ export const getBookSources = (title: string, author: string): BookSource[] => {
       url: getLibriVoxUrl(title, author),
       icon: '🎧',
       description: 'Free audiobooks'
+    },
+    {
+      id: 'annas-archive',
+      name: "Anna's Archive",
+      type: 'full',
+      url: getAnnasArchiveUrl(title, author),
+      icon: '📕',
+      description: 'Shadow library - find any book'
     }
   ];
 };

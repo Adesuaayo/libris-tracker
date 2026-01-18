@@ -240,8 +240,19 @@ export default function App() {
   // --- Mobile Back Button Handling ---
   useEffect(() => {
     const handleBackButton = async () => {
-        CapApp.addListener('backButton', ({ canGoBack }) => {
-            if (view === 'collection') {
+        CapApp.addListener('backButton', () => {
+            // Priority: Close modals first, then navigate views
+            if (selectedBook) {
+                // Close BookDetailModal
+                setSelectedBook(null);
+            } else if (showOnboarding) {
+                // Close onboarding modal
+                setShowOnboarding(false);
+            } else if (aiResponse) {
+                // Close AI response modal
+                setAiResponse(null);
+                setAiMode(null);
+            } else if (view === 'collection') {
                 setView('library');
                 setSelectedCollection(null);
                 setActiveTab('profile');
@@ -260,7 +271,7 @@ export default function App() {
     return () => {
         CapApp.removeAllListeners();
     };
-  }, [view, activeTab]);
+  }, [view, activeTab, selectedBook, showOnboarding, aiResponse]);
 
 
   // --- Handlers ---
