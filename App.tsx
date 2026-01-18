@@ -18,6 +18,7 @@ const Analytics = lazy(() => import('./components/Analytics').then(m => ({ defau
 const BookForm = lazy(() => import('./components/BookForm').then(m => ({ default: m.BookForm })));
 const BookNotes = lazy(() => import('./components/BookNotes').then(m => ({ default: m.BookNotes })));
 import { supabase, bookApi } from './services/supabase';
+import { ebookStorage } from './services/ebookStorage';
 import { BookOpen, BarChart2, Plus, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, LogOut, Loader2, ExternalLink, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText } from 'lucide-react';
 import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
 import { App as CapApp } from '@capacitor/app';
@@ -283,13 +284,22 @@ export default function App() {
         setBooks(books.map(b => b.id === book.id ? book : b));
         await bookApi.updateBook(book);
       } else {
-        // Optimistic update (temp ID)
-        const tempId = crypto.randomUUID();
-        const tempBook = { ...book, id: tempId };
-        setBooks([tempBook, ...books]);
+        // Use the book's ID from BookForm as temp ID
+        const tempId = book.id;
+        setBooks([book, ...books]);
         
-        // Real update
+        // Real update - database may return a different ID
         const realBook = await bookApi.addBook(book);
+        
+        // If the database assigned a different ID, migrate the eBook file
+        if (realBook.id !== tempId && ebookStorage.has(tempId)) {
+          const storedEbook = ebookStorage.get(tempId);
+          if (storedEbook) {
+            ebookStorage.save(realBook.id, storedEbook.fileName, storedEbook.fileType, storedEbook.data);
+            ebookStorage.delete(tempId);
+          }
+        }
+        
         setBooks(prev => prev.map(b => b.id === tempId ? realBook : b));
       }
       setView('library');
