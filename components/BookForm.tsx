@@ -11,6 +11,13 @@ import { BookSearch } from './BookSearch';
 const EBOOK_SESSION_KEY = 'libris-temp-ebook';
 const FORM_SESSION_KEY = 'libris-temp-form';
 
+// MODULE-LEVEL storage for large eBook files (persists across component remounts)
+// This is necessary because:
+// 1. Large files (>5MB) can't fit in sessionStorage
+// 2. useRef gets reset on component remount
+// 3. The file picker causes the component to remount on some devices
+let pendingEbookData: { file: string; name: string; type: 'epub' | 'pdf' } | null = null;
+
 interface BookFormProps {
   initialData?: Book;
   onSubmit: (book: Book) => void;
@@ -72,8 +79,19 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     }
   }, [formData]);
 
-  // On mount, check sessionStorage for any persisted eBook data
+  // On mount, check for any persisted eBook data (module-level first, then sessionStorage)
   useEffect(() => {
+    // First check module-level storage (for large files that survive remounts)
+    if (pendingEbookData) {
+      console.log('[BookForm] Restored eBook from MODULE-LEVEL storage:', pendingEbookData.name);
+      setEbookFile(pendingEbookData.file);
+      setEbookFileName(pendingEbookData.name);
+      setEbookFileType(pendingEbookData.type);
+      ebookDataRef.current = pendingEbookData;
+      return; // Don't need sessionStorage if we have module-level data
+    }
+    
+    // Fallback to sessionStorage (for smaller files)
     const savedEbook = sessionStorage.getItem(EBOOK_SESSION_KEY);
     if (savedEbook) {
       try {
@@ -121,11 +139,11 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     console.log('[BookForm] handleEbookFileChange called');
     const file = e.target.files?.[0];
     if (file) {
-      console.log('[BookForm] File selected:', file.name, file.size);
+      console.log('[BookForm] File selected:', file.name, 'Size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
       
-      // Check file size (50MB limit for eBooks)
-      if (file.size > 50 * 1024 * 1024) {
-        toast.error("eBook file is too large. Please select a file under 50MB.");
+      // Check file size (100MB limit for eBooks - matches IndexedDB limit)
+      if (file.size > 100 * 1024 * 1024) {
+        toast.error("eBook file is too large. Please select a file under 100MB.");
         return;
       }
 
@@ -137,9 +155,23 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
       }
 
       const fileType: 'epub' | 'pdf' = fileName.endsWith('.epub') ? 'epub' : 'pdf';
+      
+      // Show loading indicator for large files
+      const isLargeFile = file.size > 5 * 1024 * 1024;
+      if (isLargeFile) {
+        toast.info(`Reading ${(file.size / 1024 / 1024).toFixed(1)}MB file...`);
+      }
 
       // Convert to base64 for storage
       const reader = new FileReader();
+      
+      reader.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          console.log('[BookForm] Reading file:', progress + '%');
+        }
+      };
+      
       reader.onloadend = () => {
         const base64Data = reader.result as string;
         console.log('[BookForm] eBook file read successfully:', file.name, 'Type:', fileType, 'Size:', file.size, 'Base64 length:', base64Data.length);
@@ -149,18 +181,26 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         setEbookFileName(file.name);
         setEbookFileType(fileType);
         
-        // Store in ref
+        // Store in ref (persists across re-renders even if state is lost)
         ebookDataRef.current = { file: base64Data, name: file.name, type: fileType };
         
-        // Store in sessionStorage for persistence across re-renders
-        try {
-          sessionStorage.setItem(EBOOK_SESSION_KEY, JSON.stringify({ file: base64Data, name: file.name, type: fileType }));
-          console.log('[BookForm] Saved eBook to sessionStorage');
-        } catch (e) {
-          console.error('[BookForm] Failed to save to sessionStorage (might be too large):', e);
+        // CRITICAL: Also store in module-level variable (persists across component remounts)
+        pendingEbookData = { file: base64Data, name: file.name, type: fileType };
+        console.log('[BookForm] Stored in ref AND module-level:', !!pendingEbookData);
+        
+        // For smaller files, also try sessionStorage (has ~5MB limit)
+        if (base64Data.length < 4 * 1024 * 1024) { // ~3MB base64 = ~2MB file
+          try {
+            sessionStorage.setItem(EBOOK_SESSION_KEY, JSON.stringify({ file: base64Data, name: file.name, type: fileType }));
+            console.log('[BookForm] Saved eBook to sessionStorage');
+          } catch (e) {
+            console.warn('[BookForm] sessionStorage full, using module-level only');
+          }
+        } else {
+          console.log('[BookForm] File too large for sessionStorage, using module-level storage');
         }
         
-        toast.success(`${fileType.toUpperCase()} file attached!`);
+        toast.success(`${fileType.toUpperCase()} file attached! (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
       };
       reader.onerror = (error) => {
         console.error('[BookForm] FileReader error:', error);
@@ -177,8 +217,9 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
     setEbookFileName(null);
     setEbookFileType(null);
     ebookDataRef.current = null;
+    pendingEbookData = null; // Clear module-level storage
     sessionStorage.removeItem(EBOOK_SESSION_KEY);
-    console.log('[BookForm] Removed eBook file');
+    console.log('[BookForm] Removed eBook file from all storage');
   };
 
   // Handle book selection from search - called by BookSearch component
@@ -256,14 +297,15 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         }
       }
 
-      // Save eBook file to localStorage if present
-      // Use ref as backup in case state was lost during file picker
-      // Also check sessionStorage as ultimate backup
-      let finalEbookFile = ebookFile || ebookDataRef.current?.file;
-      let finalEbookFileName = ebookFileName || ebookDataRef.current?.name;
-      let finalEbookFileType = ebookFileType || ebookDataRef.current?.type;
+      // Save eBook file to IndexedDB if present
+      // Check multiple sources: state -> ref -> module-level -> sessionStorage
+      let finalEbookFile = ebookFile || ebookDataRef.current?.file || pendingEbookData?.file;
+      let finalEbookFileName = ebookFileName || ebookDataRef.current?.name || pendingEbookData?.name;
+      let finalEbookFileType = ebookFileType || ebookDataRef.current?.type || pendingEbookData?.type;
       
-      // Check sessionStorage as final fallback
+      console.log('[BookForm] eBook sources - state:', !!ebookFile, 'ref:', !!ebookDataRef.current, 'module:', !!pendingEbookData);
+      
+      // Check sessionStorage as final fallback (for smaller files)
       if (!finalEbookFile) {
         const savedEbook = sessionStorage.getItem(EBOOK_SESSION_KEY);
         if (savedEbook) {
@@ -279,7 +321,7 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         }
       }
       
-      console.log('[BookForm] eBook state check - state:', !!ebookFile, 'ref:', !!ebookDataRef.current, 'final:', !!finalEbookFile);
+      console.log('[BookForm] Final eBook check - has file:', !!finalEbookFile, 'name:', finalEbookFileName);
       
       if (finalEbookFile && finalEbookFileName && finalEbookFileType) {
         console.log('[BookForm] Saving eBook to IndexedDB with bookId:', bookId);
@@ -316,9 +358,10 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         ebookFileType: finalEbookFileType || initialData?.ebookFileType || undefined,
       };
       
-      // Clear sessionStorage after successful save
+      // Clear all storage after successful save
       sessionStorage.removeItem(FORM_SESSION_KEY);
       sessionStorage.removeItem(EBOOK_SESSION_KEY);
+      pendingEbookData = null; // Clear module-level storage
       
       onSubmit(newBook);
     } finally {
@@ -334,8 +377,8 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         <p>Title: "{formData.title}" | Author: "{formData.author}"</p>
         <p>eBook State: {ebookFile ? `YES (${(ebookFile.length/1024).toFixed(0)}KB)` : 'NO'}</p>
         <p>eBook Ref: {ebookDataRef.current ? `YES (${ebookDataRef.current.name})` : 'NO'}</p>
+        <p>eBook Module: {pendingEbookData ? `YES (${pendingEbookData.name})` : 'NO'}</p>
         <p>eBook Session: {sessionStorage.getItem(EBOOK_SESSION_KEY) ? 'YES' : 'NO'}</p>
-        <p>Form Session: {sessionStorage.getItem(FORM_SESSION_KEY) ? 'YES' : 'NO'}</p>
         <p>FileName: {ebookFileName || 'none'}</p>
       </div>
 
