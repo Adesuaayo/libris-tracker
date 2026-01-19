@@ -282,13 +282,15 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
       console.log('[BookForm] eBook state check - state:', !!ebookFile, 'ref:', !!ebookDataRef.current, 'final:', !!finalEbookFile);
       
       if (finalEbookFile && finalEbookFileName && finalEbookFileType) {
-        console.log('[BookForm] Saving eBook to localStorage with bookId:', bookId);
-        const saved = ebookStorage.save(bookId, finalEbookFileName, finalEbookFileType, finalEbookFile);
-        console.log('[BookForm] eBook save result:', saved, 'Has check:', ebookStorage.has(bookId));
+        console.log('[BookForm] Saving eBook to IndexedDB with bookId:', bookId);
+        const saved = await ebookStorage.save(bookId, finalEbookFileName, finalEbookFileType, finalEbookFile);
+        const hasIt = await ebookStorage.has(bookId);
+        console.log('[BookForm] eBook save result:', saved, 'Has check:', hasIt);
         if (!saved) {
-          toast.warning('eBook file could not be saved. Storage may be full.');
+          toast.warning('eBook file could not be saved. File may be too large (max 100MB).');
         } else {
-          console.log('[BookForm] eBook saved successfully. Storage keys:', ebookStorage.list());
+          const ebookList = await ebookStorage.list();
+          console.log('[BookForm] eBook saved successfully. Storage keys:', ebookList);
           // Clear sessionStorage after successful save
           sessionStorage.removeItem(EBOOK_SESSION_KEY);
         }

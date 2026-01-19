@@ -29,26 +29,32 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
   const [showReadOnline, setShowReadOnline] = useState(false);
   const [showEBookReader, setShowEBookReader] = useState(false);
   const [hasEbook, setHasEbook] = useState(false);
+  const [storedCount, setStoredCount] = useState(0);
   const [ebookData, setEbookData] = useState<{ data: string; fileName: string; fileType: 'epub' | 'pdf' } | null>(null);
   const bookNotes = notes.filter((n: BookNote) => n.bookId === book.id);
 
   // Check if book has an eBook file
   useEffect(() => {
-    console.log('[BookDetailModal] Checking for eBook. book.id:', book.id);
-    console.log('[BookDetailModal] All stored eBooks:', ebookStorage.list());
-    const stored = ebookStorage.get(book.id);
-    console.log('[BookDetailModal] Found stored eBook:', !!stored, stored?.fileName);
-    if (stored) {
-      setHasEbook(true);
-      setEbookData({
-        data: stored.data,
-        fileName: stored.fileName,
-        fileType: stored.fileType
-      });
-    } else {
-      setHasEbook(false);
-      setEbookData(null);
-    }
+    const checkEbook = async () => {
+      console.log('[BookDetailModal] Checking for eBook. book.id:', book.id);
+      const ebookList = await ebookStorage.list();
+      setStoredCount(ebookList.length);
+      console.log('[BookDetailModal] All stored eBooks:', ebookList);
+      const stored = await ebookStorage.get(book.id);
+      console.log('[BookDetailModal] Found stored eBook:', !!stored, stored?.fileName);
+      if (stored) {
+        setHasEbook(true);
+        setEbookData({
+          data: stored.data,
+          fileName: stored.fileName,
+          fileType: stored.fileType
+        });
+      } else {
+        setHasEbook(false);
+        setEbookData(null);
+      }
+    };
+    checkEbook();
   }, [book.id]);
   
   const formatTotalTime = (minutes: number) => {
@@ -176,7 +182,7 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
         
         {/* Debug info - remove later */}
         <div className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-[9px] text-yellow-800 dark:text-yellow-200">
-          Debug: hasEbook={hasEbook ? 'YES' : 'NO'}, bookId={book.id?.substring(0, 8)}..., storedBooks={ebookStorage.list().length}
+          Debug: hasEbook={hasEbook ? 'YES' : 'NO'}, bookId={book.id?.substring(0, 8)}..., storedBooks={storedCount}
         </div>
         
         {/* Footer */}

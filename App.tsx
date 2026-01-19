@@ -291,16 +291,18 @@ export default function App() {
         // Real update - database may return a different ID
         const realBook = await bookApi.addBook(book);
         console.log('[handleAddBook] Book saved. tempId:', tempId, 'realBook.id:', realBook.id);
-        console.log('[handleAddBook] Checking for eBook with tempId. Has:', ebookStorage.has(tempId));
+        const hasTempEbook = await ebookStorage.has(tempId);
+        console.log('[handleAddBook] Checking for eBook with tempId. Has:', hasTempEbook);
         
         // If the database assigned a different ID, migrate the eBook file
-        if (realBook.id !== tempId && ebookStorage.has(tempId)) {
+        if (realBook.id !== tempId && hasTempEbook) {
           console.log('[handleAddBook] Migrating eBook from', tempId, 'to', realBook.id);
-          const storedEbook = ebookStorage.get(tempId);
+          const storedEbook = await ebookStorage.get(tempId);
           if (storedEbook) {
-            ebookStorage.save(realBook.id, storedEbook.fileName, storedEbook.fileType, storedEbook.data);
-            ebookStorage.delete(tempId);
-            console.log('[handleAddBook] Migration complete. Has realBook.id:', ebookStorage.has(realBook.id));
+            await ebookStorage.save(realBook.id, storedEbook.fileName, storedEbook.fileType, storedEbook.data);
+            await ebookStorage.delete(tempId);
+            const hasRealBook = await ebookStorage.has(realBook.id);
+            console.log('[handleAddBook] Migration complete. Has realBook.id:', hasRealBook);
           }
         } else if (realBook.id !== tempId) {
           console.log('[handleAddBook] IDs differ but no eBook found with tempId');

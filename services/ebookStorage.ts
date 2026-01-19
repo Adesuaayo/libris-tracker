@@ -1,40 +1,108 @@
 /**
  * eBook Storage Service
  * 
- * Stores eBook files (EPUB/PDF) in localStorage as base64 strings.
- * Files are stored separately from book data due to their large size.
+ * Stores eBook files (EPUB/PDF) in IndexedDB for large file support.
+ * localStorage has a 5MB limit, but IndexedDB can store hundreds of MB.
  * 
- * Storage key format: libris-ebook-{bookId}
+ * Files are stored separately from book data due to their large size.
  */
 
 interface StoredEbook {
+  bookId: string;
   fileName: string;
   fileType: 'epub' | 'pdf';
   data: string; // Base64 encoded file data
+  size: number; // Size in bytes
   storedAt: number;
 }
 
-const STORAGE_PREFIX = 'libris-ebook-';
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB limit
+const DB_NAME = 'libris-ebooks';
+const DB_VERSION = 1;
+const STORE_NAME = 'ebooks';
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB limit
+
+let dbPromise: Promise<IDBDatabase> | null = null;
+
+/**
+ * Initialize and get the IndexedDB database
+ */
+const getDB = (): Promise<IDBDatabase> => {
+  if (dbPromise) return dbPromise;
+
+  dbPromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onerror = () => {
+      console.error('[EbookStorage] Failed to open database:', request.error);
+      reject(request.error);
+    };
+
+    request.onsuccess = () => {
+      console.log('[EbookStorage] Database opened successfully');
+      resolve(request.result);
+    };
+
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      
+      // Create object store if it doesn't exist
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { keyPath: 'bookId' });
+        store.createIndex('storedAt', 'storedAt', { unique: false });
+        console.log('[EbookStorage] Created object store');
+      }
+    };
+  });
+
+  return dbPromise;
+};
 
 /**
  * Save an eBook file for a specific book
  */
-export const saveEbook = (bookId: string, fileName: string, fileType: 'epub' | 'pdf', data: string): boolean => {
+export const saveEbook = async (
+  bookId: string, 
+  fileName: string, 
+  fileType: 'epub' | 'pdf', 
+  data: string
+): Promise<boolean> => {
   try {
+    const db = await getDB();
+    
+    // Calculate approximate size (base64 is ~33% larger than original)
+    const size = Math.round((data.length * 3) / 4);
+    
+    if (size > MAX_FILE_SIZE) {
+      console.error(`[EbookStorage] File too large: ${formatBytes(size)} (max: ${formatBytes(MAX_FILE_SIZE)})`);
+      return false;
+    }
+
     const storedEbook: StoredEbook = {
+      bookId,
       fileName,
       fileType,
       data,
+      size,
       storedAt: Date.now()
     };
-    
-    localStorage.setItem(`${STORAGE_PREFIX}${bookId}`, JSON.stringify(storedEbook));
-    console.log(`[EbookStorage] Saved ${fileType.toUpperCase()} for book ${bookId}`);
-    return true;
+
+    return new Promise((resolve) => {
+      const transaction = db.transaction([STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.put(storedEbook);
+
+      request.onsuccess = () => {
+        console.log(`[EbookStorage] Saved ${fileType.toUpperCase()} (${formatBytes(size)}) for book ${bookId}`);
+        resolve(true);
+      };
+
+      request.onerror = () => {
+        console.error('[EbookStorage] Failed to save eBook:', request.error);
+        resolve(false);
+      };
+    });
   } catch (error) {
     console.error('[EbookStorage] Failed to save eBook:', error);
-    // This usually happens when localStorage is full
     return false;
   }
 };
@@ -42,12 +110,29 @@ export const saveEbook = (bookId: string, fileName: string, fileType: 'epub' | '
 /**
  * Get an eBook file for a specific book
  */
-export const getEbook = (bookId: string): StoredEbook | null => {
+export const getEbook = async (bookId: string): Promise<Omit<StoredEbook, 'bookId'> | null> => {
   try {
-    const stored = localStorage.getItem(`${STORAGE_PREFIX}${bookId}`);
-    if (!stored) return null;
-    
-    return JSON.parse(stored) as StoredEbook;
+    const db = await getDB();
+
+    return new Promise((resolve) => {
+      const transaction = db.transaction([STORE_NAME], 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.get(bookId);
+
+      request.onsuccess = () => {
+        if (request.result) {
+          const { bookId: _, ...rest } = request.result as StoredEbook;
+          resolve(rest);
+        } else {
+          resolve(null);
+        }
+      };
+
+      request.onerror = () => {
+        console.error('[EbookStorage] Failed to get eBook:', request.error);
+        resolve(null);
+      };
+    });
   } catch (error) {
     console.error('[EbookStorage] Failed to get eBook:', error);
     return null;
@@ -57,35 +142,80 @@ export const getEbook = (bookId: string): StoredEbook | null => {
 /**
  * Check if a book has an eBook file attached
  */
-export const hasEbook = (bookId: string): boolean => {
-  return localStorage.getItem(`${STORAGE_PREFIX}${bookId}`) !== null;
+export const hasEbook = async (bookId: string): Promise<boolean> => {
+  try {
+    const db = await getDB();
+
+    return new Promise((resolve) => {
+      const transaction = db.transaction([STORE_NAME], 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.getKey(bookId);
+
+      request.onsuccess = () => {
+        resolve(request.result !== undefined);
+      };
+
+      request.onerror = () => {
+        resolve(false);
+      };
+    });
+  } catch (error) {
+    return false;
+  }
 };
 
 /**
  * Delete an eBook file for a specific book
  */
-export const deleteEbook = (bookId: string): void => {
-  localStorage.removeItem(`${STORAGE_PREFIX}${bookId}`);
-  console.log(`[EbookStorage] Deleted eBook for book ${bookId}`);
+export const deleteEbook = async (bookId: string): Promise<void> => {
+  try {
+    const db = await getDB();
+
+    return new Promise((resolve) => {
+      const transaction = db.transaction([STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.delete(bookId);
+
+      request.onsuccess = () => {
+        console.log(`[EbookStorage] Deleted eBook for book ${bookId}`);
+        resolve();
+      };
+
+      request.onerror = () => {
+        console.error('[EbookStorage] Failed to delete eBook:', request.error);
+        resolve();
+      };
+    });
+  } catch (error) {
+    console.error('[EbookStorage] Failed to delete eBook:', error);
+  }
 };
 
 /**
- * Get the total size of stored eBooks in bytes (approximate)
+ * Get the total size of stored eBooks in bytes
  */
-export const getStorageUsed = (): number => {
-  let totalSize = 0;
-  
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith(STORAGE_PREFIX)) {
-      const value = localStorage.getItem(key);
-      if (value) {
-        totalSize += value.length * 2; // UTF-16 = 2 bytes per char
-      }
-    }
+export const getStorageUsed = async (): Promise<number> => {
+  try {
+    const db = await getDB();
+
+    return new Promise((resolve) => {
+      const transaction = db.transaction([STORE_NAME], 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const ebooks = request.result as StoredEbook[];
+        const totalSize = ebooks.reduce((sum, ebook) => sum + (ebook.size || 0), 0);
+        resolve(totalSize);
+      };
+
+      request.onerror = () => {
+        resolve(0);
+      };
+    });
+  } catch (error) {
+    return 0;
   }
-  
-  return totalSize;
 };
 
 /**
@@ -100,34 +230,96 @@ export const formatBytes = (bytes: number): string => {
 };
 
 /**
- * List all stored eBooks
+ * List all stored eBooks (without the actual file data)
  */
-export const listEbooks = (): { bookId: string; fileName: string; fileType: 'epub' | 'pdf'; storedAt: number }[] => {
-  const ebooks: { bookId: string; fileName: string; fileType: 'epub' | 'pdf'; storedAt: number }[] = [];
-  
-  for (let i = 0; i < localStorage.length; i++) {
+export const listEbooks = async (): Promise<{ bookId: string; fileName: string; fileType: 'epub' | 'pdf'; size: number; storedAt: number }[]> => {
+  try {
+    const db = await getDB();
+
+    return new Promise((resolve) => {
+      const transaction = db.transaction([STORE_NAME], 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const ebooks = request.result as StoredEbook[];
+        resolve(ebooks.map(({ bookId, fileName, fileType, size, storedAt }) => ({
+          bookId,
+          fileName,
+          fileType,
+          size,
+          storedAt
+        })));
+      };
+
+      request.onerror = () => {
+        resolve([]);
+      };
+    });
+  } catch (error) {
+    return [];
+  }
+};
+
+/**
+ * Get count of stored eBooks
+ */
+export const getEbookCount = async (): Promise<number> => {
+  try {
+    const db = await getDB();
+
+    return new Promise((resolve) => {
+      const transaction = db.transaction([STORE_NAME], 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.count();
+
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+
+      request.onerror = () => {
+        resolve(0);
+      };
+    });
+  } catch (error) {
+    return 0;
+  }
+};
+
+/**
+ * Migrate from localStorage to IndexedDB (one-time migration)
+ */
+export const migrateFromLocalStorage = async (): Promise<void> => {
+  const STORAGE_PREFIX = 'libris-ebook-';
+  let migrated = 0;
+
+  for (let i = localStorage.length - 1; i >= 0; i--) {
     const key = localStorage.key(i);
     if (key && key.startsWith(STORAGE_PREFIX)) {
       try {
         const bookId = key.replace(STORAGE_PREFIX, '');
         const stored = localStorage.getItem(key);
         if (stored) {
-          const parsed = JSON.parse(stored) as StoredEbook;
-          ebooks.push({
-            bookId,
-            fileName: parsed.fileName,
-            fileType: parsed.fileType,
-            storedAt: parsed.storedAt
-          });
+          const parsed = JSON.parse(stored);
+          const success = await saveEbook(bookId, parsed.fileName, parsed.fileType, parsed.data);
+          if (success) {
+            localStorage.removeItem(key);
+            migrated++;
+          }
         }
       } catch (e) {
-        // Skip invalid entries
+        console.error('[EbookStorage] Migration failed for key:', key, e);
       }
     }
   }
-  
-  return ebooks;
+
+  if (migrated > 0) {
+    console.log(`[EbookStorage] Migrated ${migrated} eBooks from localStorage to IndexedDB`);
+  }
 };
+
+// Run migration on load
+migrateFromLocalStorage().catch(console.error);
 
 export const ebookStorage = {
   save: saveEbook,
@@ -137,5 +329,6 @@ export const ebookStorage = {
   getStorageUsed,
   formatBytes,
   list: listEbooks,
+  count: getEbookCount,
   MAX_FILE_SIZE
 };
