@@ -12,6 +12,7 @@ import { StreakTracker } from './components/StreakTracker';
 import { ReadingInsights } from './components/ReadingInsights';
 import { BookCollections } from './components/BookCollections';
 import { CollectionView } from './components/CollectionView';
+import { Community } from './components/Community';
 
 // Lazy load heavy components for better initial load time
 const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })));
@@ -19,7 +20,7 @@ const BookForm = lazy(() => import('./components/BookForm').then(m => ({ default
 const BookNotes = lazy(() => import('./components/BookNotes').then(m => ({ default: m.BookNotes })));
 import { supabase, bookApi } from './services/supabase';
 import { ebookStorage } from './services/ebookStorage';
-import { BookOpen, BarChart2, Plus, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, LogOut, Loader2, ExternalLink, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText } from 'lucide-react';
+import { BookOpen, BarChart2, Plus, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, LogOut, Loader2, ExternalLink, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText, Globe } from 'lucide-react';
 import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
 import { App as CapApp } from '@capacitor/app';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -30,7 +31,7 @@ import { useToastActions } from './components/Toast';
 const APP_VERSION = '1.0.0';
 
 type SortOption = 'dateAdded' | 'rating' | 'title' | 'dateFinished';
-type TabView = 'home' | 'profile' | 'privacy' | 'terms';
+type TabView = 'home' | 'profile' | 'community' | 'privacy' | 'terms';
 
 export default function App() {
   // Auth State
@@ -1726,11 +1727,12 @@ export default function App() {
       {/* Screen Content */}
       {activeTab === 'home' && <HomeScreen />}
       {activeTab === 'profile' && <ProfileScreen />}
+      {activeTab === 'community' && session?.user && <Community currentUserId={session.user.id} />}
       {activeTab === 'privacy' && <PrivacyPolicyScreen />}
       {activeTab === 'terms' && <TermsOfServiceScreen />}
 
       {/* Bottom Navigation - Hide on legal pages */}
-      {(activeTab === 'home' || activeTab === 'profile') && (
+      {(activeTab === 'home' || activeTab === 'profile' || activeTab === 'community') && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] z-50">
           <div className="flex items-center justify-around h-16">
             <button
@@ -1741,7 +1743,7 @@ export default function App() {
                   : 'text-slate-400 dark:text-slate-500'
               }`}
             >
-              <Home className="h-6 w-6" />
+              <Home className="h-5 w-5" />
               <span className="text-xs mt-1 font-medium">Home</span>
             </button>
             
@@ -1750,6 +1752,18 @@ export default function App() {
               className="flex items-center justify-center w-14 h-14 -mt-5 bg-brand-600 rounded-full text-white shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-colors"
             >
               <Plus className="h-7 w-7" />
+            </button>
+
+            <button
+              onClick={() => setActiveTab('community')}
+              className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
+                activeTab === 'community' 
+                  ? 'text-brand-600 dark:text-brand-400' 
+                  : 'text-slate-400 dark:text-slate-500'
+              }`}
+            >
+              <Globe className="h-5 w-5" />
+              <span className="text-xs mt-1 font-medium">Community</span>
             </button>
             
             <button
@@ -1760,7 +1774,7 @@ export default function App() {
                   : 'text-slate-400 dark:text-slate-500'
               }`}
             >
-              <User className="h-6 w-6" />
+              <User className="h-5 w-5" />
               <span className="text-xs mt-1 font-medium">Profile</span>
             </button>
           </div>

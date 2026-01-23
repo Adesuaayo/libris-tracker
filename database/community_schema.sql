@@ -331,7 +331,31 @@ CREATE INDEX IF NOT EXISTS idx_activities_created ON public.activities(created_a
 CREATE INDEX IF NOT EXISTS idx_recommendations_to ON public.recommendations(to_user_id);
 
 -- =============================================
--- STEP 6: AUTO-CREATE PROFILE ON SIGNUP
+-- STEP 6: CREATE RPC FUNCTIONS
+-- =============================================
+
+-- Increment club member count
+CREATE OR REPLACE FUNCTION public.increment_club_members(club_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.book_clubs
+  SET member_count = COALESCE(member_count, 0) + 1
+  WHERE id = club_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Decrement club member count
+CREATE OR REPLACE FUNCTION public.decrement_club_members(club_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.book_clubs
+  SET member_count = GREATEST(COALESCE(member_count, 1) - 1, 0)
+  WHERE id = club_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =============================================
+-- STEP 7: AUTO-CREATE PROFILE ON SIGNUP
 -- =============================================
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -355,7 +379,7 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- =============================================
--- STEP 7: CREATE VIEWS
+-- STEP 8: CREATE VIEWS
 -- =============================================
 
 -- Trending books view (fixed: use book_id instead of book_isbn)
@@ -393,7 +417,7 @@ ORDER BY reader_count DESC
 LIMIT 50;
 
 -- =============================================
--- STEP 8: CREATE PROFILE FOR EXISTING USERS
+-- STEP 9: CREATE PROFILE FOR EXISTING USERS
 -- =============================================
 
 INSERT INTO public.profiles (id, display_name)
@@ -410,5 +434,6 @@ DO $$
 BEGIN
   RAISE NOTICE '✅ Community schema created successfully!';
   RAISE NOTICE 'Tables: profiles, follows, book_clubs, club_members, book_reviews, review_likes, discussions, discussion_replies, activities, recommendations';
+  RAISE NOTICE 'RPC Functions: increment_club_members, decrement_club_members';
   RAISE NOTICE 'Views: trending_books, currently_reading';
 END $$;
