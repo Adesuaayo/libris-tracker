@@ -369,6 +369,7 @@ function ClubDetailView({ club: initialClub, onBack, onViewProfile }: ClubDetail
   const [isMember, setIsMember] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showNewDiscussion, setShowNewDiscussion] = useState(false);
+  const [selectedDiscussion, setSelectedDiscussion] = useState<Discussion | null>(null);
 
   const toast = useToastActions();
 
@@ -541,9 +542,10 @@ function ClubDetailView({ club: initialClub, onBack, onViewProfile }: ClubDetail
                 </div>
               ) : (
                 discussions.map((discussion) => (
-                  <div 
+                  <button
                     key={discussion.id}
-                    className="p-4 bg-white dark:bg-slate-800 rounded-xl"
+                    onClick={() => setSelectedDiscussion(discussion)}
+                    className="w-full text-left p-4 bg-white dark:bg-slate-800 rounded-xl hover:shadow-md transition-all"
                   >
                     <h3 className="font-semibold text-slate-900 dark:text-white">
                       {discussion.title}
@@ -563,7 +565,7 @@ function ClubDetailView({ club: initialClub, onBack, onViewProfile }: ClubDetail
                         {discussion.reply_count || 0} replies
                       </span>
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
             </div>
@@ -604,6 +606,18 @@ function ClubDetailView({ club: initialClub, onBack, onViewProfile }: ClubDetail
             </div>
           )}
         </>
+      )}
+
+      {/* Discussion Detail View */}
+      {selectedDiscussion && (
+        <DiscussionDetailView
+          discussion={selectedDiscussion}
+          onBack={() => setSelectedDiscussion(null)}
+          onViewProfile={onViewProfile}
+          onDiscussionUpdated={(updated) => {
+            setDiscussions(prev => prev.map(d => d.id === updated.id ? updated : d));
+          }}
+        />
       )}
 
       {/* New Discussion Modal */}
@@ -729,3 +743,166 @@ function NewDiscussionModal({ clubId, onClose, onCreated }: NewDiscussionModalPr
     </div>
   );
 }
+
+// =============================================
+// DISCUSSION DETAIL VIEW
+// =============================================
+
+interface DiscussionDetailViewProps {
+  discussion: Discussion;
+  onBack: () => void;
+  onViewProfile: (userId: string) => void;
+  onDiscussionUpdated: (discussion: Discussion) => void;
+}
+
+function DiscussionDetailView({ discussion: initialDiscussion, onBack, onViewProfile, onDiscussionUpdated }: DiscussionDetailViewProps) {
+  const [discussion] = useState(initialDiscussion);
+  const [replies, setReplies] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [replyContent, setReplyContent] = useState('');
+  const [isSavingReply, setIsSavingReply] = useState(false);
+
+  const toast = useToastActions();
+
+  useEffect(() => {
+    loadReplies();
+  }, [discussion.id]);
+
+  const loadReplies = async () => {
+    setIsLoading(true);
+    try {
+      const discussionReplies = await communityApi.discussions.getReplies(discussion.id);
+      console.log('[DiscussionDetail] Loaded replies:', discussionReplies);
+      setReplies(discussionReplies);
+    } catch (error) {
+      console.error('Error loading replies:', error);
+      toast.error('Failed to load replies');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddReply = async () => {
+    if (!replyContent.trim()) {
+      toast.error('Reply cannot be empty');
+      return;
+    }
+
+    setIsSavingReply(true);
+    try {
+      const reply = await communityApi.discussions.addReply(discussion.id, replyContent.trim());
+      if (reply) {
+        setReplies(prev => [...prev, reply]);
+        setReplyContent('');
+        toast.success('Reply posted!');
+      }
+    } catch (error) {
+      console.error('Error adding reply:', error);
+      toast.error('Failed to post reply');
+    } finally {
+      setIsSavingReply(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <button 
+          onClick={onBack}
+          className="flex items-center gap-2 text-violet-600 dark:text-violet-400 hover:text-violet-700 mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to discussions
+        </button>
+
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+          {discussion.title}
+        </h1>
+
+        {discussion.book_title && (
+          <p className="text-sm text-violet-600 dark:text-violet-400 mb-4">
+            About: {discussion.book_title}
+          </p>
+        )}
+
+        <p className="text-slate-600 dark:text-slate-400 mb-4">
+          {discussion.content}
+        </p>
+
+        <div className="flex items-center justify-between text-sm text-slate-500 pb-4 border-b border-slate-200 dark:border-slate-700">
+          <span>{new Date(discussion.created_at).toLocaleDateString()}</span>
+          <span>{replies.length} replies</span>
+        </div>
+      </div>
+
+      {/* Replies */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin w-6 h-6 border-3 border-violet-500 border-t-transparent rounded-full" />
+        </div>
+      ) : replies.length === 0 ? (
+        <div className="text-center py-8">
+          <MessageCircle className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+          <p className="text-slate-500">No replies yet. Be the first to respond!</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {replies.map((reply) => (
+            <div key={reply.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+              <div className="flex items-start gap-3 mb-2">
+                {reply.author?.avatar_url ? (
+                  <img 
+                    src={reply.author.avatar_url} 
+                    alt=""
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center text-white text-xs font-medium">
+                    {reply.author?.display_name?.[0]?.toUpperCase() || '?'}
+                  </div>
+                )}
+                <div className="flex-1">
+                  <button 
+                    onClick={() => onViewProfile(reply.author_id)}
+                    className="font-medium text-slate-900 dark:text-white hover:text-violet-600"
+                  >
+                    {reply.author?.display_name || 'Unknown'}
+                  </button>
+                  <p className="text-xs text-slate-500">
+                    {new Date(reply.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400">
+                {reply.content}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add Reply Form */}
+      <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          Add Your Reply
+        </label>
+        <textarea
+          value={replyContent}
+          onChange={(e) => setReplyContent(e.target.value)}
+          rows={3}
+          placeholder="Share your thoughts..."
+          className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white resize-none"
+        />
+        <button
+          onClick={handleAddReply}
+          disabled={isSavingReply || !replyContent.trim()}
+          className="mt-3 w-full py-2 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {isSavingReply ? 'Posting...' : 'Post Reply'}
+        </button>
+      </div>
+    </div>
+  );
+}
+

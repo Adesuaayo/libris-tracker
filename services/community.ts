@@ -317,33 +317,77 @@ export const followsApi = {
   },
 
   async getFollowers(userId: string, limit = 50): Promise<UserProfile[]> {
-    const { data, error } = await supabase
-      .from('follows')
-      .select('follower_id, profiles!follows_follower_id_fkey(*)')
-      .eq('following_id', userId)
-      .limit(limit);
+    try {
+      // Get all follows where this user is being followed
+      const { data: follows, error } = await supabase
+        .from('follows')
+        .select('follower_id')
+        .eq('following_id', userId)
+        .limit(limit);
 
-    if (error) {
-      console.error('Error fetching followers:', error);
+      if (error) {
+        console.error('Error fetching followers:', error);
+        return [];
+      }
+
+      if (!follows || follows.length === 0) {
+        console.log('[getFollowers] No followers found for user:', userId);
+        return [];
+      }
+
+      // Get profiles for all followers
+      const followerIds = follows.map(f => f.follower_id);
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', followerIds);
+
+      if (profileError) {
+        console.error('Error fetching follower profiles:', profileError);
+      }
+
+      return profiles || [];
+    } catch (err) {
+      console.error('Error in getFollowers:', err);
       return [];
     }
-
-    return data?.map(f => f.profiles as any as UserProfile) || [];
   },
 
   async getFollowing(userId: string, limit = 50): Promise<UserProfile[]> {
-    const { data, error } = await supabase
-      .from('follows')
-      .select('following_id, profiles!follows_following_id_fkey(*)')
-      .eq('follower_id', userId)
-      .limit(limit);
+    try {
+      // Get all follows where this user is following others
+      const { data: follows, error } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', userId)
+        .limit(limit);
 
-    if (error) {
-      console.error('Error fetching following:', error);
+      if (error) {
+        console.error('Error fetching following:', error);
+        return [];
+      }
+
+      if (!follows || follows.length === 0) {
+        console.log('[getFollowing] No following found for user:', userId);
+        return [];
+      }
+
+      // Get profiles for all following
+      const followingIds = follows.map(f => f.following_id);
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', followingIds);
+
+      if (profileError) {
+        console.error('Error fetching following profiles:', profileError);
+      }
+
+      return profiles || [];
+    } catch (err) {
+      console.error('Error in getFollowing:', err);
       return [];
     }
-
-    return data?.map(f => f.profiles as any as UserProfile) || [];
   },
 
   async isFollowing(userId: string): Promise<boolean> {
