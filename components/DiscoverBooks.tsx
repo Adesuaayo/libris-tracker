@@ -6,9 +6,12 @@ import {
   Search,
   Heart,
   MessageCircle,
-  Eye
+  Eye,
+  X
 } from 'lucide-react';
 import { communityApi, BookReview, TrendingBook as TrendingBookApi } from '../services/community';
+import { BookReviewSection } from './BookReviewSection';
+import { useToastActions } from './Toast';
 
 interface DiscoverBooksProps {
   onViewProfile: (userId: string) => void;
@@ -36,6 +39,10 @@ export const DiscoverBooks = memo<DiscoverBooksProps>(({ onViewProfile }) => {
   const [reviews, setReviews] = useState<BookReview[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<TrendingBook | null>(null);
+
+  const toast = useToastActions();
 
   useEffect(() => {
     loadData();
@@ -113,7 +120,13 @@ export const DiscoverBooks = memo<DiscoverBooksProps>(({ onViewProfile }) => {
         <>
           {/* Trending Books */}
           {activeSection === 'trending' && (
-            <TrendingBooksSection books={trendingBooks} />
+            <TrendingBooksSection 
+              books={trendingBooks}
+              onWriteReview={(book) => {
+                setSelectedBook(book);
+                setShowReviewModal(true);
+              }}
+            />
           )}
 
           {/* Currently Reading */}
@@ -127,6 +140,33 @@ export const DiscoverBooks = memo<DiscoverBooksProps>(({ onViewProfile }) => {
           )}
         </>
       )}
+
+      {/* Review Modal */}
+      {showReviewModal && selectedBook && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Review: {selectedBook.title}
+              </h2>
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+            <div className="p-4">
+              <BookReviewSection
+                bookIsbn={`trending-${selectedBook.title}`}
+                bookTitle={selectedBook.title}
+                bookAuthor={selectedBook.author}
+                bookCoverUrl={selectedBook.cover_url}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
@@ -137,7 +177,7 @@ DiscoverBooks.displayName = 'DiscoverBooks';
 // TRENDING BOOKS SECTION
 // =============================================
 
-function TrendingBooksSection({ books }: { books: TrendingBook[] }) {
+function TrendingBooksSection({ books, onWriteReview }: { books: TrendingBook[], onWriteReview: (book: TrendingBook) => void }) {
   if (books.length === 0) {
     return (
       <div className="text-center py-12">
@@ -192,7 +232,7 @@ function TrendingBooksSection({ books }: { books: TrendingBook[] }) {
               <p className="text-sm text-slate-500 truncate">{book.author}</p>
 
               {/* Stats */}
-              <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
                 {/* Rating */}
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 text-yellow-400 fill-current" />
@@ -206,6 +246,15 @@ function TrendingBooksSection({ books }: { books: TrendingBook[] }) {
                   <MessageCircle className="w-4 h-4" />
                   <span className="text-sm">{book.review_count} reviews</span>
                 </div>
+
+                {/* Write Review Button */}
+                <button
+                  onClick={() => onWriteReview(book)}
+                  className="ml-auto p-1.5 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-800 transition-colors"
+                  title="Write a Review"
+                >
+                  <Star className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
