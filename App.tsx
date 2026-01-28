@@ -281,10 +281,44 @@ export default function App() {
   const handleAddBook = async (book: Book) => {
     try {
       if (editingBook) {
+        // Log activity if status changed
+        if (editingBook.status !== book.status) {
+          const { communityApi } = await import('./services/community');
+          try {
+            if (book.status === ReadingStatus.IN_PROGRESS && editingBook.status !== ReadingStatus.IN_PROGRESS) {
+              await communityApi.activities.create('started_reading', {
+                book_title: book.title,
+                book_author: book.author,
+                book_cover_url: book.coverUrl
+              });
+            } else if (book.status === ReadingStatus.COMPLETED && editingBook.status !== ReadingStatus.COMPLETED) {
+              await communityApi.activities.create('finished_reading', {
+                book_title: book.title,
+                book_author: book.author,
+                book_cover_url: book.coverUrl
+              });
+            }
+          } catch (err) {
+            console.warn('Failed to log activity:', err);
+          }
+        }
+
         // Optimistic update
         setBooks(books.map(b => b.id === book.id ? book : b));
         await bookApi.updateBook(book);
       } else {
+        // Log activity for new book added
+        const { communityApi } = await import('./services/community');
+        try {
+          await communityApi.activities.create('added_book', {
+            book_title: book.title,
+            book_author: book.author,
+            book_cover_url: book.coverUrl
+          });
+        } catch (err) {
+          console.warn('Failed to log activity:', err);
+        }
+
         // Use the book's ID from BookForm as temp ID
         const tempId = book.id;
         setBooks([book, ...books]);
