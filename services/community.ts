@@ -833,6 +833,60 @@ export const discussionsApi = {
     }
   },
 
+  async deleteDiscussion(discussionId: string): Promise<boolean> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('Not authenticated');
+        return false;
+      }
+
+      // Check if user is the author
+      const { data: discussion, error: fetchError } = await supabase
+        .from('discussions')
+        .select('author_id')
+        .eq('id', discussionId)
+        .single();
+
+      if (fetchError || !discussion) {
+        console.error('Error fetching discussion:', fetchError);
+        return false;
+      }
+
+      if (discussion.author_id !== user.id) {
+        console.error('Not authorized to delete this discussion');
+        return false;
+      }
+
+      // Delete all replies first (due to FK constraint)
+      const { error: deleteRepliesError } = await supabase
+        .from('discussion_replies')
+        .delete()
+        .eq('discussion_id', discussionId);
+
+      if (deleteRepliesError) {
+        console.error('Error deleting replies:', deleteRepliesError);
+        return false;
+      }
+
+      // Delete discussion
+      const { error: deleteError } = await supabase
+        .from('discussions')
+        .delete()
+        .eq('id', discussionId);
+
+      if (deleteError) {
+        console.error('Error deleting discussion:', deleteError);
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Error in deleteDiscussion:', err);
+      return false;
+    }
+  },
+
   async getDiscussionsForBook(bookIsbn: string, limit = 20): Promise<Discussion[]> {
     try {
       // Get discussions first
@@ -942,7 +996,17 @@ export const discussionsApi = {
       throw error;
     }
 
-    return data;
+    // Fetch author profile immediately
+    const { data: author } = await supabase
+      .from('profiles')
+      .select('id, display_name, avatar_url, bio')
+      .eq('id', user.id)
+      .single();
+
+    return {
+      ...data,
+      author: author || undefined
+    };
   },
 
   async getReplies(discussionId: string): Promise<DiscussionReply[]> {

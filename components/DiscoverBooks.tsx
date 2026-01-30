@@ -136,7 +136,19 @@ export const DiscoverBooks = memo<DiscoverBooksProps>(({ onViewProfile }) => {
 
           {/* Reviews */}
           {activeSection === 'reviews' && (
-            <ReviewsSection reviews={reviews} onViewProfile={onViewProfile} />
+            <ReviewsSection 
+              reviews={reviews} 
+              onViewProfile={onViewProfile}
+              onWriteReview={() => {
+                // For reviews section, we show a generic write review modal
+                // For now, we'll just show a message to write about a book
+                const anyBook = trendingBooks[0];
+                if (anyBook) {
+                  setSelectedBook(anyBook);
+                  setShowReviewModal(true);
+                }
+              }}
+            />
           )}
         </>
       )}
@@ -178,6 +190,9 @@ DiscoverBooks.displayName = 'DiscoverBooks';
 // =============================================
 
 function TrendingBooksSection({ books, onWriteReview }: { books: TrendingBook[], onWriteReview: (book: TrendingBook) => void }) {
+  const [selectedBook, setSelectedBook] = useState<TrendingBook | null>(null);
+  const [showReviewsModal, setShowReviewsModal] = useState(false);
+
   if (books.length === 0) {
     return (
       <div className="text-center py-12">
@@ -189,7 +204,8 @@ function TrendingBooksSection({ books, onWriteReview }: { books: TrendingBook[],
   }
 
   return (
-    <div className="space-y-4">
+    <>
+      <div className="space-y-4">
       <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
         <TrendingUp className="w-5 h-5 text-violet-500" />
         Trending This Week
@@ -242,10 +258,17 @@ function TrendingBooksSection({ books, onWriteReview }: { books: TrendingBook[],
                 </div>
 
                 {/* Review Count */}
-                <div className="flex items-center gap-1 text-slate-500">
+                <button
+                  onClick={() => {
+                    setSelectedBook(book);
+                    setShowReviewsModal(true);
+                  }}
+                  className="flex items-center gap-1 text-slate-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors cursor-pointer"
+                  title="View reviews"
+                >
                   <MessageCircle className="w-4 h-4" />
                   <span className="text-sm">{book.review_count} reviews</span>
-                </div>
+                </button>
 
                 {/* Write Review Button */}
                 <button
@@ -260,7 +283,32 @@ function TrendingBooksSection({ books, onWriteReview }: { books: TrendingBook[],
           </div>
         ))}
       </div>
-    </div>
+
+      {/* Reviews Modal */}
+      {showReviewsModal && selectedBook && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Reviews for {selectedBook.title}
+              </h2>
+              <button
+                onClick={() => setShowReviewsModal(false)}
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+            <div className="p-4">
+              {/* Display book info and reviews would go here */}
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                Showing {selectedBook.review_count} reviews
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -343,9 +391,10 @@ function CurrentlyReadingSection({ items }: { items: CurrentlyReadingItem[] }) {
 interface ReviewsSectionProps {
   reviews: BookReview[];
   onViewProfile: (userId: string) => void;
+  onWriteReview?: () => void;
 }
 
-function ReviewsSection({ reviews, onViewProfile }: ReviewsSectionProps) {
+function ReviewsSection({ reviews, onViewProfile, onWriteReview }: ReviewsSectionProps) {
   const [likedReviews, setLikedReviews] = useState<Set<string>>(new Set());
 
   const handleLike = async (reviewId: string) => {
@@ -367,17 +416,36 @@ function ReviewsSection({ reviews, onViewProfile }: ReviewsSectionProps) {
       <div className="text-center py-12">
         <Star className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
         <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">No reviews yet</h3>
-        <p className="text-sm text-slate-500">Be the first to share your thoughts!</p>
+        <p className="text-sm text-slate-500 mb-4">Be the first to share your thoughts!</p>
+        {onWriteReview && (
+          <button
+            onClick={onWriteReview}
+            className="px-4 py-2 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600 transition-colors"
+          >
+            Write a Review
+          </button>
+        )}
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-        <Star className="w-5 h-5 text-yellow-500" />
-        Latest Reviews
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+          <Star className="w-5 h-5 text-yellow-500" />
+          Latest Reviews
+        </h2>
+        {onWriteReview && (
+          <button
+            onClick={onWriteReview}
+            className="p-1.5 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-800 transition-colors"
+            title="Write a Review"
+          >
+            <Star className="w-4 h-4" />
+          </button>
+        )}
+      </div>
 
       <div className="space-y-4">
         {reviews.map((review) => (

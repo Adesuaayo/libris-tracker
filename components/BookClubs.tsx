@@ -1,4 +1,3 @@
-import { useState, useEffect, memo } from 'react';
 import { 
   Users, 
   Plus, 
@@ -16,10 +15,11 @@ import { communityApi, BookClub, ClubMember, Discussion } from '../services/comm
 import { useToastActions } from './Toast';
 
 interface BookClubsListProps {
+  currentUserId: string;
   onViewProfile: (userId: string) => void;
 }
 
-export const BookClubsList = memo<BookClubsListProps>(({ onViewProfile }) => {
+export const BookClubsList = memo<BookClubsListProps>(({ currentUserId, onViewProfile }) => {
   const [clubs, setClubs] = useState<BookClub[]>([]);
   const [myClubs, setMyClubs] = useState<BookClub[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,6 +60,7 @@ export const BookClubsList = memo<BookClubsListProps>(({ onViewProfile }) => {
     return (
       <ClubDetailView 
         club={selectedClub}
+        currentUserId={currentUserId}
         onBack={() => {
           setSelectedClub(null);
           loadClubs();
@@ -357,11 +358,12 @@ function CreateClubModal({ onClose, onCreated }: CreateClubModalProps) {
 
 interface ClubDetailViewProps {
   club: BookClub;
+  currentUserId: string;
   onBack: () => void;
   onViewProfile: (userId: string) => void;
 }
 
-function ClubDetailView({ club: initialClub, onBack, onViewProfile }: ClubDetailViewProps) {
+function ClubDetailView({ club: initialClub, currentUserId, onBack, onViewProfile }: ClubDetailViewProps) {
   const [club] = useState(initialClub);
   const [members, setMembers] = useState<ClubMember[]>([]);
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
@@ -612,8 +614,13 @@ function ClubDetailView({ club: initialClub, onBack, onViewProfile }: ClubDetail
       {selectedDiscussion && (
         <DiscussionDetailView
           discussion={selectedDiscussion}
+          currentUserId={currentUserId}
           onBack={() => setSelectedDiscussion(null)}
           onViewProfile={onViewProfile}
+          onDiscussionDeleted={() => {
+            setDiscussions(prev => prev.filter(d => d.id !== selectedDiscussion.id));
+            setSelectedDiscussion(null);
+          }}
           onDiscussionUpdated={(updated) => {
             setDiscussions(prev => prev.map(d => d.id === updated.id ? updated : d));
           }}
@@ -750,19 +757,23 @@ function NewDiscussionModal({ clubId, onClose, onCreated }: NewDiscussionModalPr
 
 interface DiscussionDetailViewProps {
   discussion: Discussion;
+  currentUserId: string;
   onBack: () => void;
   onViewProfile: (userId: string) => void;
+  onDiscussionDeleted: () => void;
   onDiscussionUpdated: (discussion: Discussion) => void;
 }
 
-function DiscussionDetailView({ discussion: initialDiscussion, onBack, onViewProfile, onDiscussionUpdated }: DiscussionDetailViewProps) {
+function DiscussionDetailView({ discussion: initialDiscussion, currentUserId, onBack, onViewProfile, onDiscussionDeleted, onDiscussionUpdated }: DiscussionDetailViewProps) {
   const [discussion] = useState(initialDiscussion);
   const [replies, setReplies] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [replyContent, setReplyContent] = useState('');
   const [isSavingReply, setIsSavingReply] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const toast = useToastActions();
+  const isAuthor = currentUserId === discussion.author_id;
 
   useEffect(() => {
     loadReplies();
@@ -804,17 +815,50 @@ function DiscussionDetailView({ discussion: initialDiscussion, onBack, onViewPro
     }
   };
 
+  const handleDeleteDiscussion = async () => {
+    if (!confirm('Are you sure you want to delete this discussion? This cannot be undone.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const success = await communityApi.discussions.deleteDiscussion(discussion.id);
+      if (success) {
+        toast.success('Discussion deleted');
+        onDiscussionDeleted();
+      } else {
+        toast.error('Failed to delete discussion');
+      }
+    } catch (error) {
+      console.error('Error deleting discussion:', error);
+      toast.error('Failed to delete discussion');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with delete button */}
       <div>
-        <button 
-          onClick={onBack}
-          className="flex items-center gap-2 text-violet-600 dark:text-violet-400 hover:text-violet-700 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to discussions
-        </button>
+        <div className="flex items-center justify-between mb-4">
+          <button 
+            onClick={onBack}
+            className="flex items-center gap-2 text-violet-600 dark:text-violet-400 hover:text-violet-700"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to discussions
+          </button>
+          {isAuthor && (
+            <button
+              onClick={handleDeleteDiscussion}
+              disabled={isDeleting}
+              className="px-3 py-1.5 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 disabled:opacity-50 transition-colors"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </button>
+          )}
+        </div>
 
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
           {discussion.title}
@@ -833,6 +877,29 @@ function DiscussionDetailView({ discussion: initialDiscussion, onBack, onViewPro
         <div className="flex items-center justify-between text-sm text-slate-500 pb-4 border-b border-slate-200 dark:border-slate-700">
           <span>{new Date(discussion.created_at).toLocaleDateString()}</span>
           <span>{replies.length} replies</span>
+        </div>
+      </div>
+
+      {/* Reply Form - Sticky at top of replies section */}
+      <div className="sticky top-0 z-20 -mx-4 px-4 py-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          Add Your Reply
+        </label>
+        <div className="flex gap-2">
+          <textarea
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            rows={2}
+            placeholder="Share your thoughts..."
+            className="flex-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white resize-none text-sm"
+          />
+          <button
+            onClick={handleAddReply}
+            disabled={isSavingReply || !replyContent.trim()}
+            className="px-4 py-2 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap self-end"
+          >
+            {isSavingReply ? 'Posting...' : 'Post'}
+          </button>
         </div>
       </div>
 
@@ -881,27 +948,6 @@ function DiscussionDetailView({ discussion: initialDiscussion, onBack, onViewPro
           ))}
         </div>
       )}
-
-      {/* Add Reply Form */}
-      <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Add Your Reply
-        </label>
-        <textarea
-          value={replyContent}
-          onChange={(e) => setReplyContent(e.target.value)}
-          rows={3}
-          placeholder="Share your thoughts..."
-          className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white resize-none"
-        />
-        <button
-          onClick={handleAddReply}
-          disabled={isSavingReply || !replyContent.trim()}
-          className="mt-3 w-full py-2 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {isSavingReply ? 'Posting...' : 'Post Reply'}
-        </button>
-      </div>
     </div>
   );
 }

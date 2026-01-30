@@ -150,6 +150,7 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
 
         {activeTab === 'clubs' && (
           <BookClubsList 
+            currentUserId={currentUserId}
             onViewProfile={handleViewProfile}
           />
         )}
