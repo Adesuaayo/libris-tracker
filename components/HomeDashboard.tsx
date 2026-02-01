@@ -9,7 +9,8 @@ import {
   Trophy,
   ChevronRight,
   Sun,
-  Moon
+  Moon,
+  Sparkles
 } from 'lucide-react';
 import { Book, ReadingStatus, ReadingStreak, Achievement } from '../types';
 
@@ -83,51 +84,67 @@ export const HomeDashboard = memo<HomeDashboardProps>(({
     return 0;
   };
 
+  const goalProgress = Math.min((booksThisYear / readingGoal) * 100, 100);
+
   return (
-    <div className="min-h-screen bg-warm-cream dark:bg-charcoal pb-24">
+    <div className="min-h-screen bg-surface-base pb-24">
       <div className="max-w-2xl mx-auto p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
         
-        {/* Header with Streak */}
+        {/* Header */}
         <header className="mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-coral to-coral-dark rounded-2xl flex items-center justify-center shadow-lg shadow-coral/30">
-                <BookOpen className="text-white h-6 w-6" />
+              <div className="w-11 h-11 bg-gradient-to-br from-accent to-accent-dark rounded-xl flex items-center justify-center shadow-lg" style={{ boxShadow: '0 8px 24px rgba(124, 92, 252, 0.35)' }}>
+                <BookOpen className="text-white h-5 w-5" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-charcoal dark:text-warm-cream">Libris</h1>
-                <p className="text-sm text-charcoal/60 dark:text-warm-cream/60">Your reading companion</p>
+                <h1 className="text-xl font-bold text-text-primary">Libris</h1>
+                <p className="text-xs text-text-muted">Track your reading journey</p>
               </div>
             </div>
             <button 
               onClick={onToggleTheme}
-              className="p-2.5 rounded-xl bg-white dark:bg-charcoal-light hover:bg-warm-cream-dark dark:hover:bg-charcoal-lighter transition-colors"
+              className="p-2.5 rounded-xl bg-surface-card border border-surface-border hover:bg-surface-elevated transition-colors"
             >
               {theme === 'dark' ? (
-                <Sun className="w-5 h-5 text-coral" />
+                <Sun className="w-5 h-5 text-accent" />
               ) : (
-                <Moon className="w-5 h-5 text-charcoal/70" />
+                <Moon className="w-5 h-5 text-text-secondary" />
               )}
             </button>
           </div>
           
-          {/* Streak Banner */}
-          <div className="bg-gradient-to-r from-coral to-coral-dark rounded-2xl p-4 text-white shadow-lg shadow-coral/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Flame className="w-7 h-7" />
+          {/* Streak Banner - Premium Glass Effect */}
+          <div 
+            className="relative rounded-2xl p-4 overflow-hidden"
+            style={{ 
+              background: 'linear-gradient(135deg, rgba(124, 92, 252, 0.15) 0%, rgba(155, 138, 251, 0.08) 100%)',
+              border: '1px solid rgba(124, 92, 252, 0.2)'
+            }}
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-3xl" />
+            <div className="relative flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-accent to-accent-dark rounded-xl flex items-center justify-center" style={{ boxShadow: '0 4px 20px rgba(124, 92, 252, 0.4)' }}>
+                  <Flame className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <p className="text-white/80 text-sm font-medium">Current Streak</p>
-                  <p className="text-3xl font-bold">{readingStreak.currentStreak} days</p>
+                  <p className="text-text-muted text-sm font-medium">Current Streak</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-bold text-text-primary">{readingStreak.currentStreak}</span>
+                    <span className="text-text-secondary text-sm">days</span>
+                  </div>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-white/80 text-sm">Best: {readingStreak.longestStreak} days</p>
-                <p className="text-white/90 text-sm mt-1">
-                  {readingStreak.currentStreak > 0 ? "You're on fire! 🔥" : "Start reading today!"}
-                </p>
+                <p className="text-text-muted text-xs">Personal Best</p>
+                <p className="text-accent font-semibold">{readingStreak.longestStreak} days</p>
+                {readingStreak.currentStreak > 0 && (
+                  <div className="flex items-center gap-1 mt-1 text-amber-400">
+                    <Sparkles className="w-3 h-3" />
+                    <span className="text-xs">On fire!</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -135,52 +152,55 @@ export const HomeDashboard = memo<HomeDashboardProps>(({
 
         {/* Continue Reading Card */}
         {continueBook && (
-          <section className="mb-6">
+          <section className="mb-5">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-charcoal dark:text-warm-cream flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-coral" />
+              <h2 className="text-base font-semibold text-text-primary flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-accent" />
                 Continue Reading
               </h2>
             </div>
             <button
               onClick={() => onSelectBook(continueBook)}
-              className="w-full bg-white dark:bg-charcoal-light rounded-2xl p-4 shadow-sm hover:shadow-md transition-all text-left group"
+              className="w-full bg-surface-card border border-surface-border rounded-2xl p-4 hover:border-accent/30 transition-all text-left group"
             >
               <div className="flex gap-4">
                 {continueBook.coverUrl ? (
                   <img 
                     src={continueBook.coverUrl} 
                     alt={continueBook.title}
-                    className="w-20 h-28 object-cover rounded-xl shadow-md"
+                    className="w-16 h-24 object-cover rounded-xl shadow-lg"
                   />
                 ) : (
-                  <div className="w-20 h-28 bg-coral/10 rounded-xl flex items-center justify-center">
-                    <BookOpen className="w-8 h-8 text-coral/50" />
+                  <div className="w-16 h-24 bg-surface-elevated rounded-xl flex items-center justify-center border border-surface-border">
+                    <BookOpen className="w-6 h-6 text-text-muted" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-charcoal dark:text-warm-cream text-lg truncate group-hover:text-coral transition-colors">
+                  <h3 className="font-semibold text-text-primary truncate group-hover:text-accent transition-colors">
                     {continueBook.title}
                   </h3>
-                  <p className="text-charcoal/60 dark:text-warm-cream/60 text-sm truncate">{continueBook.author}</p>
+                  <p className="text-text-muted text-sm truncate">{continueBook.author}</p>
                   
                   {/* Progress */}
                   <div className="mt-3">
-                    <div className="flex items-center justify-between text-xs text-charcoal/60 dark:text-warm-cream/60 mb-1.5">
+                    <div className="flex items-center justify-between text-xs text-text-muted mb-1.5">
                       <span>{continueBook.currentPage || 0} of {continueBook.totalPages || '?'} pages</span>
-                      <span className="font-medium text-coral">{getReadingProgress(continueBook)}%</span>
+                      <span className="font-medium text-accent">{getReadingProgress(continueBook)}%</span>
                     </div>
-                    <div className="h-2 bg-charcoal/10 dark:bg-warm-cream/10 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-coral to-coral-dark rounded-full transition-all"
-                        style={{ width: `${getReadingProgress(continueBook)}%` }}
+                        className="h-full rounded-full transition-all"
+                        style={{ 
+                          width: `${getReadingProgress(continueBook)}%`,
+                          background: 'linear-gradient(90deg, #7C5CFC 0%, #9B8AFB 100%)'
+                        }}
                       />
                     </div>
                   </div>
                   
-                  <div className="mt-3 flex items-center text-coral font-medium text-sm">
-                    Continue Reading
-                    <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                  <div className="mt-2.5 flex items-center text-accent font-medium text-xs">
+                    Resume Reading
+                    <ChevronRight className="w-3.5 h-3.5 ml-0.5 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 </div>
               </div>
@@ -190,90 +210,94 @@ export const HomeDashboard = memo<HomeDashboardProps>(({
 
         {/* No book currently reading */}
         {!continueBook && (
-          <section className="mb-6">
+          <section className="mb-5">
             <button
               onClick={onAddBook}
-              className="w-full bg-white dark:bg-charcoal-light rounded-2xl p-6 shadow-sm hover:shadow-md transition-all border-2 border-dashed border-coral/30 hover:border-coral/50"
+              className="w-full bg-surface-card rounded-2xl p-5 border border-dashed border-accent/30 hover:border-accent/50 hover:bg-surface-elevated transition-all"
             >
               <div className="text-center">
-                <div className="w-16 h-16 bg-coral/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <Plus className="w-8 h-8 text-coral" />
+                <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Plus className="w-7 h-7 text-accent" />
                 </div>
-                <h3 className="font-semibold text-charcoal dark:text-warm-cream mb-1">Start Your Next Book</h3>
-                <p className="text-sm text-charcoal/60 dark:text-warm-cream/60">Add a book to begin your reading journey</p>
+                <h3 className="font-semibold text-text-primary mb-1">Start Your Next Book</h3>
+                <p className="text-sm text-text-muted">Add a book to begin your reading journey</p>
               </div>
             </button>
           </section>
         )}
 
         {/* Quick Actions */}
-        <section className="mb-6">
-          <h2 className="text-lg font-semibold text-charcoal dark:text-warm-cream mb-3">Quick Actions</h2>
-          <div className="grid grid-cols-4 gap-3">
+        <section className="mb-5">
+          <h2 className="text-base font-semibold text-text-primary mb-3">Quick Actions</h2>
+          <div className="grid grid-cols-4 gap-2.5">
             <button
               onClick={onAddBook}
-              className="flex flex-col items-center gap-2 p-3 bg-white dark:bg-charcoal-light rounded-xl hover:shadow-md transition-all group"
+              className="flex flex-col items-center gap-2 p-3 bg-surface-card border border-surface-border rounded-xl hover:border-accent/30 hover:bg-surface-elevated transition-all group"
             >
-              <div className="w-10 h-10 bg-coral/10 rounded-xl flex items-center justify-center group-hover:bg-coral/20 transition-colors">
-                <Plus className="w-5 h-5 text-coral" />
+              <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+                <Plus className="w-5 h-5 text-accent" />
               </div>
-              <span className="text-xs font-medium text-charcoal/70 dark:text-warm-cream/70">Add Book</span>
+              <span className="text-[11px] font-medium text-text-secondary">Add Book</span>
             </button>
             <button
               onClick={onNavigateToLibrary}
-              className="flex flex-col items-center gap-2 p-3 bg-white dark:bg-charcoal-light rounded-xl hover:shadow-md transition-all group"
+              className="flex flex-col items-center gap-2 p-3 bg-surface-card border border-surface-border rounded-xl hover:border-blue-500/30 hover:bg-surface-elevated transition-all group"
             >
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
-                <Library className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                <Library className="w-5 h-5 text-blue-400" />
               </div>
-              <span className="text-xs font-medium text-charcoal/70 dark:text-warm-cream/70">Library</span>
+              <span className="text-[11px] font-medium text-text-secondary">Library</span>
             </button>
             <button
               onClick={onNavigateToGoals}
-              className="flex flex-col items-center gap-2 p-3 bg-white dark:bg-charcoal-light rounded-xl hover:shadow-md transition-all group"
+              className="flex flex-col items-center gap-2 p-3 bg-surface-card border border-surface-border rounded-xl hover:border-emerald-500/30 hover:bg-surface-elevated transition-all group"
             >
-              <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
-                <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                <Target className="w-5 h-5 text-emerald-400" />
               </div>
-              <span className="text-xs font-medium text-charcoal/70 dark:text-warm-cream/70">Goals</span>
+              <span className="text-[11px] font-medium text-text-secondary">Goals</span>
             </button>
             <button
               onClick={onNavigateToAnalytics}
-              className="flex flex-col items-center gap-2 p-3 bg-white dark:bg-charcoal-light rounded-xl hover:shadow-md transition-all group"
+              className="flex flex-col items-center gap-2 p-3 bg-surface-card border border-surface-border rounded-xl hover:border-accent/30 hover:bg-surface-elevated transition-all group"
             >
-              <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
-                <BarChart3 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+                <BarChart3 className="w-5 h-5 text-accent" />
               </div>
-              <span className="text-xs font-medium text-charcoal/70 dark:text-warm-cream/70">Stats</span>
+              <span className="text-[11px] font-medium text-text-secondary">Stats</span>
             </button>
           </div>
         </section>
 
         {/* This Week Activity */}
-        <section className="mb-6">
+        <section className="mb-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-charcoal dark:text-warm-cream">This Week</h2>
-            <span className="text-sm text-charcoal/60 dark:text-warm-cream/60">{daysReadThisWeek}/7 days</span>
+            <h2 className="text-base font-semibold text-text-primary">This Week</h2>
+            <span className="text-xs text-text-muted bg-surface-card px-2 py-1 rounded-md">{daysReadThisWeek}/7 days</span>
           </div>
-          <div className="bg-white dark:bg-charcoal-light rounded-2xl p-4 shadow-sm">
-            <div className="flex justify-between items-end">
+          <div className="bg-surface-card border border-surface-border rounded-2xl p-4">
+            <div className="flex justify-between items-end gap-1">
               {weekActivity.map((day, i) => (
-                <div key={i} className="flex flex-col items-center gap-2">
+                <div key={i} className="flex flex-col items-center gap-2 flex-1">
                   <div 
-                    className={`w-8 h-16 rounded-lg flex items-end justify-center pb-1 transition-colors ${
+                    className={`w-full max-w-[36px] h-14 rounded-lg flex items-end justify-center pb-1.5 transition-all ${
                       day.hasRead 
-                        ? 'bg-gradient-to-t from-coral to-coral-light' 
+                        ? '' 
                         : day.isToday 
-                          ? 'bg-charcoal/10 dark:bg-warm-cream/10 border-2 border-dashed border-coral/50' 
-                          : 'bg-charcoal/5 dark:bg-warm-cream/5'
+                          ? 'bg-surface-elevated border border-dashed border-accent/40' 
+                          : 'bg-surface-elevated'
                     }`}
+                    style={day.hasRead ? {
+                      background: 'linear-gradient(180deg, #9B8AFB 0%, #7C5CFC 100%)',
+                      boxShadow: '0 4px 12px rgba(124, 92, 252, 0.3)'
+                    } : {}}
                   >
                     {day.hasRead && <Flame className="w-4 h-4 text-white" />}
                   </div>
-                  <span className={`text-xs font-medium ${
+                  <span className={`text-[10px] font-medium ${
                     day.isToday 
-                      ? 'text-coral' 
-                      : 'text-charcoal/50 dark:text-warm-cream/50'
+                      ? 'text-accent' 
+                      : 'text-text-muted'
                   }`}>
                     {day.day}
                   </span>
@@ -283,41 +307,47 @@ export const HomeDashboard = memo<HomeDashboardProps>(({
           </div>
         </section>
 
-        {/* Reading Progress */}
-        <section className="mb-6">
-          <div className="bg-white dark:bg-charcoal-light rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
+        {/* Reading Goal Progress */}
+        <section className="mb-5">
+          <div className="bg-surface-card border border-surface-border rounded-2xl p-4">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-charcoal/60 dark:text-warm-cream/60">Yearly Goal Progress</p>
-                <p className="text-2xl font-bold text-charcoal dark:text-warm-cream">
-                  {booksThisYear} <span className="text-base font-normal text-charcoal/50 dark:text-warm-cream/50">/ {readingGoal} books</span>
-                </p>
+                <p className="text-xs text-text-muted mb-0.5">Yearly Goal</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-3xl font-bold text-text-primary">{booksThisYear}</span>
+                  <span className="text-text-muted text-sm">/ {readingGoal} books</span>
+                </div>
               </div>
               <div className="w-16 h-16 relative">
                 <svg className="w-16 h-16 -rotate-90">
                   <circle
                     cx="32"
                     cy="32"
-                    r="28"
+                    r="26"
                     stroke="currentColor"
-                    strokeWidth="6"
+                    strokeWidth="5"
                     fill="none"
-                    className="text-charcoal/10 dark:text-warm-cream/10"
+                    className="text-surface-elevated"
                   />
                   <circle
                     cx="32"
                     cy="32"
-                    r="28"
-                    stroke="currentColor"
-                    strokeWidth="6"
+                    r="26"
+                    stroke="url(#progressGradient)"
+                    strokeWidth="5"
                     fill="none"
-                    strokeDasharray={`${(booksThisYear / readingGoal) * 176} 176`}
+                    strokeDasharray={`${goalProgress * 1.63} 163`}
                     strokeLinecap="round"
-                    className="text-coral"
                   />
+                  <defs>
+                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#7C5CFC" />
+                      <stop offset="100%" stopColor="#9B8AFB" />
+                    </linearGradient>
+                  </defs>
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-sm font-bold text-coral">{Math.round((booksThisYear / readingGoal) * 100)}%</span>
+                  <span className="text-sm font-bold text-accent">{Math.round(goalProgress)}%</span>
                 </div>
               </div>
             </div>
@@ -326,17 +356,23 @@ export const HomeDashboard = memo<HomeDashboardProps>(({
 
         {/* Recent Achievement */}
         {recentAchievement && (
-          <section className="mb-6">
-            <h2 className="text-lg font-semibold text-charcoal dark:text-warm-cream mb-3 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-500" />
+          <section className="mb-5">
+            <h2 className="text-base font-semibold text-text-primary mb-3 flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-amber-400" />
               Latest Achievement
             </h2>
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl p-4 border border-amber-200/50 dark:border-amber-700/30">
+            <div 
+              className="rounded-2xl p-4 border"
+              style={{
+                background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.08) 0%, rgba(245, 158, 11, 0.04) 100%)',
+                borderColor: 'rgba(251, 191, 36, 0.15)'
+              }}
+            >
               <div className="flex items-center gap-4">
                 <div className="text-4xl">{recentAchievement.icon}</div>
                 <div>
-                  <h3 className="font-semibold text-charcoal dark:text-warm-cream">{recentAchievement.name}</h3>
-                  <p className="text-sm text-charcoal/60 dark:text-warm-cream/60">{recentAchievement.description}</p>
+                  <h3 className="font-semibold text-text-primary">{recentAchievement.name}</h3>
+                  <p className="text-sm text-text-muted">{recentAchievement.description}</p>
                 </div>
               </div>
             </div>
@@ -345,18 +381,18 @@ export const HomeDashboard = memo<HomeDashboardProps>(({
 
         {/* Stats Summary */}
         <section>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white dark:bg-charcoal-light rounded-xl p-4 text-center shadow-sm">
-              <p className="text-2xl font-bold text-charcoal dark:text-warm-cream">{books.length}</p>
-              <p className="text-xs text-charcoal/60 dark:text-warm-cream/60">Total Books</p>
+          <div className="grid grid-cols-3 gap-2.5">
+            <div className="bg-surface-card border border-surface-border rounded-xl p-3.5 text-center">
+              <p className="text-2xl font-bold text-text-primary">{books.length}</p>
+              <p className="text-[10px] text-text-muted mt-0.5">Total Books</p>
             </div>
-            <div className="bg-white dark:bg-charcoal-light rounded-xl p-4 text-center shadow-sm">
-              <p className="text-2xl font-bold text-coral">{booksThisYear}</p>
-              <p className="text-xs text-charcoal/60 dark:text-warm-cream/60">This Year</p>
+            <div className="bg-surface-card border border-surface-border rounded-xl p-3.5 text-center">
+              <p className="text-2xl font-bold text-accent">{booksThisYear}</p>
+              <p className="text-[10px] text-text-muted mt-0.5">This Year</p>
             </div>
-            <div className="bg-white dark:bg-charcoal-light rounded-xl p-4 text-center shadow-sm">
-              <p className="text-2xl font-bold text-charcoal dark:text-warm-cream">{currentlyReading.length}</p>
-              <p className="text-xs text-charcoal/60 dark:text-warm-cream/60">Reading</p>
+            <div className="bg-surface-card border border-surface-border rounded-xl p-3.5 text-center">
+              <p className="text-2xl font-bold text-text-primary">{currentlyReading.length}</p>
+              <p className="text-[10px] text-text-muted mt-0.5">Reading</p>
             </div>
           </div>
         </section>

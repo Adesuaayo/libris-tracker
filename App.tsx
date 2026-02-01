@@ -1662,6 +1662,23 @@ export default function App() {
           />
         )}
 
+        {view === 'goals' && (
+          <div className="max-w-2xl mx-auto">
+            <ReadingGoals
+              goals={readingGoals}
+              completedBooks={books.filter(b => b.status === ReadingStatus.COMPLETED && b.dateFinished?.startsWith(new Date().getFullYear().toString())).length}
+              completedThisMonth={books.filter(b => {
+                if (b.status !== ReadingStatus.COMPLETED || !b.dateFinished) return false;
+                const finished = new Date(b.dateFinished);
+                const now = new Date();
+                return finished.getMonth() === now.getMonth() && finished.getFullYear() === now.getFullYear();
+              }).length}
+              onUpdateGoal={handleUpdateGoal}
+              onCreateGoal={handleCreateGoal}
+            />
+          </div>
+        )}
+
         {view === 'library' && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {isLoadingBooks ? (
@@ -1788,14 +1805,14 @@ export default function App() {
 
       {/* Bottom Navigation - Hide on legal pages */}
       {(activeTab === 'home' || activeTab === 'profile' || activeTab === 'community') && (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] z-50">
+        <nav className="fixed bottom-0 left-0 right-0 bg-surface-card border-t border-surface-border pb-[env(safe-area-inset-bottom)] z-50">
           <div className="flex items-center justify-around h-16">
             <button
               onClick={() => { setActiveTab('home'); setShowDashboard(true); setView('library'); }}
               className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                 activeTab === 'home' 
-                  ? 'text-coral dark:text-coral' 
-                  : 'text-slate-400 dark:text-slate-500'
+                  ? 'text-accent' 
+                  : 'text-text-muted'
               }`}
             >
               <Home className="h-5 w-5" />
@@ -1804,7 +1821,8 @@ export default function App() {
             
             <button
               onClick={() => { setView('add'); setShowDashboard(false); setEditingBook(null); setActiveTab('home'); }}
-              className="flex items-center justify-center w-14 h-14 -mt-5 bg-coral rounded-full text-white shadow-lg shadow-coral/30 hover:bg-coral-dark transition-colors"
+              className="flex items-center justify-center w-14 h-14 -mt-5 bg-gradient-to-br from-accent to-accent-dark rounded-full text-white shadow-lg hover:opacity-90 transition-opacity"
+              style={{ boxShadow: '0 8px 24px rgba(124, 92, 252, 0.4)' }}
             >
               <Plus className="h-7 w-7" />
             </button>
@@ -1813,8 +1831,8 @@ export default function App() {
               onClick={() => setActiveTab('community')}
               className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                 activeTab === 'community' 
-                  ? 'text-brand-600 dark:text-brand-400' 
-                  : 'text-slate-400 dark:text-slate-500'
+                  ? 'text-accent' 
+                  : 'text-text-muted'
               }`}
             >
               <Globe className="h-5 w-5" />
@@ -1825,8 +1843,8 @@ export default function App() {
               onClick={() => setActiveTab('profile')}
               className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                 activeTab === 'profile' 
-                  ? 'text-brand-600 dark:text-brand-400' 
-                  : 'text-slate-400 dark:text-slate-500'
+                  ? 'text-accent' 
+                  : 'text-text-muted'
               }`}
             >
               <User className="h-5 w-5" />
