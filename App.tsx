@@ -1629,10 +1629,10 @@ export default function App() {
         {view === 'analytics' && (
           <Suspense fallback={
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 text-brand-600 animate-spin" />
+              <Loader2 className="h-8 w-8 text-accent animate-spin" />
             </div>
           }>
-            <Analytics books={books} />
+            <Analytics books={books} readingStreak={readingStreak} />
           </Suspense>
         )}
         
