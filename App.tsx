@@ -13,6 +13,7 @@ import { ReadingInsights } from './components/ReadingInsights';
 import { BookCollections } from './components/BookCollections';
 import { CollectionView } from './components/CollectionView';
 import { Community } from './components/Community';
+import { HomeDashboard } from './components/HomeDashboard';
 
 // Lazy load heavy components for better initial load time
 const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })));
@@ -53,6 +54,7 @@ export default function App() {
 
   const [view, setView] = useState<ViewMode>('library');
   const [activeTab, setActiveTab] = useState<TabView>('home');
+  const [showDashboard, setShowDashboard] = useState(true); // Show new dashboard by default
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>('dateAdded');
@@ -1535,14 +1537,18 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
       <main className="p-4 md:p-6 pt-[calc(1rem+env(safe-area-inset-top))]">
         
-        {/* Header */}
+        {/* Header with Back button */}
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/20">
-              <BookOpen className="text-white h-5 w-5" />
-            </div>
+            <button 
+              onClick={() => setShowDashboard(true)}
+              className="w-10 h-10 bg-coral rounded-xl flex items-center justify-center shadow-lg shadow-coral/20 hover:bg-coral-dark transition-colors"
+            >
+              <ArrowLeft className="text-white h-5 w-5" />
+            </button>
             <div>
                 <h1 className="text-xl font-bold text-slate-900 dark:text-white">Libris</h1>
+                <p className="text-xs text-slate-500">{view === 'library' ? 'My Library' : view === 'analytics' ? 'Analytics' : view}</p>
             </div>
           </div>
         </header>
@@ -1553,7 +1559,7 @@ export default function App() {
             onClick={() => { setView('library'); setEditingBook(null); }}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
               view === 'library' 
-                ? 'bg-brand-600 text-white shadow-md shadow-brand-500/20' 
+                ? 'bg-coral text-white shadow-md shadow-coral/20' 
                 : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
             }`}
           >
@@ -1564,7 +1570,7 @@ export default function App() {
             onClick={() => { setView('analytics'); setEditingBook(null); }}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
               view === 'analytics' 
-                ? 'bg-brand-600 text-white shadow-md shadow-brand-500/20' 
+                ? 'bg-coral text-white shadow-md shadow-coral/20' 
                 : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
             }`}
           >
@@ -1759,7 +1765,22 @@ export default function App() {
   return (
     <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Screen Content */}
-      {activeTab === 'home' && <HomeScreen />}
+      {activeTab === 'home' && showDashboard && (
+        <HomeDashboard
+          books={books}
+          readingStreak={readingStreak}
+          unlockedAchievements={unlockedAchievements}
+          readingGoal={readingGoal}
+          theme={theme}
+          onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          onNavigateToLibrary={() => { setShowDashboard(false); setView('library'); }}
+          onNavigateToAnalytics={() => { setShowDashboard(false); setView('analytics'); }}
+          onNavigateToGoals={() => { setShowDashboard(false); setView('goals'); }}
+          onAddBook={() => { setShowDashboard(false); setView('add'); }}
+          onSelectBook={(book) => setSelectedBook(book)}
+        />
+      )}
+      {activeTab === 'home' && !showDashboard && <HomeScreen />}
       {activeTab === 'profile' && <ProfileScreen />}
       {activeTab === 'community' && session?.user && <Community currentUserId={session.user.id} />}
       {activeTab === 'privacy' && <PrivacyPolicyScreen />}
@@ -1770,10 +1791,10 @@ export default function App() {
         <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] z-50">
           <div className="flex items-center justify-around h-16">
             <button
-              onClick={() => { setActiveTab('home'); setView('library'); }}
+              onClick={() => { setActiveTab('home'); setShowDashboard(true); setView('library'); }}
               className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                 activeTab === 'home' 
-                  ? 'text-brand-600 dark:text-brand-400' 
+                  ? 'text-coral dark:text-coral' 
                   : 'text-slate-400 dark:text-slate-500'
               }`}
             >
@@ -1782,8 +1803,8 @@ export default function App() {
             </button>
             
             <button
-              onClick={() => { setView('add'); setEditingBook(null); setActiveTab('home'); }}
-              className="flex items-center justify-center w-14 h-14 -mt-5 bg-brand-600 rounded-full text-white shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-colors"
+              onClick={() => { setView('add'); setShowDashboard(false); setEditingBook(null); setActiveTab('home'); }}
+              className="flex items-center justify-center w-14 h-14 -mt-5 bg-coral rounded-full text-white shadow-lg shadow-coral/30 hover:bg-coral-dark transition-colors"
             >
               <Plus className="h-7 w-7" />
             </button>

@@ -308,6 +308,7 @@ function TrendingBooksSection({ books, onWriteReview }: { books: TrendingBook[],
           </div>
         </div>
       )}
+      </div>
     </>
   );
 }

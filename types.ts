@@ -229,6 +229,6 @@ export const COLLECTION_ICONS = [
   '🎭', '🎬', '🎵', '💡', '🔮', '🌸', '🍂', '❄️'
 ];
 
-export type ViewMode = 'library' | 'analytics' | 'add' | 'details' | 'collection';
+export type ViewMode = 'library' | 'analytics' | 'add' | 'details' | 'collection' | 'goals';
 
 export type Theme = 'light' | 'dark' | 'system';
