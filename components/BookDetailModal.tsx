@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import { X, BookOpen, Clock, Star, FileText, Tag, Calendar, Globe, Pencil, BookMarked } from 'lucide-react';
 import { Book, BookNote, ReadingStatus } from '../types';
 import { ReadingTimer } from './ReadingTimer';
@@ -15,6 +15,9 @@ interface BookDetailModalProps {
   onSessionComplete: (bookId: string, durationMinutes: number) => void;
   onAddNote: (note: Omit<BookNote, 'id' | 'createdAt'>) => void;
   onDeleteNote: (noteId: string) => void;
+  onProgressUpdate?: (bookId: string, currentPage: number, totalPages: number) => void;
+  onReaderStateChange?: (isOpen: boolean) => void;
+  closeReaderTrigger?: number;
 }
 
 export const BookDetailModal = memo<BookDetailModalProps>(({
@@ -24,7 +27,10 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
   onEdit,
   onSessionComplete,
   onAddNote,
-  onDeleteNote
+  onDeleteNote,
+  onProgressUpdate,
+  onReaderStateChange,
+  closeReaderTrigger
 }) => {
   const [showReadOnline, setShowReadOnline] = useState(false);
   const [showEBookReader, setShowEBookReader] = useState(false);
@@ -56,6 +62,22 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
     };
     checkEbook();
   }, [book.id]);
+
+  // Notify parent when reader state changes
+  useEffect(() => {
+    onReaderStateChange?.(showEBookReader);
+  }, [showEBookReader, onReaderStateChange]);
+
+  // Close reader when parent requests it (via back button)
+  const prevTriggerRef = useRef(closeReaderTrigger);
+  useEffect(() => {
+    if (closeReaderTrigger !== undefined && closeReaderTrigger !== prevTriggerRef.current) {
+      prevTriggerRef.current = closeReaderTrigger;
+      if (showEBookReader) {
+        setShowEBookReader(false);
+      }
+    }
+  }, [closeReaderTrigger, showEBookReader]);
   
   const formatTotalTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -180,11 +202,6 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
           </div>
         </div>
         
-        {/* Debug info - remove later */}
-        <div className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-[9px] text-yellow-800 dark:text-yellow-200">
-          Debug: hasEbook={hasEbook ? 'YES' : 'NO'}, bookId={book.id?.substring(0, 8)}..., storedBooks={storedCount}
-        </div>
-        
         {/* Footer */}
         <div className="border-t border-slate-200 dark:border-slate-700 p-2 bg-slate-50 dark:bg-slate-900/50">
           <div className="flex gap-1">
@@ -239,6 +256,9 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
           fileName={ebookData.fileName}
           bookTitle={book.title}
           onClose={() => setShowEBookReader(false)}
+          onProgressUpdate={(currentPage, totalPages) => {
+            onProgressUpdate?.(book.id, currentPage, totalPages);
+          }}
         />
       )}
     </div>

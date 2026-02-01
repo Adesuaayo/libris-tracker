@@ -327,17 +327,6 @@ export function ReadingReminders({ onSettingsChange }: ReadingRemindersProps) {
             </div>
           </div>
 
-          {/* Test Button - works on both web and native */}
-          <Button 
-            variant="secondary" 
-            onClick={sendTestNotification}
-            className="w-full text-sm"
-            disabled={testSending}
-          >
-            <Bell className="w-4 h-4 mr-2" />
-            {testSending ? 'Sending...' : 'Send Test Notification'}
-          </Button>
-
           {/* Permission Warning */}
           {permissionStatus === 'denied' && (
             <div className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-xl">

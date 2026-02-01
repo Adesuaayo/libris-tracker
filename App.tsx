@@ -22,7 +22,7 @@ const BookForm = lazy(() => import('./components/BookForm').then(m => ({ default
 const BookNotes = lazy(() => import('./components/BookNotes').then(m => ({ default: m.BookNotes })));
 import { supabase, bookApi } from './services/supabase';
 import { ebookStorage } from './services/ebookStorage';
-import { BookOpen, BarChart2, Plus, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, LogOut, Loader2, ExternalLink, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText, Globe } from 'lucide-react';
+import { BookOpen, BarChart2, Plus, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, LogOut, Loader2, ExternalLink, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText, Globe, Check } from 'lucide-react';
 import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
 import { App as CapApp } from '@capacitor/app';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -74,12 +74,21 @@ export default function App() {
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [uploadingProfilePic, setUploadingProfilePic] = useState(false);
 
+  // Display Name State
+  const [displayName, setDisplayName] = useState<string>('');
+  const [editingDisplayName, setEditingDisplayName] = useState(false);
+  const [tempDisplayName, setTempDisplayName] = useState('');
+
   // Reading Preferences State (for AI recommendations)
   const [readingPreferences, setReadingPreferences] = useState<ReadingPreferences>(() => {
     const saved = localStorage.getItem('libris-reading-preferences');
     return saved ? JSON.parse(saved) : DEFAULT_PREFERENCES;
   });
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // eBook Reader open state (for back button handling)
+  const [isEBookReaderOpen, setIsEBookReaderOpen] = useState(false);
+  const [closeReaderTrigger, setCloseReaderTrigger] = useState(0);
 
   // Book Notes State
   const [bookNotes, setBookNotes] = useState<BookNote[]>(() => {
@@ -171,6 +180,14 @@ export default function App() {
   const loadUserSettings = (session: any) => {
     const metadata = session?.user?.user_metadata;
     
+    // Load display name
+    if (metadata?.display_name) {
+      setDisplayName(metadata.display_name);
+    } else {
+      // Fallback to email username
+      setDisplayName(session?.user?.email?.split('@')[0] || '');
+    }
+    
     // Load avatar
     if (metadata?.avatar_url) {
       setProfilePicture(metadata.avatar_url);
@@ -246,9 +263,12 @@ export default function App() {
   useEffect(() => {
     const handleBackButton = async () => {
         CapApp.addListener('backButton', () => {
-            // Priority: Close modals first, then navigate views
-            if (selectedBook) {
-                // Close BookDetailModal - this handles reader as well
+            // Priority: Close modals/readers first, then navigate views
+            if (isEBookReaderOpen) {
+                // Close eBook reader first - increment trigger to notify component
+                setCloseReaderTrigger(prev => prev + 1);
+            } else if (selectedBook) {
+                // Close BookDetailModal
                 setSelectedBook(null);
             } else if (showOnboarding) {
                 // Close onboarding modal
@@ -281,7 +301,7 @@ export default function App() {
     return () => {
         CapApp.removeAllListeners();
     };
-  }, [view, activeTab, selectedBook, showOnboarding, aiResponse, showDashboard]);
+  }, [view, activeTab, selectedBook, showOnboarding, aiResponse, showDashboard, isEBookReaderOpen]);
 
 
   // --- Handlers ---
@@ -444,6 +464,37 @@ export default function App() {
       });
     } catch (error) {
       console.error('Failed to sync notes:', error);
+    }
+  };
+
+  // Handle reading progress update from eBook reader
+  const handleReadingProgressUpdate = async (bookId: string, currentPage: number, totalPages: number) => {
+    // Update local state
+    const updatedBooks = books.map(book => {
+      if (book.id === bookId) {
+        return {
+          ...book,
+          currentPage,
+          totalPages
+        };
+      }
+      return book;
+    });
+    
+    setBooks(updatedBooks);
+    
+    // Update in database
+    const book = books.find(b => b.id === bookId);
+    if (book) {
+      try {
+        await bookApi.updateBook({
+          ...book,
+          currentPage,
+          totalPages
+        });
+      } catch (error) {
+        console.error('Failed to update reading progress:', error);
+      }
     }
   };
 
@@ -705,6 +756,8 @@ export default function App() {
   const handleViewCollection = (collection: BookCollection) => {
     setSelectedCollection(collection);
     setView('collection');
+    setActiveTab('home');
+    setShowDashboard(false);
   };
 
   // Calculate books completed this month
@@ -824,6 +877,28 @@ export default function App() {
       toast.error(`Failed to upload: ${error.message}`);
     } finally {
       setUploadingProfilePic(false);
+    }
+  };
+
+  const handleSaveDisplayName = async () => {
+    if (!tempDisplayName.trim()) {
+      toast.error('Please enter a display name');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { display_name: tempDisplayName.trim() }
+      });
+
+      if (error) throw error;
+
+      setDisplayName(tempDisplayName.trim());
+      setEditingDisplayName(false);
+      toast.success('Display name updated!');
+    } catch (error: any) {
+      console.error('Failed to update display name:', error);
+      toast.error('Failed to update display name');
     }
   };
 
@@ -1091,7 +1166,40 @@ export default function App() {
               />
             </label>
           </div>
-          <h2 className="text-xl font-bold text-white">{session.user.email?.split('@')[0]}</h2>
+          
+          {/* Editable Display Name */}
+          {editingDisplayName ? (
+            <div className="flex items-center gap-2 mt-1">
+              <input
+                type="text"
+                value={tempDisplayName}
+                onChange={(e) => setTempDisplayName(e.target.value)}
+                className="px-3 py-1.5 rounded-lg bg-white/20 text-white placeholder-white/50 border border-white/30 focus:outline-none focus:border-white/60 text-center"
+                placeholder="Enter display name"
+                autoFocus
+              />
+              <button
+                onClick={handleSaveDisplayName}
+                className="p-1.5 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+              >
+                <Check className="h-4 w-4 text-white" />
+              </button>
+              <button
+                onClick={() => setEditingDisplayName(false)}
+                className="p-1.5 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+              >
+                <X className="h-4 w-4 text-white" />
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => { setTempDisplayName(displayName); setEditingDisplayName(true); }}
+              className="flex items-center gap-2 group"
+            >
+              <h2 className="text-xl font-bold text-white">{displayName || session.user.email?.split('@')[0]}</h2>
+              <Edit2 className="h-4 w-4 text-white/50 group-hover:text-white transition-colors" />
+            </button>
+          )}
           <p className="text-white/70 text-sm">{session.user.email}</p>
         </div>
       </div>
@@ -1796,7 +1904,7 @@ export default function App() {
           unlockedAchievements={unlockedAchievements}
           readingGoal={readingGoal}
           theme={theme}
-          username={session?.user?.user_metadata?.display_name || session?.user?.email?.split('@')[0]}
+          username={displayName || session?.user?.email?.split('@')[0]}
           onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           onNavigateToLibrary={() => { setShowDashboard(false); setView('library'); }}
           onNavigateToAnalytics={() => { setShowDashboard(false); setView('analytics'); }}
@@ -1889,6 +1997,9 @@ export default function App() {
           onSessionComplete={handleReadingSessionComplete}
           onAddNote={handleAddBookNote}
           onDeleteNote={handleDeleteBookNote}
+          onProgressUpdate={handleReadingProgressUpdate}
+          onReaderStateChange={setIsEBookReaderOpen}
+          closeReaderTrigger={closeReaderTrigger}
         />
       )}
 
