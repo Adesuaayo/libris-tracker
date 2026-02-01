@@ -18,6 +18,7 @@ import { communityApi, UserProfile, Activity, BookReview } from '../services/com
 import { UserProfileView } from './UserProfile';
 import { BookClubsList } from './BookClubs';
 import { useToastActions } from './Toast';
+import { Notifications, NotificationBell } from './Notifications';
 
 interface CommunityProps {
   currentUserId: string;
@@ -42,6 +43,7 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
   const [showClubs, setShowClubs] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedTrendingBook, setSelectedTrendingBook] = useState<TrendingBook | null>(null);
   const [bookReviews, setBookReviews] = useState<BookReview[]>([]);
@@ -166,6 +168,16 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
     if (days < 7) return `${days}d`;
     return date.toLocaleDateString();
   };
+
+  // Show notifications view
+  if (showNotifications) {
+    return (
+      <Notifications 
+        onBack={() => setShowNotifications(false)}
+        onViewProfile={handleViewProfile}
+      />
+    );
+  }
 
   // Show profile view
   if (viewingProfile) {
@@ -342,6 +354,9 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
             >
               <RefreshCw className={`w-5 h-5 text-text-secondary ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
+            
+            {/* Notifications */}
+            <NotificationBell onClick={() => setShowNotifications(true)} />
             
             {/* Profile */}
             <button

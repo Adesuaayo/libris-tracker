@@ -850,12 +850,39 @@ function DiscussionDetailView({ discussion: initialDiscussion, currentUserId, on
         setReplies(prev => [...prev, reply]);
         setReplyContent('');
         toast.success('Reply posted!');
+        // Update parent discussion's reply count
+        onDiscussionUpdated({
+          ...discussion,
+          reply_count: (discussion.reply_count || 0) + 1
+        });
       }
     } catch (error) {
       console.error('Error adding reply:', error);
       toast.error('Failed to post reply');
     } finally {
       setIsSavingReply(false);
+    }
+  };
+
+  const handleDeleteReply = async (replyId: string) => {
+    if (!confirm('Delete this reply?')) return;
+    
+    try {
+      const success = await communityApi.discussions.deleteReply(replyId);
+      if (success) {
+        setReplies(prev => prev.filter(r => r.id !== replyId));
+        toast.success('Reply deleted');
+        // Update parent discussion's reply count
+        onDiscussionUpdated({
+          ...discussion,
+          reply_count: Math.max((discussion.reply_count || 0) - 1, 0)
+        });
+      } else {
+        toast.error('Failed to delete reply');
+      }
+    } catch (error) {
+      console.error('Error deleting reply:', error);
+      toast.error('Failed to delete reply');
     }
   };
 
@@ -974,12 +1001,24 @@ function DiscussionDetailView({ discussion: initialDiscussion, currentUserId, on
                   </div>
                 )}
                 <div className="flex-1">
-                  <button 
-                    onClick={() => onViewProfile(reply.author_id)}
-                    className="font-medium text-slate-900 dark:text-white hover:text-violet-600"
-                  >
-                    {reply.author?.display_name || 'Unknown'}
-                  </button>
+                  <div className="flex items-center justify-between">
+                    <button 
+                      onClick={() => onViewProfile(reply.author_id)}
+                      className="font-medium text-slate-900 dark:text-white hover:text-violet-600"
+                    >
+                      {reply.author?.display_name || 'Unknown'}
+                    </button>
+                    {/* Delete button - only show for own replies */}
+                    {reply.author_id === currentUserId && (
+                      <button
+                        onClick={() => handleDeleteReply(reply.id)}
+                        className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        title="Delete reply"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-500">
                     {new Date(reply.created_at).toLocaleDateString()}
                   </p>

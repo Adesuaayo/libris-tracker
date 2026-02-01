@@ -7,7 +7,8 @@ import {
   MessageCircle,
   Check,
   TrendingUp,
-  RefreshCw
+  RefreshCw,
+  Heart
 } from 'lucide-react';
 import { communityApi, Activity } from '../services/community';
 
@@ -20,6 +21,8 @@ export const ActivityFeed = memo<ActivityFeedProps>(({ onViewProfile }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'following'>('all');
+  const [likedActivities, setLikedActivities] = useState<Record<string, boolean>>({});
+  const [likingActivity, setLikingActivity] = useState<string | null>(null);
 
   useEffect(() => {
     loadActivities();
@@ -30,6 +33,12 @@ export const ActivityFeed = memo<ActivityFeedProps>(({ onViewProfile }) => {
     try {
       const data = await communityApi.activities.getFeed(50);
       setActivities(data);
+      
+      // Check which activities the user has liked
+      if (data.length > 0) {
+        const likedMap = await communityApi.activities.checkIfLiked(data.map(a => a.id));
+        setLikedActivities(likedMap);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -39,6 +48,23 @@ export const ActivityFeed = memo<ActivityFeedProps>(({ onViewProfile }) => {
     setIsRefreshing(true);
     await loadActivities();
     setIsRefreshing(false);
+  };
+
+  const handleToggleLike = async (activityId: string) => {
+    if (likingActivity) return; // Prevent double-clicking
+    
+    setLikingActivity(activityId);
+    try {
+      const result = await communityApi.activities.toggleLike(activityId);
+      if (result) {
+        setLikedActivities(prev => ({ ...prev, [activityId]: result.liked }));
+        setActivities(prev => prev.map(a => 
+          a.id === activityId ? { ...a, like_count: result.newCount } : a
+        ));
+      }
+    } finally {
+      setLikingActivity(null);
+    }
   };
 
   const getActivityIcon = (type: string) => {
@@ -228,6 +254,26 @@ export const ActivityFeed = memo<ActivityFeedProps>(({ onViewProfile }) => {
                         ))}
                       </div>
                     )}
+
+                    {/* Like Button */}
+                    <div className="flex items-center gap-3 mt-2">
+                      <button
+                        onClick={() => handleToggleLike(activity.id)}
+                        disabled={likingActivity === activity.id}
+                        className={`flex items-center gap-1.5 text-sm transition-colors ${
+                          likedActivities[activity.id]
+                            ? 'text-red-500'
+                            : 'text-slate-400 hover:text-red-500'
+                        }`}
+                      >
+                        <Heart 
+                          className={`w-4 h-4 ${likedActivities[activity.id] ? 'fill-current' : ''}`} 
+                        />
+                        {(activity.like_count || 0) > 0 && (
+                          <span className="text-xs font-medium">{activity.like_count}</span>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Activity Type Badge */}

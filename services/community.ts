@@ -134,9 +134,35 @@ export interface Activity {
   review_id: string | null;
   discussion_id: string | null;
   metadata: Record<string, any> | null;
+  like_count: number;
   created_at: string;
   user?: UserProfile;
   target_user?: UserProfile;
+  is_liked?: boolean;
+}
+
+export interface ActivityLike {
+  id: string;
+  activity_id: string;
+  user_id: string;
+  created_at: string;
+  user?: UserProfile;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'book_finished' | 'activity_liked' | 'new_follower' | 'challenge_joined' | 'challenge_completed' | 'club_activity' | 'recommendation';
+  title: string;
+  body: string | null;
+  actor_id: string | null;
+  activity_id: string | null;
+  book_title: string | null;
+  book_cover_url: string | null;
+  metadata: Record<string, any> | null;
+  is_read: boolean;
+  created_at: string;
+  actor?: UserProfile;
 }
 
 export interface Recommendation {
@@ -160,6 +186,38 @@ export interface TrendingBook {
   book_cover_url: string | null;
   activity_count: number;
   unique_users: number;
+}
+
+// Challenge Types
+export interface Challenge {
+  id: string;
+  title: string;
+  description: string | null;
+  challenge_type: 'books_count' | 'pages_count' | 'genre' | 'author' | 'custom';
+  target_value: number;
+  target_genre?: string | null;
+  target_author?: string | null;
+  start_date: string;
+  end_date: string;
+  creator_id: string;
+  is_public: boolean;
+  cover_image_url?: string | null;
+  participant_count?: number;
+  created_at: string;
+  creator?: UserProfile;
+  is_joined?: boolean;
+  my_progress?: ChallengeProgress | null;
+}
+
+export interface ChallengeProgress {
+  id: string;
+  challenge_id: string;
+  user_id: string;
+  current_value: number;
+  completed: boolean;
+  completed_at?: string | null;
+  joined_at: string;
+  user?: UserProfile;
 }
 
 // =============================================
@@ -1116,6 +1174,35 @@ export const discussionsApi = {
     }
   },
 
+  async deleteReply(replyId: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    // First check if user owns this reply
+    const { data: reply } = await supabase
+      .from('discussion_replies')
+      .select('author_id')
+      .eq('id', replyId)
+      .single();
+
+    if (!reply || reply.author_id !== user.id) {
+      console.error('Not authorized to delete this reply');
+      return false;
+    }
+
+    const { error } = await supabase
+      .from('discussion_replies')
+      .delete()
+      .eq('id', replyId);
+
+    if (error) {
+      console.error('Error deleting reply:', error);
+      return false;
+    }
+
+    return true;
+  },
+
   // Alias for getDiscussionsForClub
   async getByClub(clubId: string, limit = 20): Promise<Discussion[]> {
     return this.getDiscussionsForClub(clubId, limit);
@@ -1203,6 +1290,206 @@ export const activitiesApi = {
     }
 
     return data || [];
+  },
+
+  async likeActivity(activityId: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from('activity_likes')
+      .insert({ activity_id: activityId, user_id: user.id });
+
+    if (error) {
+      console.error('Error liking activity:', error);
+      return false;
+    }
+
+    return true;
+  },
+
+  async unlikeActivity(activityId: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from('activity_likes')
+      .delete()
+      .eq('activity_id', activityId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error unliking activity:', error);
+      return false;
+    }
+
+    return true;
+  },
+
+  async toggleLike(activityId: string): Promise<{ liked: boolean; newCount: number } | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    // Check if already liked
+    const { data: existingLike } = await supabase
+      .from('activity_likes')
+      .select('id')
+      .eq('activity_id', activityId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (existingLike) {
+      // Unlike
+      await this.unlikeActivity(activityId);
+      const { data: activity } = await supabase
+        .from('activities')
+        .select('like_count')
+        .eq('id', activityId)
+        .single();
+      return { liked: false, newCount: activity?.like_count || 0 };
+    } else {
+      // Like
+      await this.likeActivity(activityId);
+      const { data: activity } = await supabase
+        .from('activities')
+        .select('like_count')
+        .eq('id', activityId)
+        .single();
+      return { liked: true, newCount: activity?.like_count || 0 };
+    }
+  },
+
+  async getActivityLikes(activityId: string): Promise<ActivityLike[]> {
+    const { data, error } = await supabase
+      .from('activity_likes')
+      .select('*, profiles(*)')
+      .eq('activity_id', activityId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching activity likes:', error);
+      return [];
+    }
+
+    return data?.map(l => ({ ...l, user: l.profiles })) || [];
+  },
+
+  async checkIfLiked(activityIds: string[]): Promise<Record<string, boolean>> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return {};
+
+    const { data, error } = await supabase
+      .from('activity_likes')
+      .select('activity_id')
+      .eq('user_id', user.id)
+      .in('activity_id', activityIds);
+
+    if (error) {
+      console.error('Error checking likes:', error);
+      return {};
+    }
+
+    const likedMap: Record<string, boolean> = {};
+    activityIds.forEach(id => likedMap[id] = false);
+    data?.forEach(like => likedMap[like.activity_id] = true);
+    return likedMap;
+  }
+};
+
+// =============================================
+// NOTIFICATIONS API
+// =============================================
+
+export const notificationsApi = {
+  async getNotifications(limit = 50): Promise<Notification[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*, actor:profiles!notifications_actor_id_fkey(*)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching notifications:', error);
+      return [];
+    }
+
+    return data || [];
+  },
+
+  async getUnreadCount(): Promise<number> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return 0;
+
+    const { count, error } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false);
+
+    if (error) {
+      console.error('Error fetching unread count:', error);
+      return 0;
+    }
+
+    return count || 0;
+  },
+
+  async markAsRead(notificationId: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error marking notification as read:', error);
+      return false;
+    }
+
+    return true;
+  },
+
+  async markAllAsRead(): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false);
+
+    if (error) {
+      console.error('Error marking all as read:', error);
+      return false;
+    }
+
+    return true;
+  },
+
+  async deleteNotification(notificationId: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error deleting notification:', error);
+      return false;
+    }
+
+    return true;
   }
 };
 
@@ -1345,6 +1632,283 @@ export const discoveryApi = {
 };
 
 // =============================================
+// CHALLENGES API
+// =============================================
+
+export const challengesApi = {
+  async getChallenges(filter: 'all' | 'joined' | 'created' = 'all'): Promise<Challenge[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    let query = supabase
+      .from('challenges')
+      .select(`
+        *,
+        creator:profiles!challenges_creator_id_fkey(id, username, display_name, avatar_url)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (filter === 'created' && user) {
+      query = query.eq('creator_id', user.id);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching challenges:', error);
+      return [];
+    }
+
+    if (!data) return [];
+
+    // Get participation info for each challenge
+    const challengesWithProgress = await Promise.all(
+      data.map(async (challenge) => {
+        // Get participant count
+        const { count } = await supabase
+          .from('challenge_progress')
+          .select('*', { count: 'exact', head: true })
+          .eq('challenge_id', challenge.id);
+
+        // Check if user joined and get their progress
+        let isJoined = false;
+        let myProgress = null;
+        if (user) {
+          const { data: progressData } = await supabase
+            .from('challenge_progress')
+            .select('*')
+            .eq('challenge_id', challenge.id)
+            .eq('user_id', user.id)
+            .single();
+          
+          isJoined = !!progressData;
+          myProgress = progressData;
+        }
+
+        return {
+          ...challenge,
+          participant_count: count || 0,
+          is_joined: isJoined,
+          my_progress: myProgress
+        };
+      })
+    );
+
+    // Filter by joined if requested
+    if (filter === 'joined') {
+      return challengesWithProgress.filter(c => c.is_joined);
+    }
+
+    return challengesWithProgress;
+  },
+
+  async getChallenge(challengeId: string): Promise<Challenge | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const { data, error } = await supabase
+      .from('challenges')
+      .select(`
+        *,
+        creator:profiles!challenges_creator_id_fkey(id, username, display_name, avatar_url)
+      `)
+      .eq('id', challengeId)
+      .single();
+
+    if (error || !data) {
+      console.error('Error fetching challenge:', error);
+      return null;
+    }
+
+    // Get participant count
+    const { count } = await supabase
+      .from('challenge_progress')
+      .select('*', { count: 'exact', head: true })
+      .eq('challenge_id', challengeId);
+
+    // Check if user joined and get their progress
+    let isJoined = false;
+    let myProgress = null;
+    if (user) {
+      const { data: progressData } = await supabase
+        .from('challenge_progress')
+        .select('*')
+        .eq('challenge_id', challengeId)
+        .eq('user_id', user.id)
+        .single();
+      
+      isJoined = !!progressData;
+      myProgress = progressData;
+    }
+
+    return {
+      ...data,
+      participant_count: count || 0,
+      is_joined: isJoined,
+      my_progress: myProgress
+    };
+  },
+
+  async createChallenge(challenge: {
+    title: string;
+    description?: string;
+    challenge_type: Challenge['challenge_type'];
+    target_value: number;
+    target_genre?: string;
+    target_author?: string;
+    start_date: string;
+    end_date: string;
+    is_public?: boolean;
+    cover_image_url?: string;
+  }): Promise<Challenge | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('challenges')
+      .insert({
+        ...challenge,
+        creator_id: user.id,
+        is_public: challenge.is_public ?? true
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating challenge:', error);
+      return null;
+    }
+
+    // Auto-join the creator
+    await this.joinChallenge(data.id);
+
+    return data;
+  },
+
+  async joinChallenge(challengeId: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from('challenge_progress')
+      .insert({
+        challenge_id: challengeId,
+        user_id: user.id,
+        current_value: 0,
+        completed: false
+      });
+
+    if (error) {
+      console.error('Error joining challenge:', error);
+      return false;
+    }
+
+    return true;
+  },
+
+  async leaveChallenge(challengeId: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from('challenge_progress')
+      .delete()
+      .eq('challenge_id', challengeId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error leaving challenge:', error);
+      return false;
+    }
+
+    return true;
+  },
+
+  async updateProgress(challengeId: string, newValue: number): Promise<ChallengeProgress | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    // Get the challenge to check target
+    const challenge = await this.getChallenge(challengeId);
+    if (!challenge) return null;
+
+    const completed = newValue >= challenge.target_value;
+
+    const { data, error } = await supabase
+      .from('challenge_progress')
+      .update({
+        current_value: newValue,
+        completed,
+        completed_at: completed ? new Date().toISOString() : null
+      })
+      .eq('challenge_id', challengeId)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating progress:', error);
+      return null;
+    }
+
+    return data;
+  },
+
+  async getLeaderboard(challengeId: string): Promise<ChallengeProgress[]> {
+    const { data, error } = await supabase
+      .from('challenge_progress')
+      .select(`
+        *,
+        user:profiles!challenge_progress_user_id_fkey(id, username, display_name, avatar_url)
+      `)
+      .eq('challenge_id', challengeId)
+      .order('current_value', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error('Error fetching leaderboard:', error);
+      return [];
+    }
+
+    return data || [];
+  },
+
+  async deleteChallenge(challengeId: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    // Verify ownership
+    const { data: challenge } = await supabase
+      .from('challenges')
+      .select('creator_id')
+      .eq('id', challengeId)
+      .single();
+
+    if (!challenge || challenge.creator_id !== user.id) {
+      console.error('Not authorized to delete this challenge');
+      return false;
+    }
+
+    // Delete progress first
+    await supabase
+      .from('challenge_progress')
+      .delete()
+      .eq('challenge_id', challengeId);
+
+    // Delete challenge
+    const { error } = await supabase
+      .from('challenges')
+      .delete()
+      .eq('id', challengeId);
+
+    if (error) {
+      console.error('Error deleting challenge:', error);
+      return false;
+    }
+
+    return true;
+  }
+};
+
+// =============================================
 // EXPORT ALL
 // =============================================
 
@@ -1356,5 +1920,7 @@ export const communityApi = {
   discussions: discussionsApi,
   activities: activitiesApi,
   recommendations: recommendationsApi,
-  discovery: discoveryApi
+  discovery: discoveryApi,
+  challenges: challengesApi,
+  notifications: notificationsApi
 };

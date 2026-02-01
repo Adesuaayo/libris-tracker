@@ -13,6 +13,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { Book, ReadingStatus, ReadingStreak, Achievement } from '../types';
+import { PullToRefresh } from './PullToRefresh';
 
 interface HomeDashboardProps {
   books: Book[];
@@ -20,12 +21,14 @@ interface HomeDashboardProps {
   unlockedAchievements: Achievement[];
   readingGoal: number;
   theme: 'light' | 'dark' | 'system';
+  username?: string;
   onToggleTheme: () => void;
   onNavigateToLibrary: () => void;
   onNavigateToAnalytics: () => void;
   onNavigateToGoals: () => void;
   onAddBook: () => void;
   onSelectBook: (book: Book) => void;
+  onRefresh?: () => Promise<void>;
 }
 
 export const HomeDashboard = memo<HomeDashboardProps>(({
@@ -34,12 +37,14 @@ export const HomeDashboard = memo<HomeDashboardProps>(({
   unlockedAchievements,
   readingGoal,
   theme,
+  username,
   onToggleTheme,
   onNavigateToLibrary,
   onNavigateToAnalytics,
   onNavigateToGoals,
   onAddBook,
-  onSelectBook
+  onSelectBook,
+  onRefresh
 }) => {
   // Get currently reading books
   const currentlyReading = books.filter(b => b.status === ReadingStatus.IN_PROGRESS);
@@ -86,36 +91,50 @@ export const HomeDashboard = memo<HomeDashboardProps>(({
 
   const goalProgress = Math.min((booksThisYear / readingGoal) * 100, 100);
 
-  return (
-    <div className="min-h-screen bg-surface-base pb-24">
-      <div className="max-w-2xl mx-auto p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
-        
-        {/* Header */}
-        <header className="mb-6">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-gradient-to-br from-accent to-accent-dark rounded-xl flex items-center justify-center shadow-lg" style={{ boxShadow: '0 8px 24px rgba(124, 92, 252, 0.35)' }}>
-                <BookOpen className="text-white h-5 w-5" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-text-primary">Libris</h1>
-                <p className="text-xs text-text-muted">Track your reading journey</p>
-              </div>
+  const handleRefresh = async () => {
+    if (onRefresh) {
+      await onRefresh();
+    }
+  };
+
+  const content = (
+    <div className="max-w-2xl mx-auto p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
+      
+      {/* Header */}
+      <header className="mb-6">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 bg-gradient-to-br from-accent to-accent-dark rounded-xl flex items-center justify-center shadow-lg" style={{ boxShadow: '0 8px 24px rgba(124, 92, 252, 0.35)' }}>
+              <BookOpen className="text-white h-5 w-5" />
             </div>
-            <button 
-              onClick={onToggleTheme}
-              className="p-2.5 rounded-xl bg-surface-card border border-surface-border hover:bg-surface-elevated transition-colors"
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-5 h-5 text-accent" />
+            <div>
+              {username ? (
+                <>
+                  <p className="text-sm text-text-muted">Welcome back,</p>
+                  <h1 className="text-xl font-bold text-text-primary">{username}</h1>
+                </>
               ) : (
-                <Moon className="w-5 h-5 text-text-secondary" />
+                <>
+                  <h1 className="text-xl font-bold text-text-primary">Libris</h1>
+                  <p className="text-xs text-text-muted">Track your reading journey</p>
+                </>
               )}
-            </button>
+            </div>
           </div>
+          <button 
+            onClick={onToggleTheme}
+            className="p-2.5 rounded-xl bg-surface-card border border-surface-border hover:bg-surface-elevated transition-colors"
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-5 h-5 text-accent" />
+            ) : (
+              <Moon className="w-5 h-5 text-text-secondary" />
+            )}
+          </button>
+        </div>
           
-          {/* Streak Banner - Premium Glass Effect */}
-          <div 
+        {/* Streak Banner - Premium Glass Effect */}
+        <div 
             className="relative rounded-2xl p-4 overflow-hidden"
             style={{ 
               background: 'linear-gradient(135deg, rgba(124, 92, 252, 0.15) 0%, rgba(155, 138, 251, 0.08) 100%)',
@@ -232,12 +251,12 @@ export const HomeDashboard = memo<HomeDashboardProps>(({
           <div className="grid grid-cols-4 gap-2.5">
             <button
               onClick={onAddBook}
-              className="flex flex-col items-center gap-2 p-3 bg-surface-card border border-surface-border rounded-xl hover:border-accent/30 hover:bg-surface-elevated transition-all group"
+              className="flex flex-col items-center gap-2 p-3 bg-gradient-to-br from-accent/20 to-accent/10 border border-accent/30 rounded-xl hover:border-accent/50 hover:from-accent/30 hover:to-accent/20 transition-all group"
             >
-              <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center group-hover:bg-accent/20 transition-colors">
-                <Plus className="w-5 h-5 text-accent" />
+              <div className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center shadow-lg" style={{ boxShadow: '0 4px 12px rgba(124, 92, 252, 0.3)' }}>
+                <BookOpen className="w-5 h-5 text-white" />
               </div>
-              <span className="text-[11px] font-medium text-text-secondary">Add Book</span>
+              <span className="text-[11px] font-semibold text-accent">Add Book</span>
             </button>
             <button
               onClick={onNavigateToLibrary}
@@ -397,7 +416,12 @@ export const HomeDashboard = memo<HomeDashboardProps>(({
           </div>
         </section>
       </div>
-    </div>
+  );
+
+  return (
+    <PullToRefresh onRefresh={handleRefresh} className="min-h-screen bg-surface-base pb-24">
+      {content}
+    </PullToRefresh>
   );
 });
 

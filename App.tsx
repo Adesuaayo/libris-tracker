@@ -13,6 +13,7 @@ import { ReadingInsights } from './components/ReadingInsights';
 import { BookCollections } from './components/BookCollections';
 import { CollectionView } from './components/CollectionView';
 import { Community } from './components/Community';
+import { Challenges } from './components/Challenges';
 import { HomeDashboard } from './components/HomeDashboard';
 
 // Lazy load heavy components for better initial load time
@@ -32,7 +33,7 @@ import { useToastActions } from './components/Toast';
 const APP_VERSION = '1.0.0';
 
 type SortOption = 'dateAdded' | 'rating' | 'title' | 'dateFinished';
-type TabView = 'home' | 'profile' | 'community' | 'privacy' | 'terms';
+type TabView = 'home' | 'profile' | 'community' | 'challenges' | 'privacy' | 'terms';
 
 export default function App() {
   // Auth State
@@ -247,7 +248,7 @@ export default function App() {
         CapApp.addListener('backButton', () => {
             // Priority: Close modals first, then navigate views
             if (selectedBook) {
-                // Close BookDetailModal
+                // Close BookDetailModal - this handles reader as well
                 setSelectedBook(null);
             } else if (showOnboarding) {
                 // Close onboarding modal
@@ -261,10 +262,15 @@ export default function App() {
                 setSelectedCollection(null);
                 setActiveTab('profile');
             } else if (view !== 'library') {
+                // Go back to library view within home tab
                 setView('library');
                 setEditingBook(null);
+            } else if (!showDashboard && activeTab === 'home') {
+                // If we're in library view under home, go back to dashboard
+                setShowDashboard(true);
             } else if (activeTab !== 'home') {
                 setActiveTab('home');
+                setShowDashboard(true);
             } else {
                 CapApp.exitApp();
             }
@@ -275,7 +281,7 @@ export default function App() {
     return () => {
         CapApp.removeAllListeners();
     };
-  }, [view, activeTab, selectedBook, showOnboarding, aiResponse]);
+  }, [view, activeTab, selectedBook, showOnboarding, aiResponse, showDashboard]);
 
 
   // --- Handlers ---
@@ -910,6 +916,7 @@ export default function App() {
     setAiMode(mode);
     setAiResponse(null);
     setActiveTab('home'); // Switch to home tab to show results
+    setShowDashboard(false); // Make sure to show the library view where AI response is displayed
     setView('library');
     
     try {
@@ -1042,8 +1049,8 @@ export default function App() {
 
   if (loadingInitial) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-brand-600 animate-spin" />
+      <div className="min-h-screen bg-surface-base flex items-center justify-center">
+        <Loader2 className="h-8 w-8 text-accent animate-spin" />
       </div>
     );
   }
@@ -1054,9 +1061,9 @@ export default function App() {
 
   // Profile Screen Component
   const ProfileScreen = () => (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
+    <div className="min-h-screen bg-surface-base pb-20">
       {/* Profile Header */}
-      <div className="bg-brand-600 dark:bg-brand-700 pt-[env(safe-area-inset-top)] pb-8 px-4">
+      <div className="bg-gradient-to-br from-accent to-accent-dark pt-[env(safe-area-inset-top)] pb-8 px-4">
         <h1 className="text-xl font-bold text-white text-center mb-6 pt-4">Profile</h1>
         <div className="flex flex-col items-center">
           <div className="relative mb-3">
@@ -1074,7 +1081,7 @@ export default function App() {
                 </div>
               )}
             </div>
-            <label className="absolute bottom-0 right-0 w-8 h-8 bg-brand-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg cursor-pointer hover:bg-brand-400 transition-colors">
+            <label className="absolute bottom-0 right-0 w-8 h-8 bg-accent rounded-full flex items-center justify-center border-2 border-white shadow-lg cursor-pointer hover:bg-accent-light transition-colors">
               <Camera className="h-4 w-4 text-white" />
               <input
                 type="file"
@@ -1085,28 +1092,28 @@ export default function App() {
             </label>
           </div>
           <h2 className="text-xl font-bold text-white">{session.user.email?.split('@')[0]}</h2>
-          <p className="text-brand-200 text-sm">{session.user.email}</p>
+          <p className="text-white/70 text-sm">{session.user.email}</p>
         </div>
       </div>
 
       {/* Profile Content */}
       <div className="px-4 -mt-4">
         {/* Stats Card */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-4 mb-6">
+        <div className="bg-surface-card rounded-xl shadow-lg border border-surface-border p-4 mb-6">
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{books.length}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Total Books</p>
+              <p className="text-2xl font-bold text-text-primary">{books.length}</p>
+              <p className="text-xs text-text-muted">Total Books</p>
             </div>
-            <div className="w-px h-10 bg-slate-200 dark:bg-slate-700"></div>
+            <div className="w-px h-10 bg-surface-border"></div>
             <div className="text-center flex-1">
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{booksReadThisYear}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Read This Year</p>
+              <p className="text-2xl font-bold text-text-primary">{booksReadThisYear}</p>
+              <p className="text-xs text-text-muted">Read This Year</p>
             </div>
-            <div className="w-px h-10 bg-slate-200 dark:bg-slate-700"></div>
+            <div className="w-px h-10 bg-surface-border"></div>
             <div className="text-center flex-1">
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{readingStreak.currentStreak}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Day Streak</p>
+              <p className="text-2xl font-bold text-text-primary">{readingStreak.currentStreak}</p>
+              <p className="text-xs text-text-muted">Day Streak</p>
             </div>
           </div>
         </div>
@@ -1178,18 +1185,18 @@ export default function App() {
         </div>
 
         {/* Settings Section */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-4 overflow-hidden">
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 pt-4 pb-2">Appearance</p>
+        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border mb-4 overflow-hidden">
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider px-4 pt-4 pb-2">Appearance</p>
           <div className="px-4 pb-4">
-            <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+            <div className="flex items-center justify-between bg-surface-base p-1 rounded-lg">
               {(['light', 'system', 'dark'] as Theme[]).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTheme(t)}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md transition-colors ${
                     theme === t 
-                      ? 'bg-white dark:bg-slate-600 shadow-sm text-brand-600 dark:text-white font-medium' 
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                      ? 'bg-surface-card shadow-sm text-accent font-medium' 
+                      : 'text-text-muted hover:text-text-secondary'
                   }`}
                 >
                   {t === 'light' && <Sun className="h-4 w-4" />}
@@ -1203,17 +1210,17 @@ export default function App() {
         </div>
 
         {/* Data Section */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-4 overflow-hidden">
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 pt-4 pb-2">Data</p>
+        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border mb-4 overflow-hidden">
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider px-4 pt-4 pb-2">Data</p>
           <button 
             onClick={handleExport}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
           >
             <div className="flex items-center gap-3">
-              <Download className="h-5 w-5 text-slate-500 dark:text-slate-400" />
-              <span className="text-slate-900 dark:text-white">Export Library</span>
+              <Download className="h-5 w-5 text-text-muted" />
+              <span className="text-text-primary">Export Library</span>
             </div>
-            <ChevronRight className="h-5 w-5 text-slate-400" />
+            <ChevronRight className="h-5 w-5 text-text-muted" />
           </button>
         </div>
 
@@ -1223,90 +1230,90 @@ export default function App() {
         </div>
 
         {/* Reading Preferences Section */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-4 overflow-hidden">
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 pt-4 pb-2">Personalization</p>
+        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border mb-4 overflow-hidden">
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider px-4 pt-4 pb-2">Personalization</p>
           <button 
             onClick={() => setShowOnboarding(true)}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
           >
             <div className="flex items-center gap-3">
-              <BrainCircuit className="h-5 w-5 text-purple-500" />
+              <BrainCircuit className="h-5 w-5 text-accent" />
               <div className="text-left">
-                <span className="text-slate-900 dark:text-white block">Update Reading Preferences</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">
+                <span className="text-text-primary block">Update Reading Preferences</span>
+                <span className="text-xs text-text-muted">
                   {readingPreferences.hasCompletedOnboarding 
                     ? `${readingPreferences.favoriteGenres.length} genres selected` 
                     : 'Set up for better AI recommendations'}
                 </span>
               </div>
             </div>
-            <ChevronRight className="h-5 w-5 text-slate-400" />
+            <ChevronRight className="h-5 w-5 text-text-muted" />
           </button>
         </div>
 
         {/* Feedback Section */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-4 overflow-hidden">
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 pt-4 pb-2">Feedback</p>
+        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border mb-4 overflow-hidden">
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider px-4 pt-4 pb-2">Feedback</p>
           <button 
             onClick={handleRateApp}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
           >
             <div className="flex items-center gap-3">
               <Star className="h-5 w-5 text-amber-500" />
-              <span className="text-slate-900 dark:text-white">Rate App</span>
+              <span className="text-text-primary">Rate App</span>
             </div>
-            <ChevronRight className="h-5 w-5 text-slate-400" />
+            <ChevronRight className="h-5 w-5 text-text-muted" />
           </button>
-          <div className="mx-4 border-t border-slate-100 dark:border-slate-700"></div>
+          <div className="mx-4 border-t border-surface-border"></div>
           <button 
             onClick={() => openExternalLink('mailto:support@libris.app?subject=Feedback')}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
           >
             <div className="flex items-center gap-3">
-              <MessageSquare className="h-5 w-5 text-slate-500 dark:text-slate-400" />
-              <span className="text-slate-900 dark:text-white">Send Feedback</span>
+              <MessageSquare className="h-5 w-5 text-text-muted" />
+              <span className="text-text-primary">Send Feedback</span>
             </div>
-            <ChevronRight className="h-5 w-5 text-slate-400" />
+            <ChevronRight className="h-5 w-5 text-text-muted" />
           </button>
         </div>
 
         {/* Legal Section */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-4 overflow-hidden">
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-4 pt-4 pb-2">Legal</p>
+        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border mb-4 overflow-hidden">
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider px-4 pt-4 pb-2">Legal</p>
           <button 
             onClick={() => setActiveTab('privacy')}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
           >
             <div className="flex items-center gap-3">
-              <Shield className="h-5 w-5 text-slate-500 dark:text-slate-400" />
-              <span className="text-slate-900 dark:text-white">Privacy Policy</span>
+              <Shield className="h-5 w-5 text-text-muted" />
+              <span className="text-text-primary">Privacy Policy</span>
             </div>
-            <ChevronRight className="h-5 w-5 text-slate-400" />
+            <ChevronRight className="h-5 w-5 text-text-muted" />
           </button>
-          <div className="mx-4 border-t border-slate-100 dark:border-slate-700"></div>
+          <div className="mx-4 border-t border-surface-border"></div>
           <button 
             onClick={() => setActiveTab('terms')}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
           >
             <div className="flex items-center gap-3">
-              <FileText className="h-5 w-5 text-slate-500 dark:text-slate-400" />
-              <span className="text-slate-900 dark:text-white">Terms of Service</span>
+              <FileText className="h-5 w-5 text-text-muted" />
+              <span className="text-text-primary">Terms of Service</span>
             </div>
-            <ChevronRight className="h-5 w-5 text-slate-400" />
+            <ChevronRight className="h-5 w-5 text-text-muted" />
           </button>
         </div>
 
         {/* Sign Out */}
         <button 
           onClick={handleSignOut}
-          className="w-full bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors mb-4"
+          className="w-full bg-surface-card rounded-xl shadow-sm border border-surface-border px-4 py-3 flex items-center justify-center gap-2 text-red-500 hover:bg-red-500/10 transition-colors mb-4"
         >
           <LogOut className="h-5 w-5" />
           <span className="font-medium">Sign Out</span>
         </button>
 
         {/* Version */}
-        <div className="text-center text-sm text-slate-400 dark:text-slate-500 py-4">
+        <div className="text-center text-sm text-text-muted py-4">
           <p>Libris v{APP_VERSION}</p>
           <p className="text-xs mt-1">Made with ❤️ for book lovers</p>
         </div>
@@ -1316,9 +1323,9 @@ export default function App() {
 
   // Privacy Policy Screen
   const PrivacyPolicyScreen = () => (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
+    <div className="min-h-screen bg-surface-base pb-20">
       {/* Header */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+      <div className="bg-surface-card border-b border-surface-border pt-[env(safe-area-inset-top)] sticky top-0 z-10">
         <div className="flex items-center gap-3 px-4 py-4">
           <button 
             onClick={() => setActiveTab('profile')}
@@ -1780,7 +1787,7 @@ export default function App() {
   );
 
   return (
-    <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="relative min-h-screen bg-surface-base">
       {/* Screen Content */}
       {activeTab === 'home' && showDashboard && (
         <HomeDashboard
@@ -1789,22 +1796,25 @@ export default function App() {
           unlockedAchievements={unlockedAchievements}
           readingGoal={readingGoal}
           theme={theme}
+          username={session?.user?.user_metadata?.display_name || session?.user?.email?.split('@')[0]}
           onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           onNavigateToLibrary={() => { setShowDashboard(false); setView('library'); }}
           onNavigateToAnalytics={() => { setShowDashboard(false); setView('analytics'); }}
           onNavigateToGoals={() => { setShowDashboard(false); setView('goals'); }}
           onAddBook={() => { setShowDashboard(false); setView('add'); }}
           onSelectBook={(book) => setSelectedBook(book)}
+          onRefresh={async () => { await loadBooks(); }}
         />
       )}
       {activeTab === 'home' && !showDashboard && <HomeScreen />}
       {activeTab === 'profile' && <ProfileScreen />}
       {activeTab === 'community' && session?.user && <Community currentUserId={session.user.id} />}
+      {activeTab === 'challenges' && session?.user && <Challenges currentUserId={session.user.id} />}
       {activeTab === 'privacy' && <PrivacyPolicyScreen />}
       {activeTab === 'terms' && <TermsOfServiceScreen />}
 
       {/* Bottom Navigation - Hide on legal pages */}
-      {(activeTab === 'home' || activeTab === 'profile' || activeTab === 'community') && (
+      {(activeTab === 'home' || activeTab === 'profile' || activeTab === 'community' || activeTab === 'challenges') && (
         <nav className="fixed bottom-0 left-0 right-0 bg-surface-card border-t border-surface-border pb-[env(safe-area-inset-bottom)] z-50">
           <div className="flex items-center justify-around h-16">
             <button
@@ -1820,14 +1830,6 @@ export default function App() {
             </button>
             
             <button
-              onClick={() => { setView('add'); setShowDashboard(false); setEditingBook(null); setActiveTab('home'); }}
-              className="flex items-center justify-center w-14 h-14 -mt-5 bg-gradient-to-br from-accent to-accent-dark rounded-full text-white shadow-lg hover:opacity-90 transition-opacity"
-              style={{ boxShadow: '0 8px 24px rgba(124, 92, 252, 0.4)' }}
-            >
-              <Plus className="h-7 w-7" />
-            </button>
-
-            <button
               onClick={() => setActiveTab('community')}
               className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                 activeTab === 'community' 
@@ -1837,6 +1839,26 @@ export default function App() {
             >
               <Globe className="h-5 w-5" />
               <span className="text-xs mt-1 font-medium">Community</span>
+            </button>
+            
+            <button
+              onClick={() => { setView('add'); setShowDashboard(false); setEditingBook(null); setActiveTab('home'); }}
+              className="flex items-center justify-center w-14 h-14 -mt-5 bg-gradient-to-br from-accent to-accent-dark rounded-full text-white shadow-lg hover:opacity-90 transition-opacity"
+              style={{ boxShadow: '0 8px 24px rgba(124, 92, 252, 0.4)' }}
+            >
+              <Plus className="h-7 w-7" />
+            </button>
+
+            <button
+              onClick={() => setActiveTab('challenges')}
+              className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
+                activeTab === 'challenges' 
+                  ? 'text-accent' 
+                  : 'text-text-muted'
+              }`}
+            >
+              <Trophy className="h-5 w-5" />
+              <span className="text-xs mt-1 font-medium">Challenges</span>
             </button>
             
             <button
