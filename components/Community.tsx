@@ -8,6 +8,7 @@ import {
   Globe,
   Star,
   ChevronRight,
+  ChevronLeft,
   Clock,
   Check,
   RefreshCw,
@@ -42,6 +43,9 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
   const [showClubs, setShowClubs] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [selectedTrendingBook, setSelectedTrendingBook] = useState<TrendingBook | null>(null);
+  const [bookReviews, setBookReviews] = useState<BookReview[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
   
   // Data states
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -101,6 +105,20 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
     setIsRefreshing(true);
     await loadAllData();
     setIsRefreshing(false);
+  };
+
+  const handleViewTrendingBookReviews = async (book: TrendingBook) => {
+    setSelectedTrendingBook(book);
+    setLoadingReviews(true);
+    try {
+      const reviews = await communityApi.reviews.getReviewsByBookTitle(book.title, 20);
+      setBookReviews(reviews);
+    } catch (error) {
+      console.error('Error loading reviews:', error);
+      setBookReviews([]);
+    } finally {
+      setLoadingReviews(false);
+    }
   };
 
   const handleViewProfile = async (userId: string) => {
@@ -164,23 +182,142 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
   // Show book clubs full view
   if (showClubs) {
     return (
-      <div className="min-h-screen bg-surface-base">
+      <div className="min-h-screen bg-surface-base pb-24">
         <div className="bg-surface-card border-b border-surface-border sticky top-0 z-10">
           <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
             <button
               onClick={() => setShowClubs(false)}
               className="p-2 -ml-2 hover:bg-surface-elevated rounded-lg transition-colors"
             >
-              <ChevronRight className="w-5 h-5 text-text-secondary rotate-180" />
+              <ChevronLeft className="w-5 h-5 text-text-secondary" />
             </button>
             <h1 className="text-lg font-bold text-text-primary">Book Clubs</h1>
           </div>
         </div>
-        <div className="max-w-2xl mx-auto px-4 py-4">
+        <div className="max-w-2xl mx-auto px-4 py-4 pb-8">
           <BookClubsList 
             currentUserId={currentUserId}
             onViewProfile={handleViewProfile}
           />
+        </div>
+      </div>
+    );
+  }
+
+  // Show trending book reviews
+  if (selectedTrendingBook) {
+    return (
+      <div className="min-h-screen bg-surface-base pb-24">
+        <div className="bg-surface-card border-b border-surface-border sticky top-0 z-10">
+          <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
+            <button
+              onClick={() => {
+                setSelectedTrendingBook(null);
+                setBookReviews([]);
+              }}
+              className="p-2 -ml-2 hover:bg-surface-elevated rounded-lg transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 text-text-secondary" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-bold text-text-primary truncate">{selectedTrendingBook.title}</h1>
+              <p className="text-xs text-text-muted">{selectedTrendingBook.review_count} reviews</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="max-w-2xl mx-auto px-4 py-4 pb-8">
+          {/* Book Info Card */}
+          <div className="bg-surface-card border border-surface-border rounded-xl p-4 mb-4 flex gap-4">
+            {selectedTrendingBook.cover_url ? (
+              <img 
+                src={selectedTrendingBook.cover_url} 
+                alt={selectedTrendingBook.title}
+                className="w-20 h-28 object-cover rounded-lg shadow"
+              />
+            ) : (
+              <div className="w-20 h-28 bg-surface-elevated rounded-lg flex items-center justify-center border border-surface-border">
+                <BookOpen className="w-8 h-8 text-text-muted" />
+              </div>
+            )}
+            <div className="flex-1">
+              <h2 className="text-base font-semibold text-text-primary">{selectedTrendingBook.title}</h2>
+              {selectedTrendingBook.author && (
+                <p className="text-sm text-text-muted">by {selectedTrendingBook.author}</p>
+              )}
+              <div className="mt-2 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-accent" />
+                <span className="text-sm text-accent font-medium">Trending Now</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Reviews */}
+          <h3 className="text-base font-semibold text-text-primary mb-3 flex items-center gap-2">
+            <Star className="w-4 h-4 text-amber-400" />
+            Community Reviews
+          </h3>
+          
+          {loadingReviews ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin w-8 h-8 border-4 border-accent border-t-transparent rounded-full" />
+            </div>
+          ) : bookReviews.length > 0 ? (
+            <div className="space-y-3">
+              {bookReviews.map((review) => (
+                <div 
+                  key={review.id} 
+                  className="bg-surface-card border border-surface-border rounded-xl p-4"
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <button
+                      onClick={() => review.user_id && handleViewProfile(review.user_id)}
+                      className="flex-shrink-0"
+                    >
+                      {review.user?.avatar_url ? (
+                        <img 
+                          src={review.user.avatar_url} 
+                          alt="" 
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white text-sm font-medium">
+                          {review.user?.display_name?.[0] || '?'}
+                        </div>
+                      )}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-text-primary">
+                        {review.user?.display_name || 'Anonymous'}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star 
+                              key={i} 
+                              className={`w-3.5 h-3.5 ${i < review.rating ? 'text-amber-400 fill-current' : 'text-text-muted'}`} 
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs text-text-muted">
+                          {formatTime(review.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-text-secondary leading-relaxed">
+                    {review.content}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-surface-card border border-surface-border rounded-xl p-8 text-center">
+              <Star className="w-12 h-12 mx-auto text-text-muted mb-3" />
+              <p className="text-sm text-text-muted">No reviews yet for this book</p>
+              <p className="text-xs text-text-muted mt-1">Be the first to review!</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -336,19 +473,20 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
               {trendingBooks.length > 0 ? (
                 <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
                   {trendingBooks.map((book, index) => (
-                    <div
+                    <button
                       key={book.title}
-                      className="flex-shrink-0 w-28 text-center"
+                      onClick={() => handleViewTrendingBookReviews(book)}
+                      className="flex-shrink-0 w-28 text-center group"
                     >
                       <div className="relative">
                         {book.cover_url ? (
                           <img 
                             src={book.cover_url} 
                             alt={book.title}
-                            className="w-28 h-40 object-cover rounded-xl shadow-lg"
+                            className="w-28 h-40 object-cover rounded-xl shadow-lg group-hover:scale-105 transition-transform"
                           />
                         ) : (
-                          <div className="w-28 h-40 bg-surface-elevated rounded-xl flex items-center justify-center border border-surface-border">
+                          <div className="w-28 h-40 bg-surface-elevated rounded-xl flex items-center justify-center border border-surface-border group-hover:border-accent/30 transition-colors">
                             <BookOpen className="w-8 h-8 text-text-muted" />
                           </div>
                         )}
@@ -361,10 +499,15 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
                             {index + 1}
                           </div>
                         )}
+                        {/* Tap to view indicator */}
+                        <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                          <MessageCircle className="w-2.5 h-2.5" />
+                          <span>{book.review_count}</span>
+                        </div>
                       </div>
                       <p className="text-xs font-medium text-text-primary mt-2 truncate">{book.title}</p>
-                      <p className="text-[10px] text-text-muted">{book.review_count} reviews</p>
-                    </div>
+                      <p className="text-[10px] text-accent">Tap to see reviews</p>
+                    </button>
                   ))}
                 </div>
               ) : (
@@ -373,6 +516,23 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
                   <p className="text-sm text-text-muted">No trending books yet</p>
                 </div>
               )}
+            </section>
+
+            {/* Book Clubs Section - Moved up for better visibility */}
+            <section>
+              <button
+                onClick={() => setShowClubs(true)}
+                className="w-full bg-gradient-to-r from-accent/10 to-violet-500/10 border border-accent/20 rounded-xl p-4 flex items-center gap-4 hover:border-accent/40 transition-colors text-left"
+              >
+                <div className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center">
+                  <MessageCircle className="w-6 h-6 text-accent" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-base font-semibold text-text-primary">📚 Book Clubs</h3>
+                  <p className="text-sm text-text-muted">Join discussions with fellow readers</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-accent" />
+              </button>
             </section>
 
             {/* Currently Reading Around You */}
@@ -476,23 +636,6 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
                   <p className="text-sm text-text-muted">No reviews yet</p>
                 </div>
               )}
-            </section>
-
-            {/* Book Clubs Section */}
-            <section>
-              <button
-                onClick={() => setShowClubs(true)}
-                className="w-full bg-surface-card border border-surface-border rounded-xl p-4 flex items-center gap-4 hover:border-accent/30 transition-colors text-left"
-              >
-                <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center">
-                  <MessageCircle className="w-6 h-6 text-accent" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-base font-semibold text-text-primary">Book Clubs</h3>
-                  <p className="text-sm text-text-muted">Join discussions with other readers</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-text-muted" />
-              </button>
             </section>
 
             {/* Join the Community CTA */}

@@ -627,6 +627,37 @@ export const bookClubsApi = {
       .single();
 
     return !!data;
+  },
+
+  async deleteClub(clubId: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    // Check if user is the creator (admin) of the club
+    const { data: membership } = await supabase
+      .from('club_members')
+      .select('role')
+      .eq('club_id', clubId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (!membership || membership.role !== 'admin') {
+      console.error('Only club creator can delete the club');
+      return false;
+    }
+
+    // Delete club (this will cascade to members and discussions)
+    const { error } = await supabase
+      .from('book_clubs')
+      .delete()
+      .eq('id', clubId);
+
+    if (error) {
+      console.error('Error deleting club:', error);
+      return false;
+    }
+
+    return true;
   }
 };
 
@@ -677,6 +708,41 @@ export const reviewsApi = {
 
     // Check which reviews current user has liked
     const reviews = data?.map(r => ({ ...r, author: r.profiles })) || [];
+    
+    if (user && reviews.length > 0) {
+      const { data: likes } = await supabase
+        .from('review_likes')
+        .select('review_id')
+        .eq('user_id', user.id)
+        .in('review_id', reviews.map(r => r.id));
+
+      const likedIds = new Set(likes?.map(l => l.review_id) || []);
+      reviews.forEach(r => { r.is_liked = likedIds.has(r.id); });
+    }
+
+    return reviews;
+  },
+
+  async getReviewsByBookTitle(bookTitle: string, limit = 20): Promise<BookReview[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+      .from('book_reviews')
+      .select('*, profiles(*)')
+      .ilike('book_title', bookTitle)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching reviews by title:', error);
+      return [];
+    }
+
+    const reviews = data?.map(r => ({ 
+      ...r, 
+      user: r.profiles,
+      author: r.profiles 
+    })) || [];
     
     if (user && reviews.length > 0) {
       const { data: likes } = await supabase

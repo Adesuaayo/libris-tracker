@@ -10,7 +10,8 @@ import {
   MessageCircle,
   ArrowLeft,
   X,
-  Crown
+  Crown,
+  Trash2
 } from 'lucide-react';
 import { communityApi, BookClub, ClubMember, Discussion } from '../services/community';
 import { useToastActions } from './Toast';
@@ -370,7 +371,9 @@ function ClubDetailView({ club: initialClub, currentUserId, onBack, onViewProfil
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [activeTab, setActiveTab] = useState<'discussions' | 'members'>('discussions');
   const [isMember, setIsMember] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showNewDiscussion, setShowNewDiscussion] = useState(false);
   const [selectedDiscussion, setSelectedDiscussion] = useState<Discussion | null>(null);
 
@@ -395,6 +398,10 @@ function ClubDetailView({ club: initialClub, currentUserId, onBack, onViewProfil
       setMembers(clubMembers);
       setDiscussions(clubDiscussions);
       setIsMember(memberStatus);
+      
+      // Check if current user is admin
+      const currentMember = clubMembers.find((m: ClubMember) => m.user_id === currentUserId);
+      setIsAdmin(currentMember?.role === 'admin');
     } catch (error) {
       console.error('[ClubDetail] Error loading club data:', error);
       toast.error('Failed to load club data');
@@ -417,6 +424,28 @@ function ClubDetailView({ club: initialClub, currentUserId, onBack, onViewProfil
     setIsMember(false);
     toast.success(`Left ${club.name}`);
     loadClubData();
+  };
+
+  const handleDeleteClub = async () => {
+    if (!confirm('Are you sure you want to delete this club? All discussions will be removed. This cannot be undone.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const success = await communityApi.clubs.deleteClub(club.id);
+      if (success) {
+        toast.success('Club deleted');
+        onBack();
+      } else {
+        toast.error('Failed to delete club');
+      }
+    } catch (error) {
+      console.error('Error deleting club:', error);
+      toast.error('Failed to delete club');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -475,22 +504,36 @@ function ClubDetailView({ club: initialClub, currentUserId, onBack, onViewProfil
               )}
             </div>
 
-            {/* Join/Leave Button */}
-            {isMember ? (
-              <button
-                onClick={handleLeave}
-                className="w-full py-2 border border-red-300 text-red-600 rounded-lg font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-              >
-                Leave Club
-              </button>
-            ) : (
-              <button
-                onClick={handleJoin}
-                className="w-full py-2 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600 transition-colors"
-              >
-                Join Club
-              </button>
-            )}
+            {/* Join/Leave/Delete Buttons */}
+            <div className="space-y-2">
+              {isMember ? (
+                <button
+                  onClick={handleLeave}
+                  className="w-full py-2 border border-red-300 text-red-600 rounded-lg font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                  Leave Club
+                </button>
+              ) : (
+                <button
+                  onClick={handleJoin}
+                  className="w-full py-2 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600 transition-colors"
+                >
+                  Join Club
+                </button>
+              )}
+              
+              {/* Delete Club - Only for admin */}
+              {isAdmin && (
+                <button
+                  onClick={handleDeleteClub}
+                  disabled={isDeleting}
+                  className="w-full py-2 flex items-center justify-center gap-2 border border-red-500 text-red-600 dark:text-red-400 rounded-lg font-medium hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {isDeleting ? 'Deleting...' : 'Delete Club'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -839,7 +882,7 @@ function DiscussionDetailView({ discussion: initialDiscussion, currentUserId, on
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-24">
       {/* Header with delete button */}
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -861,46 +904,46 @@ function DiscussionDetailView({ discussion: initialDiscussion, currentUserId, on
           )}
         </div>
 
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+        <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
           {discussion.title}
         </h1>
 
         {discussion.book_title && (
-          <p className="text-sm text-violet-600 dark:text-violet-400 mb-4">
+          <p className="text-sm text-violet-600 dark:text-violet-400 mb-3">
             About: {discussion.book_title}
           </p>
         )}
+      </div>
 
+      {/* Reply Form - PROMINENTLY at top */}
+      <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl p-4">
+        <label className="block text-sm font-semibold text-violet-700 dark:text-violet-300 mb-2">
+          💬 Add Your Reply
+        </label>
+        <textarea
+          value={replyContent}
+          onChange={(e) => setReplyContent(e.target.value)}
+          rows={3}
+          placeholder="Share your thoughts..."
+          className="w-full px-3 py-2 rounded-lg border border-violet-300 dark:border-violet-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white resize-none text-sm mb-3"
+        />
+        <button
+          onClick={handleAddReply}
+          disabled={isSavingReply || !replyContent.trim()}
+          className="w-full py-3 bg-violet-500 text-white rounded-xl font-semibold hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-base"
+        >
+          {isSavingReply ? 'Posting...' : '📤 Post Reply'}
+        </button>
+      </div>
+
+      {/* Discussion Content */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
         <p className="text-slate-600 dark:text-slate-400 mb-4">
           {discussion.content}
         </p>
-
-        <div className="flex items-center justify-between text-sm text-slate-500 pb-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between text-sm text-slate-500 pt-3 border-t border-slate-200 dark:border-slate-700">
           <span>{new Date(discussion.created_at).toLocaleDateString()}</span>
           <span>{replies.length} replies</span>
-        </div>
-      </div>
-
-      {/* Reply Form - Sticky at top of replies section */}
-      <div className="sticky top-0 z-20 -mx-4 px-4 py-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Add Your Reply
-        </label>
-        <div className="flex gap-2">
-          <textarea
-            value={replyContent}
-            onChange={(e) => setReplyContent(e.target.value)}
-            rows={2}
-            placeholder="Share your thoughts..."
-            className="flex-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white resize-none text-sm"
-          />
-          <button
-            onClick={handleAddReply}
-            disabled={isSavingReply || !replyContent.trim()}
-            className="px-4 py-2 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap self-end"
-          >
-            {isSavingReply ? 'Posting...' : 'Post'}
-          </button>
         </div>
       </div>
 
