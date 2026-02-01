@@ -4,14 +4,16 @@ import {
   Star, 
   BookOpen, 
   Search,
-  Heart,
   MessageCircle,
   Eye,
-  X
+  X,
+  Users,
+  Sparkles,
+  ChevronLeft,
+  RefreshCw
 } from 'lucide-react';
 import { communityApi, BookReview, TrendingBook as TrendingBookApi } from '../services/community';
 import { BookReviewSection } from './BookReviewSection';
-import { useToastActions } from './Toast';
 
 interface DiscoverBooksProps {
   onViewProfile: (userId: string) => void;
@@ -33,512 +35,456 @@ interface CurrentlyReadingItem {
 }
 
 export const DiscoverBooks = memo<DiscoverBooksProps>(({ onViewProfile }) => {
-  const [activeSection, setActiveSection] = useState<'trending' | 'reading' | 'reviews'>('trending');
   const [trendingBooks, setTrendingBooks] = useState<TrendingBook[]>([]);
   const [currentlyReading, setCurrentlyReading] = useState<CurrentlyReadingItem[]>([]);
   const [reviews, setReviews] = useState<BookReview[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState<TrendingBook | null>(null);
-
-  const toast = useToastActions();
+  const [bookReviews, setBookReviews] = useState<BookReview[]>([]);
+  const [loadingBookReviews, setLoadingBookReviews] = useState(false);
+  const [showBookReviews, setShowBookReviews] = useState(false);
 
   useEffect(() => {
-    loadData();
-  }, [activeSection]);
+    loadAllData();
+  }, []);
 
-  const loadData = async () => {
+  const loadAllData = async () => {
     setIsLoading(true);
     try {
-      if (activeSection === 'trending') {
-        const data = await communityApi.discovery.getTrendingBooks(10);
-        // Map API response to local TrendingBook interface
-        setTrendingBooks(data.map((book: TrendingBookApi) => ({
-          title: book.book_title || 'Unknown',
-          author: '', // API doesn't provide author in trending view
-          cover_url: book.book_cover_url || undefined,
-          review_count: book.activity_count || 0,
-          average_rating: 0 // Would need separate query to calculate
-        })));
-      } else if (activeSection === 'reading') {
-        const data = await communityApi.discovery.getCurrentlyReading();
-        setCurrentlyReading(data);
-      } else if (activeSection === 'reviews') {
-        const data = await communityApi.reviews.getLatestReviews(20);
-        setReviews(data);
-      }
+      const [trendingData, readingData, reviewsData] = await Promise.all([
+        communityApi.discovery.getTrendingBooks(10),
+        communityApi.discovery.getCurrentlyReading(),
+        communityApi.reviews.getLatestReviews(10)
+      ]);
+      
+      setTrendingBooks(trendingData.map((book: TrendingBookApi) => ({
+        title: book.book_title || 'Unknown',
+        author: (book as any).book_author || '',
+        cover_url: book.book_cover_url || undefined,
+        review_count: book.activity_count || 0,
+        average_rating: 0
+      })));
+      setCurrentlyReading(readingData.slice(0, 5));
+      setReviews(reviewsData);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const sections = [
-    { id: 'trending' as const, label: 'Trending', icon: TrendingUp },
-    { id: 'reading' as const, label: 'Reading Now', icon: BookOpen },
-    { id: 'reviews' as const, label: 'Reviews', icon: Star },
-  ];
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadAllData();
+    setIsRefreshing(false);
+  };
 
-  return (
-    <div className="space-y-6">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search books, authors, or readers..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 ring-violet-500 focus:border-transparent"
-        />
-      </div>
+  const handleViewBookReviews = async (book: TrendingBook) => {
+    setSelectedBook(book);
+    setShowBookReviews(true);
+    setLoadingBookReviews(true);
+    try {
+      const reviews = await communityApi.reviews.getReviewsByBookTitle(book.title, 20);
+      setBookReviews(reviews);
+    } catch (error) {
+      console.error('Error loading reviews:', error);
+      setBookReviews([]);
+    } finally {
+      setLoadingBookReviews(false);
+    }
+  };
 
-      {/* Section Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {sections.map((section) => (
-          <button
-            key={section.id}
-            onClick={() => setActiveSection(section.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              activeSection === section.id
-                ? 'bg-violet-500 text-white'
-                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-            }`}
-          >
-            <section.icon className="w-4 h-4" />
-            {section.label}
-          </button>
-        ))}
-      </div>
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+  };
 
-      {/* Loading */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full" />
-        </div>
-      ) : (
-        <>
-          {/* Trending Books */}
-          {activeSection === 'trending' && (
-            <TrendingBooksSection 
-              books={trendingBooks}
-              onWriteReview={(book) => {
-                setSelectedBook(book);
-                setShowReviewModal(true);
+  // Book Reviews Detail View
+  if (showBookReviews && selectedBook) {
+    return (
+      <div className="min-h-screen bg-surface-base pb-24">
+        <div className="bg-surface-card border-b border-surface-border sticky top-0 z-10">
+          <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
+            <button
+              onClick={() => {
+                setShowBookReviews(false);
+                setSelectedBook(null);
+                setBookReviews([]);
               }}
-            />
-          )}
-
-          {/* Currently Reading */}
-          {activeSection === 'reading' && (
-            <CurrentlyReadingSection items={currentlyReading} />
-          )}
-
-          {/* Reviews */}
-          {activeSection === 'reviews' && (
-            <ReviewsSection 
-              reviews={reviews} 
-              onViewProfile={onViewProfile}
-              onWriteReview={() => {
-                // For reviews section, we show a generic write review modal
-                // For now, we'll just show a message to write about a book
-                const anyBook = trendingBooks[0];
-                if (anyBook) {
-                  setSelectedBook(anyBook);
-                  setShowReviewModal(true);
-                }
-              }}
-            />
-          )}
-        </>
-      )}
-
-      {/* Review Modal */}
-      {showReviewModal && selectedBook && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Review: {selectedBook.title}
-              </h2>
-              <button
-                onClick={() => setShowReviewModal(false)}
-                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
-            </div>
-            <div className="p-4">
-              <BookReviewSection
-                bookIsbn={`trending-${selectedBook.title}`}
-                bookTitle={selectedBook.title}
-                bookAuthor={selectedBook.author}
-                bookCoverUrl={selectedBook.cover_url}
-              />
+              className="p-2 -ml-2 hover:bg-surface-elevated rounded-lg transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 text-text-secondary" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-bold text-text-primary truncate">{selectedBook.title}</h1>
+              <p className="text-xs text-text-muted">{selectedBook.review_count} reviews</p>
             </div>
           </div>
         </div>
-      )}
+        
+        <div className="max-w-2xl mx-auto px-4 py-4 pb-8">
+          {/* Book Info Card */}
+          <div className="bg-surface-card border border-surface-border rounded-xl p-4 mb-4 flex gap-4">
+            {selectedBook.cover_url ? (
+              <img 
+                src={selectedBook.cover_url} 
+                alt={selectedBook.title}
+                className="w-20 h-28 object-cover rounded-lg shadow"
+              />
+            ) : (
+              <div className="w-20 h-28 bg-surface-elevated rounded-lg flex items-center justify-center border border-surface-border">
+                <BookOpen className="w-8 h-8 text-text-muted" />
+              </div>
+            )}
+            <div className="flex-1">
+              <h2 className="text-base font-semibold text-text-primary">{selectedBook.title}</h2>
+              {selectedBook.author && (
+                <p className="text-sm text-text-muted">by {selectedBook.author}</p>
+              )}
+              <div className="mt-2 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-accent" />
+                <span className="text-sm text-accent font-medium">Trending Now</span>
+              </div>
+              <button
+                onClick={() => setShowReviewModal(true)}
+                className="mt-3 px-3 py-1.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent-dark transition-colors"
+              >
+                Write a Review
+              </button>
+            </div>
+          </div>
+
+          {/* Reviews */}
+          <h3 className="text-base font-semibold text-text-primary mb-3 flex items-center gap-2">
+            <Star className="w-4 h-4 text-amber-400" />
+            Community Reviews
+          </h3>
+          
+          {loadingBookReviews ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin w-8 h-8 border-4 border-accent border-t-transparent rounded-full" />
+            </div>
+          ) : bookReviews.length > 0 ? (
+            <div className="space-y-3">
+              {bookReviews.map((review) => (
+                <div 
+                  key={review.id} 
+                  className="bg-surface-card border border-surface-border rounded-xl p-4"
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <button
+                      onClick={() => review.user_id && onViewProfile(review.user_id)}
+                      className="flex-shrink-0"
+                    >
+                      {review.user?.avatar_url ? (
+                        <img 
+                          src={review.user.avatar_url} 
+                          alt="" 
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white text-sm font-medium">
+                          {review.user?.display_name?.[0] || '?'}
+                        </div>
+                      )}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-text-primary">
+                        {review.user?.display_name || 'Anonymous'}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star 
+                              key={i} 
+                              className={`w-3.5 h-3.5 ${i < review.rating ? 'text-amber-400 fill-current' : 'text-text-muted'}`} 
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs text-text-muted">
+                          {formatTime(review.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-text-secondary leading-relaxed">
+                    {review.content}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-surface-card border border-surface-border rounded-xl p-8 text-center">
+              <Star className="w-12 h-12 mx-auto text-text-muted mb-3" />
+              <p className="text-sm text-text-muted">No reviews yet for this book</p>
+              <button
+                onClick={() => setShowReviewModal(true)}
+                className="mt-3 px-4 py-2 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent-dark transition-colors"
+              >
+                Be the first to review!
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Review Modal */}
+        {showReviewModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="bg-surface-card border border-surface-border rounded-xl max-w-lg w-full shadow-xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-4 border-b border-surface-border sticky top-0 bg-surface-card">
+                <h2 className="text-lg font-semibold text-text-primary">
+                  Review: {selectedBook.title}
+                </h2>
+                <button
+                  onClick={() => setShowReviewModal(false)}
+                  className="p-1 hover:bg-surface-elevated rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-text-muted" />
+                </button>
+              </div>
+              <div className="p-4">
+                <BookReviewSection
+                  bookIsbn={`trending-${selectedBook.title}`}
+                  bookTitle={selectedBook.title}
+                  bookAuthor={selectedBook.author}
+                  bookCoverUrl={selectedBook.cover_url}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-surface-base pb-24">
+      {/* Header */}
+      <div className="bg-surface-card border-b border-surface-border sticky top-0 z-10">
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-xl font-bold text-text-primary flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-accent" />
+              Discover
+            </h1>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-2 rounded-lg hover:bg-surface-elevated transition-colors"
+            >
+              <RefreshCw className={`w-5 h-5 text-text-secondary ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+          
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+            <input
+              type="text"
+              placeholder="Search books, authors, or readers..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-elevated border border-surface-border text-text-primary placeholder-text-muted focus:ring-2 ring-accent focus:border-transparent"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-2xl mx-auto px-4 py-4 space-y-6">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin w-8 h-8 border-4 border-accent border-t-transparent rounded-full" />
+          </div>
+        ) : (
+          <>
+            {/* Trending Books */}
+            <section>
+              <h2 className="text-base font-semibold text-text-primary mb-3 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-accent" />
+                Trending This Week
+              </h2>
+              
+              {trendingBooks.length > 0 ? (
+                <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+                  {trendingBooks.map((book, index) => (
+                    <button
+                      key={book.title}
+                      onClick={() => handleViewBookReviews(book)}
+                      className="flex-shrink-0 w-28 text-center group"
+                    >
+                      <div className="relative">
+                        {book.cover_url ? (
+                          <img 
+                            src={book.cover_url} 
+                            alt={book.title}
+                            className="w-28 h-40 object-cover rounded-xl shadow-lg group-hover:scale-105 transition-transform"
+                          />
+                        ) : (
+                          <div className="w-28 h-40 bg-surface-elevated rounded-xl flex items-center justify-center border border-surface-border group-hover:border-accent/30 transition-colors">
+                            <BookOpen className="w-8 h-8 text-text-muted" />
+                          </div>
+                        )}
+                        {index < 3 && (
+                          <div className={`absolute -top-2 -left-2 w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold ${
+                            index === 0 ? 'bg-amber-400 text-amber-900' :
+                            index === 1 ? 'bg-slate-300 text-slate-700' :
+                            'bg-amber-600 text-white'
+                          }`}>
+                            {index + 1}
+                          </div>
+                        )}
+                        <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                          <MessageCircle className="w-2.5 h-2.5" />
+                          <span>{book.review_count}</span>
+                        </div>
+                      </div>
+                      <p className="text-xs font-medium text-text-primary mt-2 truncate">{book.title}</p>
+                      <p className="text-[10px] text-accent">Tap for reviews</p>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-surface-card border border-surface-border rounded-xl p-6 text-center">
+                  <TrendingUp className="w-10 h-10 mx-auto text-text-muted mb-2" />
+                  <p className="text-sm text-text-muted">No trending books yet</p>
+                </div>
+              )}
+            </section>
+
+            {/* What Others Are Reading */}
+            <section>
+              <h2 className="text-base font-semibold text-text-primary mb-3 flex items-center gap-2">
+                <Eye className="w-4 h-4 text-accent" />
+                What Others Are Reading
+              </h2>
+              
+              {currentlyReading.length > 0 ? (
+                <div className="bg-surface-card border border-surface-border rounded-xl divide-y divide-surface-border">
+                  {currentlyReading.map((item) => (
+                    <div key={item.book_title} className="p-3 flex items-center gap-3">
+                      {item.book_cover ? (
+                        <img 
+                          src={item.book_cover} 
+                          alt={item.book_title}
+                          className="w-10 h-14 object-cover rounded-lg shadow"
+                        />
+                      ) : (
+                        <div className="w-10 h-14 bg-surface-elevated rounded-lg flex items-center justify-center border border-surface-border">
+                          <BookOpen className="w-4 h-4 text-text-muted" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text-primary truncate">{item.book_title}</p>
+                        <p className="text-xs text-text-muted truncate">{item.book_author}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                        <Users className="w-3.5 h-3.5" />
+                        <span>{item.reader_count}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-surface-card border border-surface-border rounded-xl p-6 text-center">
+                  <BookOpen className="w-10 h-10 mx-auto text-text-muted mb-2" />
+                  <p className="text-sm text-text-muted">No one reading yet</p>
+                </div>
+              )}
+            </section>
+
+            {/* Latest Reviews */}
+            <section>
+              <h2 className="text-base font-semibold text-text-primary mb-3 flex items-center gap-2">
+                <Star className="w-4 h-4 text-amber-400" />
+                Latest Reviews
+              </h2>
+              
+              {reviews.length > 0 ? (
+                <div className="space-y-3">
+                  {reviews.map((review) => (
+                    <div 
+                      key={review.id} 
+                      className="bg-surface-card border border-surface-border rounded-xl p-4"
+                    >
+                      <div className="flex items-start gap-3 mb-2">
+                        <button
+                          onClick={() => review.user_id && onViewProfile(review.user_id)}
+                          className="flex-shrink-0"
+                        >
+                          {review.user?.avatar_url ? (
+                            <img 
+                              src={review.user.avatar_url} 
+                              alt="" 
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white text-xs font-medium">
+                              {review.user?.display_name?.[0] || '?'}
+                            </div>
+                          )}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-text-primary">
+                            {review.user?.display_name || 'Someone'}
+                          </p>
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star 
+                                key={i} 
+                                className={`w-3 h-3 ${i < review.rating ? 'text-amber-400 fill-current' : 'text-text-muted'}`} 
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-sm font-medium text-text-primary mb-1">
+                        "{review.book_title}"
+                      </p>
+                      <p className="text-sm text-text-secondary line-clamp-2">
+                        {review.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-surface-card border border-surface-border rounded-xl p-6 text-center">
+                  <Star className="w-10 h-10 mx-auto text-text-muted mb-2" />
+                  <p className="text-sm text-text-muted">No reviews yet</p>
+                </div>
+              )}
+            </section>
+
+            {/* Explore More CTA */}
+            <section>
+              <div 
+                className="rounded-xl p-5 text-center"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(124, 92, 252, 0.15) 0%, rgba(155, 138, 251, 0.08) 100%)',
+                  border: '1px solid rgba(124, 92, 252, 0.2)'
+                }}
+              >
+                <BookOpen className="w-8 h-8 text-accent mx-auto mb-2" />
+                <h3 className="text-base font-semibold text-text-primary mb-1">
+                  Discover Your Next Read
+                </h3>
+                <p className="text-sm text-text-muted">
+                  Explore trending books and see what others are reading
+                </p>
+              </div>
+            </section>
+          </>
+        )}
+      </div>
     </div>
   );
 });
 
 DiscoverBooks.displayName = 'DiscoverBooks';
-
-// =============================================
-// TRENDING BOOKS SECTION
-// =============================================
-
-function TrendingBooksSection({ books, onWriteReview }: { books: TrendingBook[], onWriteReview: (book: TrendingBook) => void }) {
-  const [selectedBook, setSelectedBook] = useState<TrendingBook | null>(null);
-  const [showReviewsModal, setShowReviewsModal] = useState(false);
-
-  if (books.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <TrendingUp className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-        <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">No trending books yet</h3>
-        <p className="text-sm text-slate-500">Be the first to review a book!</p>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-        <TrendingUp className="w-5 h-5 text-violet-500" />
-        Trending This Week
-      </h2>
-
-      <div className="grid gap-3">
-        {books.map((book, index) => (
-          <div 
-            key={`${book.title}-${book.author}`}
-            className="flex gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm"
-          >
-            {/* Rank */}
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
-              index === 0 ? 'bg-yellow-400 text-yellow-900' :
-              index === 1 ? 'bg-slate-300 text-slate-700' :
-              index === 2 ? 'bg-amber-600 text-white' :
-              'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-            }`}>
-              {index + 1}
-            </div>
-
-            {/* Book Cover */}
-            {book.cover_url ? (
-              <img 
-                src={book.cover_url} 
-                alt={book.title}
-                className="w-12 h-18 object-cover rounded-lg shadow"
-              />
-            ) : (
-              <div className="w-12 h-18 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-slate-400" />
-              </div>
-            )}
-
-            {/* Book Info */}
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-slate-900 dark:text-white truncate">
-                {book.title}
-              </h3>
-              <p className="text-sm text-slate-500 truncate">{book.author}</p>
-
-              {/* Stats */}
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                {/* Rating */}
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    {book.average_rating.toFixed(1)}
-                  </span>
-                </div>
-
-                {/* Review Count */}
-                <button
-                  onClick={() => {
-                    setSelectedBook(book);
-                    setShowReviewsModal(true);
-                  }}
-                  className="flex items-center gap-1 text-slate-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors cursor-pointer"
-                  title="View reviews"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span className="text-sm">{book.review_count} reviews</span>
-                </button>
-
-                {/* Write Review Button */}
-                <button
-                  onClick={() => onWriteReview(book)}
-                  className="ml-auto p-1.5 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-800 transition-colors"
-                  title="Write a Review"
-                >
-                  <Star className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Reviews Modal */}
-      {showReviewsModal && selectedBook && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Reviews for {selectedBook.title}
-              </h2>
-              <button
-                onClick={() => setShowReviewsModal(false)}
-                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
-            </div>
-            <div className="p-4">
-              {/* Display book info and reviews would go here */}
-              <p className="text-slate-600 dark:text-slate-400 mb-4">
-                Showing {selectedBook.review_count} reviews
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-      </div>
-    </>
-  );
-}
-
-// =============================================
-// CURRENTLY READING SECTION
-// =============================================
-
-function CurrentlyReadingSection({ items }: { items: CurrentlyReadingItem[] }) {
-  if (items.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <BookOpen className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-        <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">No books being read</h3>
-        <p className="text-sm text-slate-500">Start reading to show up here!</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-        <Eye className="w-5 h-5 text-blue-500" />
-        See What Others Are Reading
-      </h2>
-
-      <div className="grid gap-3">
-        {items.map((item) => (
-          <div 
-            key={`${item.book_title}-${item.book_author}`}
-            className="flex gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm"
-          >
-            {/* Book Cover */}
-            {item.book_cover ? (
-              <img 
-                src={item.book_cover} 
-                alt={item.book_title}
-                className="w-14 h-20 object-cover rounded-lg shadow"
-              />
-            ) : (
-              <div className="w-14 h-20 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-slate-400" />
-              </div>
-            )}
-
-            {/* Book Info */}
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-slate-900 dark:text-white truncate">
-                {item.book_title}
-              </h3>
-              <p className="text-sm text-slate-500 truncate">{item.book_author}</p>
-
-              {/* Reader Count */}
-              <div className="flex items-center gap-2 mt-3">
-                <div className="flex -space-x-2">
-                  {[...Array(Math.min(3, item.reader_count))].map((_, i) => (
-                    <div 
-                      key={i}
-                      className="w-6 h-6 rounded-full bg-violet-500 border-2 border-white dark:border-slate-800 flex items-center justify-center text-white text-xs"
-                    >
-                      ?
-                    </div>
-                  ))}
-                </div>
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  {item.reader_count} {item.reader_count === 1 ? 'reader' : 'readers'}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// =============================================
-// REVIEWS SECTION
-// =============================================
-
-interface ReviewsSectionProps {
-  reviews: BookReview[];
-  onViewProfile: (userId: string) => void;
-  onWriteReview?: () => void;
-}
-
-function ReviewsSection({ reviews, onViewProfile, onWriteReview }: ReviewsSectionProps) {
-  const [likedReviews, setLikedReviews] = useState<Set<string>>(new Set());
-
-  const handleLike = async (reviewId: string) => {
-    if (likedReviews.has(reviewId)) {
-      await communityApi.reviews.unlikeReview(reviewId);
-      setLikedReviews(prev => {
-        const next = new Set(prev);
-        next.delete(reviewId);
-        return next;
-      });
-    } else {
-      await communityApi.reviews.likeReview(reviewId);
-      setLikedReviews(prev => new Set(prev).add(reviewId));
-    }
-  };
-
-  if (reviews.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <Star className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-        <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">No reviews yet</h3>
-        <p className="text-sm text-slate-500 mb-4">Be the first to share your thoughts!</p>
-        {onWriteReview && (
-          <button
-            onClick={onWriteReview}
-            className="px-4 py-2 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600 transition-colors"
-          >
-            Write a Review
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-          <Star className="w-5 h-5 text-yellow-500" />
-          Latest Reviews
-        </h2>
-        {onWriteReview && (
-          <button
-            onClick={onWriteReview}
-            className="p-1.5 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-800 transition-colors"
-            title="Write a Review"
-          >
-            <Star className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      <div className="space-y-4">
-        {reviews.map((review) => (
-          <div 
-            key={review.id}
-            className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm"
-          >
-            {/* User Info */}
-            <button 
-              onClick={() => onViewProfile(review.user_id)}
-              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-            >
-              {review.user?.avatar_url ? (
-                <img 
-                  src={review.user.avatar_url} 
-                  alt=""
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-violet-500 flex items-center justify-center text-white font-medium">
-                  {review.user?.display_name?.[0]?.toUpperCase() || '?'}
-                </div>
-              )}
-              <div className="text-left">
-                <p className="font-medium text-slate-900 dark:text-white">
-                  {review.user?.display_name || 'Anonymous'}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {new Date(review.created_at).toLocaleDateString()}
-                </p>
-              </div>
-            </button>
-
-            {/* Book Info */}
-            <div className="mt-3 flex gap-3">
-              {review.book_cover_url ? (
-                <img 
-                  src={review.book_cover_url} 
-                  alt=""
-                  className="w-12 h-18 object-cover rounded-lg shadow"
-                />
-              ) : (
-                <div className="w-12 h-18 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                  <BookOpen className="w-5 h-5 text-slate-400" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-slate-900 dark:text-white truncate">
-                  {review.book_title}
-                </h3>
-                <p className="text-sm text-slate-500 truncate">{review.book_author}</p>
-              </div>
-            </div>
-
-            {/* Rating */}
-            <div className="flex gap-0.5 mt-3">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={`w-5 h-5 ${
-                    star <= review.rating
-                      ? 'text-yellow-400 fill-current'
-                      : 'text-slate-300 dark:text-slate-600'
-                  }`}
-                />
-              ))}
-            </div>
-
-            {/* Review Content */}
-            {review.content && (
-              <p className="mt-3 text-sm text-slate-700 dark:text-slate-300 line-clamp-4">
-                {review.content}
-              </p>
-            )}
-
-            {/* Actions */}
-            <div className="flex items-center gap-4 mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
-              <button 
-                onClick={() => handleLike(review.id)}
-                className={`flex items-center gap-1 text-sm transition-colors ${
-                  likedReviews.has(review.id)
-                    ? 'text-red-500'
-                    : 'text-slate-500 hover:text-red-500'
-                }`}
-              >
-                <Heart className={`w-4 h-4 ${likedReviews.has(review.id) ? 'fill-current' : ''}`} />
-                <span>{(review.likes_count || 0) + (likedReviews.has(review.id) ? 1 : 0)}</span>
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
