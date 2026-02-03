@@ -167,9 +167,33 @@ export default function App() {
           // Load user settings from metadata on auth change
           loadUserSettings(session);
       } else {
+          // Clear all user-specific data on logout
           setBooks([]);
-          setProfilePicture(null); // Clear profile picture on logout
-          setReadingGoal(12); // Reset to default on logout
+          setProfilePicture(null);
+          setReadingGoal(12);
+          setDisplayName('');
+          setReadingStreak(DEFAULT_STREAK);
+          setUnlockedAchievements([]);
+          setReadingSessions([]);
+          setCollections(DEFAULT_COLLECTIONS.map(c => ({
+            ...c,
+            bookIds: [],
+            createdAt: Date.now(),
+          })));
+          setReadingGoals([]);
+          setBookNotes([]);
+          setReadingPreferences(DEFAULT_PREFERENCES);
+          
+          // Clear localStorage for user-specific data
+          localStorage.removeItem('libris-reading-streak');
+          localStorage.removeItem('libris-achievements');
+          localStorage.removeItem('libris-reading-sessions');
+          localStorage.removeItem('libris-collections');
+          localStorage.removeItem('libris-reading-goals');
+          localStorage.removeItem('libris-book-notes');
+          localStorage.removeItem('libris-reading-preferences');
+          localStorage.removeItem('libris-profile-picture');
+          localStorage.removeItem('libris-goal');
       }
     });
 
@@ -403,7 +427,14 @@ export default function App() {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      toast.info('Signing out...');
+      await supabase.auth.signOut();
+      toast.success('Signed out successfully');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to sign out. Please try again.');
+    }
   };
 
   // Handle onboarding completion
@@ -1027,9 +1058,10 @@ export default function App() {
         // Show summary in the AI response modal
         setAiMode('summary');
         setAiResponse(summary);
-        // Navigate to home to show the modal
+        // Navigate to library view (not dashboard) to show the AI response
         setActiveTab('home');
-        setShowDashboard(true);
+        setShowDashboard(false);
+        setView('library');
         // Scroll to top after a brief delay
         setTimeout(() => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1242,189 +1274,179 @@ export default function App() {
           </div>
         </div>
 
-        {/* Reading Streak */}
-        <div className="mb-4">
-          <StreakTracker streak={readingStreak} />
-        </div>
-
-        {/* Reading Goals */}
-        <div className="mb-4">
-          <ReadingGoals
-            goals={readingGoals}
-            completedBooks={booksReadThisYear}
-            completedThisMonth={booksCompletedThisMonth}
-            onUpdateGoal={handleUpdateGoal}
-            onCreateGoal={handleCreateGoal}
-          />
-        </div>
-
-        {/* Achievements */}
-        <div className="mb-4">
-          <Achievements
-            unlockedAchievements={unlockedAchievements}
-            totalBooks={books.filter(b => b.status === ReadingStatus.COMPLETED).length}
-            currentStreak={readingStreak.currentStreak}
-            totalReadingMinutes={totalReadingMinutes}
-            totalNotes={bookNotes.filter(n => n.type === 'note').length}
-            totalQuotes={bookNotes.filter(n => n.type === 'quote').length}
-            uniqueGenres={uniqueGenresCount}
-          />
-        </div>
-
-        {/* Reading Insights & Analytics */}
-        <div className="mb-4">
-          <ReadingInsights
-            books={books}
-            readingSessions={readingSessions}
-          />
-        </div>
-
-        {/* Book Collections */}
-        <div className="mb-4">
-          <BookCollections
-            collections={collections}
-            books={books}
-            onCreateCollection={handleCreateCollection}
-            onUpdateCollection={handleUpdateCollection}
-            onDeleteCollection={handleDeleteCollection}
-            onViewCollection={handleViewCollection}
-          />
-        </div>
-
         {/* AI Assistant Section */}
-        <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-sm p-4 mb-4">
-          <div className="flex items-center gap-2 text-white font-semibold mb-2">
-            <BrainCircuit className="h-5 w-5" />
-            <span>AI Assistant</span>
-          </div>
-          <p className="text-indigo-100 text-sm mb-3">Get smart insights powered by Gemini 2.5</p>
-          <div className="flex gap-2">
-            <Button size="sm" className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0" onClick={() => handleGeminiAction('recommend')}>
-              Recommend
-            </Button>
-            <Button size="sm" className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0" onClick={() => handleGeminiAction('analyze')}>
-              Analyze Habits
-            </Button>
-          </div>
-        </div>
-
-        {/* Settings Section */}
-        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border mb-4 overflow-hidden">
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider px-4 pt-4 pb-2">Appearance</p>
-          <div className="px-4 pb-4">
-            <div className="flex items-center justify-between bg-surface-base p-1 rounded-lg">
-              {(['light', 'system', 'dark'] as Theme[]).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTheme(t)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md transition-colors ${
-                    theme === t 
-                      ? 'bg-surface-card shadow-sm text-accent font-medium' 
-                      : 'text-text-muted hover:text-text-secondary'
-                  }`}
-                >
-                  {t === 'light' && <Sun className="h-4 w-4" />}
-                  {t === 'dark' && <Moon className="h-4 w-4" />}
-                  {t === 'system' && <Laptop className="h-4 w-4" />}
-                  <span className="text-sm capitalize">{t}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Data Section */}
-        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border mb-4 overflow-hidden">
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider px-4 pt-4 pb-2">Data</p>
-          <button 
-            onClick={handleExport}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Download className="h-5 w-5 text-text-muted" />
-              <span className="text-text-primary">Export Library</span>
-            </div>
-            <ChevronRight className="h-5 w-5 text-text-muted" />
-          </button>
-        </div>
-
-        {/* Reading Reminders Section */}
         <div className="mb-4">
-          <ReadingReminders />
+          <h3 className="text-sm font-semibold text-text-secondary px-2 mb-3">AI Assistant</h3>
+          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-sm p-4">
+            <div className="flex items-center gap-2 text-white font-semibold mb-2">
+              <BrainCircuit className="h-5 w-5" />
+              <span>Gemini 2.5 Insights</span>
+            </div>
+            <p className="text-indigo-100 text-xs mb-3">Get smart book recommendations and habit analysis</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button size="sm" className="bg-white/20 hover:bg-white/30 text-white border-0" onClick={() => handleGeminiAction('recommend')}>
+                📚 Recommend
+              </Button>
+              <Button size="sm" className="bg-white/20 hover:bg-white/30 text-white border-0" onClick={() => handleGeminiAction('analyze')}>
+                📊 Analyze
+              </Button>
+            </div>
+          </div>
         </div>
 
-        {/* Reading Preferences Section */}
-        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border mb-4 overflow-hidden">
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider px-4 pt-4 pb-2">Personalization</p>
-          <button 
-            onClick={() => setShowOnboarding(true)}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <BrainCircuit className="h-5 w-5 text-accent" />
-              <div className="text-left">
-                <span className="text-text-primary block">Update Reading Preferences</span>
-                <span className="text-xs text-text-muted">
-                  {readingPreferences.hasCompletedOnboarding 
-                    ? `${readingPreferences.favoriteGenres.length} genres selected` 
-                    : 'Set up for better AI recommendations'}
-                </span>
+        {/* Reading Management */}
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-text-secondary px-2 mb-3">Reading Management</h3>
+          <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden">
+            <StreakTracker streak={readingStreak} />
+            <div className="border-t border-surface-border"></div>
+            <ReadingGoals
+              goals={readingGoals}
+              completedBooks={booksReadThisYear}
+              completedThisMonth={booksCompletedThisMonth}
+              onUpdateGoal={handleUpdateGoal}
+              onCreateGoal={handleCreateGoal}
+            />
+            <div className="border-t border-surface-border"></div>
+            <ReadingInsights
+              books={books}
+              readingSessions={readingSessions}
+            />
+          </div>
+        </div>
+
+        {/* Collections & Achievements */}
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-text-secondary px-2 mb-3">Library</h3>
+          <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden">
+            <BookCollections
+              collections={collections}
+              books={books}
+              onCreateCollection={handleCreateCollection}
+              onUpdateCollection={handleUpdateCollection}
+              onDeleteCollection={handleDeleteCollection}
+              onViewCollection={handleViewCollection}
+            />
+            <div className="border-t border-surface-border"></div>
+            <Achievements
+              unlockedAchievements={unlockedAchievements}
+              totalBooks={books.filter(b => b.status === ReadingStatus.COMPLETED).length}
+              currentStreak={readingStreak.currentStreak}
+              totalReadingMinutes={totalReadingMinutes}
+              totalNotes={bookNotes.filter(n => n.type === 'note').length}
+              totalQuotes={bookNotes.filter(n => n.type === 'quote').length}
+              uniqueGenres={uniqueGenresCount}
+            />
+          </div>
+        </div>
+
+        {/* Settings */}
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-text-secondary px-2 mb-3">Settings</h3>
+          <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden">
+            <div className="px-4 py-3">
+              <p className="text-xs font-medium text-text-muted mb-2">Appearance</p>
+              <div className="flex items-center justify-between bg-surface-base p-1 rounded-lg">
+                {(['light', 'system', 'dark'] as Theme[]).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTheme(t)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md transition-colors ${
+                      theme === t 
+                        ? 'bg-surface-card shadow-sm text-accent font-medium' 
+                        : 'text-text-muted hover:text-text-secondary'
+                    }`}
+                  >
+                    {t === 'light' && <Sun className="h-3.5 w-3.5" />}
+                    {t === 'dark' && <Moon className="h-3.5 w-3.5" />}
+                    {t === 'system' && <Laptop className="h-3.5 w-3.5" />}
+                    <span className="text-xs capitalize">{t}</span>
+                  </button>
+                ))}
               </div>
             </div>
-            <ChevronRight className="h-5 w-5 text-text-muted" />
-          </button>
+            <div className="border-t border-surface-border"></div>
+            <button 
+              onClick={() => setShowOnboarding(true)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <BrainCircuit className="h-5 w-5 text-accent" />
+                <div className="text-left">
+                  <span className="text-text-primary text-sm block">Reading Preferences</span>
+                  <span className="text-xs text-text-muted">
+                    {readingPreferences.hasCompletedOnboarding 
+                      ? `${readingPreferences.favoriteGenres.length} genres` 
+                      : 'Set up preferences'}
+                  </span>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-muted" />
+            </button>
+            <div className="border-t border-surface-border"></div>
+            <ReadingReminders />
+          </div>
         </div>
 
-        {/* Feedback Section */}
-        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border mb-4 overflow-hidden">
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider px-4 pt-4 pb-2">Feedback</p>
-          <button 
-            onClick={handleRateApp}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Star className="h-5 w-5 text-amber-500" />
-              <span className="text-text-primary">Rate App</span>
-            </div>
-            <ChevronRight className="h-5 w-5 text-text-muted" />
-          </button>
-          <div className="mx-4 border-t border-surface-border"></div>
-          <button 
-            onClick={() => openExternalLink('mailto:support@libris.app?subject=Feedback')}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <MessageSquare className="h-5 w-5 text-text-muted" />
-              <span className="text-text-primary">Send Feedback</span>
-            </div>
-            <ChevronRight className="h-5 w-5 text-text-muted" />
-          </button>
-        </div>
-
-        {/* Legal Section */}
-        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border mb-4 overflow-hidden">
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider px-4 pt-4 pb-2">Legal</p>
-          <button 
-            onClick={() => setActiveTab('privacy')}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Shield className="h-5 w-5 text-text-muted" />
-              <span className="text-text-primary">Privacy Policy</span>
-            </div>
-            <ChevronRight className="h-5 w-5 text-text-muted" />
-          </button>
-          <div className="mx-4 border-t border-surface-border"></div>
-          <button 
-            onClick={() => setActiveTab('terms')}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <FileText className="h-5 w-5 text-text-muted" />
-              <span className="text-text-primary">Terms of Service</span>
-            </div>
-            <ChevronRight className="h-5 w-5 text-text-muted" />
-          </button>
+        {/* Data & Support */}
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-text-secondary px-2 mb-3">Data & Support</h3>
+          <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden">
+            <button 
+              onClick={handleExport}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Download className="h-5 w-5 text-text-muted" />
+                <span className="text-text-primary text-sm">Export Library</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-muted" />
+            </button>
+            <div className="border-t border-surface-border"></div>
+            <button 
+              onClick={handleRateApp}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Star className="h-5 w-5 text-amber-500" />
+                <span className="text-text-primary text-sm">Rate App</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-muted" />
+            </button>
+            <div className="border-t border-surface-border"></div>
+            <button 
+              onClick={() => openExternalLink('mailto:support@libris.app?subject=Feedback')}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <MessageSquare className="h-5 w-5 text-text-muted" />
+                <span className="text-text-primary text-sm">Send Feedback</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-muted" />
+            </button>
+            <div className="border-t border-surface-border"></div>
+            <button 
+              onClick={() => setActiveTab('privacy')}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-text-muted" />
+                <span className="text-text-primary text-sm">Privacy Policy</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-muted" />
+            </button>
+            <div className="border-t border-surface-border"></div>
+            <button 
+              onClick={() => setActiveTab('terms')}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <FileText className="h-5 w-5 text-text-muted" />
+                <span className="text-text-primary text-sm">Terms of Service</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-muted" />
+            </button>
+          </div>
         </div>
 
         {/* Sign Out */}

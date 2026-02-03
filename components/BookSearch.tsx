@@ -51,13 +51,14 @@ export const BookSearch: React.FC<BookSearchProps> = memo(({ onSelectBook }) => 
       <div className="flex gap-2">
         <input
           ref={inputRef}
-          type="search"
+          type="text"
           inputMode="search"
           enterKeyHint="search"
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
+          data-form-type="other"
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
