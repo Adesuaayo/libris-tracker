@@ -22,7 +22,7 @@ const BookForm = lazy(() => import('./components/BookForm').then(m => ({ default
 const BookNotes = lazy(() => import('./components/BookNotes').then(m => ({ default: m.BookNotes })));
 import { supabase, bookApi } from './services/supabase';
 import { ebookStorage } from './services/ebookStorage';
-import { BookOpen, BarChart2, Plus, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, LogOut, Loader2, ExternalLink, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText, Globe, Check } from 'lucide-react';
+import { BookOpen, BarChart2, Plus, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, LogOut, Loader2, ExternalLink, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText, Globe, Check, Flame, Target, Lightbulb, Library, Bell, Settings } from 'lucide-react';
 import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
 import { App as CapApp } from '@capacitor/app';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -1185,76 +1185,37 @@ export default function App() {
   // Profile Screen Component
   const ProfileScreen = () => (
     <div className="min-h-screen bg-surface-base pb-20">
-      {/* Profile Header */}
-      <div className="bg-gradient-to-br from-accent to-accent-dark pt-[env(safe-area-inset-top)] pb-8 px-4">
-        <h1 className="text-xl font-bold text-white text-center mb-6 pt-4">Profile</h1>
-        <div className="flex flex-col items-center">
-          <div className="relative mb-3">
-            <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center border-4 border-white/30 overflow-hidden">
+      {/* Profile Header - Compact Identity Section */}
+      <div className="bg-gradient-to-br from-accent to-accent-dark pt-[env(safe-area-inset-top)] pb-6 px-4">
+        <h1 className="text-xl font-bold text-white text-center mb-4 pt-4">Profile</h1>
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center border-3 border-white/30 overflow-hidden">
               {profilePicture ? (
                 <img src={profilePicture} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                <span className="text-3xl font-bold text-white">
+                <span className="text-2xl font-bold text-white">
                   {session.user.email?.charAt(0).toUpperCase()}
                 </span>
               )}
-              {uploadingProfilePic && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <Loader2 className="h-6 w-6 text-white animate-spin" />
-                </div>
-              )}
             </div>
-            <label className="absolute bottom-0 right-0 w-8 h-8 bg-accent rounded-full flex items-center justify-center border-2 border-white shadow-lg cursor-pointer hover:bg-accent-light transition-colors">
-              <Camera className="h-4 w-4 text-white" />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleProfilePictureUpload}
-                className="hidden"
-              />
-            </label>
           </div>
-          
-          {/* Editable Display Name */}
-          {editingDisplayName ? (
-            <div className="flex items-center gap-2 mt-1">
-              <input
-                type="text"
-                value={tempDisplayName}
-                onChange={(e) => setTempDisplayName(e.target.value)}
-                className="px-3 py-1.5 rounded-lg bg-white/20 text-white placeholder-white/50 border border-white/30 focus:outline-none focus:border-white/60 text-center"
-                placeholder="Enter display name"
-                autoFocus
-              />
-              <button
-                onClick={handleSaveDisplayName}
-                className="p-1.5 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
-              >
-                <Check className="h-4 w-4 text-white" />
-              </button>
-              <button
-                onClick={() => setEditingDisplayName(false)}
-                className="p-1.5 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
-              >
-                <X className="h-4 w-4 text-white" />
-              </button>
-            </div>
-          ) : (
-            <button 
-              onClick={() => { setTempDisplayName(displayName); setEditingDisplayName(true); }}
-              className="flex items-center gap-2 group"
-            >
-              <h2 className="text-xl font-bold text-white">{displayName || session.user.email?.split('@')[0]}</h2>
-              <Edit2 className="h-4 w-4 text-white/50 group-hover:text-white transition-colors" />
-            </button>
-          )}
-          <p className="text-white/70 text-sm">{session.user.email}</p>
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-white">{displayName || session.user.email?.split('@')[0]}</h2>
+            <p className="text-white/70 text-sm">{session.user.email}</p>
+          </div>
+          <button 
+            onClick={() => setView('manage-profile')}
+            className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white text-sm font-medium transition-colors"
+          >
+            Manage
+          </button>
         </div>
       </div>
 
       {/* Profile Content */}
-      <div className="px-4 -mt-4">
-        {/* Stats Card */}
+      <div className="px-4 -mt-3">
+        {/* Stats Card - Summary Only */}
         <div className="bg-surface-card rounded-xl shadow-lg border border-surface-border p-4 mb-6">
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
@@ -1294,53 +1255,99 @@ export default function App() {
           </div>
         </div>
 
-        {/* Reading Management */}
+        {/* Reading Management - Navigation Only */}
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-text-secondary px-2 mb-3">Reading Management</h3>
           <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden">
-            <StreakTracker streak={readingStreak} />
+            <button 
+              onClick={() => setView('streak')}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                  <Flame className="h-5 w-5 text-orange-500" />
+                </div>
+                <div className="text-left">
+                  <span className="text-text-primary text-sm block font-medium">Reading Streak</span>
+                  <span className="text-xs text-text-muted">{readingStreak.currentStreak} day streak</span>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-muted" />
+            </button>
             <div className="border-t border-surface-border"></div>
-            <ReadingGoals
-              goals={readingGoals}
-              completedBooks={booksReadThisYear}
-              completedThisMonth={booksCompletedThisMonth}
-              onUpdateGoal={handleUpdateGoal}
-              onCreateGoal={handleCreateGoal}
-            />
+            <button 
+              onClick={() => setView('goals')}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <Target className="h-5 w-5 text-blue-500" />
+                </div>
+                <div className="text-left">
+                  <span className="text-text-primary text-sm block font-medium">Reading Goals</span>
+                  <span className="text-xs text-text-muted">{readingGoals.length} active goal{readingGoals.length !== 1 ? 's' : ''}</span>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-muted" />
+            </button>
             <div className="border-t border-surface-border"></div>
-            <ReadingInsights
-              books={books}
-              readingSessions={readingSessions}
-            />
+            <button 
+              onClick={() => setView('insights')}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                  <Lightbulb className="h-5 w-5 text-purple-500" />
+                </div>
+                <div className="text-left">
+                  <span className="text-text-primary text-sm block font-medium">Reading Insights</span>
+                  <span className="text-xs text-text-muted">View your reading analytics</span>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-muted" />
+            </button>
           </div>
         </div>
 
-        {/* Collections & Achievements */}
+        {/* Library - Navigation Only */}
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-text-secondary px-2 mb-3">Library</h3>
           <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden">
-            <BookCollections
-              collections={collections}
-              books={books}
-              onCreateCollection={handleCreateCollection}
-              onUpdateCollection={handleUpdateCollection}
-              onDeleteCollection={handleDeleteCollection}
-              onViewCollection={handleViewCollection}
-            />
+            <button 
+              onClick={() => setView('collections-list')}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                  <Library className="h-5 w-5 text-emerald-500" />
+                </div>
+                <div className="text-left">
+                  <span className="text-text-primary text-sm block font-medium">Collections</span>
+                  <span className="text-xs text-text-muted">{collections.length} collection{collections.length !== 1 ? 's' : ''}</span>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-muted" />
+            </button>
             <div className="border-t border-surface-border"></div>
-            <Achievements
-              unlockedAchievements={unlockedAchievements}
-              totalBooks={books.filter(b => b.status === ReadingStatus.COMPLETED).length}
-              currentStreak={readingStreak.currentStreak}
-              totalReadingMinutes={totalReadingMinutes}
-              totalNotes={bookNotes.filter(n => n.type === 'note').length}
-              totalQuotes={bookNotes.filter(n => n.type === 'quote').length}
-              uniqueGenres={uniqueGenresCount}
-            />
+            <button 
+              onClick={() => setView('achievements')}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                  <Trophy className="h-5 w-5 text-amber-500" />
+                </div>
+                <div className="text-left">
+                  <span className="text-text-primary text-sm block font-medium">Achievements</span>
+                  <span className="text-xs text-text-muted">{unlockedAchievements.length} unlocked</span>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-muted" />
+            </button>
           </div>
         </div>
 
-        {/* Settings */}
+        {/* Settings - Navigation Only */}
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-text-secondary px-2 mb-3">Settings</h3>
           <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden">
@@ -1371,9 +1378,11 @@ export default function App() {
               className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
             >
               <div className="flex items-center gap-3">
-                <BrainCircuit className="h-5 w-5 text-accent" />
+                <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                  <BrainCircuit className="h-5 w-5 text-indigo-500" />
+                </div>
                 <div className="text-left">
-                  <span className="text-text-primary text-sm block">Reading Preferences</span>
+                  <span className="text-text-primary text-sm block font-medium">Reading Preferences</span>
                   <span className="text-xs text-text-muted">
                     {readingPreferences.hasCompletedOnboarding 
                       ? `${readingPreferences.favoriteGenres.length} genres` 
@@ -1384,7 +1393,21 @@ export default function App() {
               <ChevronRight className="h-4 w-4 text-text-muted" />
             </button>
             <div className="border-t border-surface-border"></div>
-            <ReadingReminders />
+            <button 
+              onClick={() => setView('reminders')}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+                  <Bell className="h-5 w-5 text-rose-500" />
+                </div>
+                <div className="text-left">
+                  <span className="text-text-primary text-sm block font-medium">Reading Reminders</span>
+                  <span className="text-xs text-text-muted">Manage notifications</span>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-muted" />
+            </button>
           </div>
         </div>
 
@@ -1462,6 +1485,260 @@ export default function App() {
         <div className="text-center text-sm text-text-muted py-4">
           <p>Libris v{APP_VERSION}</p>
           <p className="text-xs mt-1">Made with ❤️ for book lovers</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Manage Profile Screen - Drill-down for account editing
+  const ManageProfileScreen = () => (
+    <div className="min-h-screen bg-surface-base pb-20">
+      <div className="bg-surface-card border-b border-surface-border pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+        <div className="flex items-center gap-3 px-4 py-4">
+          <button 
+            onClick={() => setView('library')}
+            className="p-2 -ml-2 text-text-secondary hover:bg-surface-base rounded-lg"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-lg font-bold text-text-primary">Manage Profile</h1>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden">
+          {/* Profile Picture */}
+          <div className="p-4 flex items-center gap-4 border-b border-surface-border">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center overflow-hidden">
+                {profilePicture ? (
+                  <img src={profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-2xl font-bold text-accent">
+                    {session.user.email?.charAt(0).toUpperCase()}
+                  </span>
+                )}
+                {uploadingProfilePic && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                    <Loader2 className="h-6 w-6 text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+              <label className="absolute bottom-0 right-0 w-7 h-7 bg-accent rounded-full flex items-center justify-center border-2 border-surface-card shadow-lg cursor-pointer hover:bg-accent-light transition-colors">
+                <Camera className="h-3.5 w-3.5 text-white" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePictureUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-text-primary">Profile Photo</p>
+              <p className="text-xs text-text-muted">Tap camera icon to change</p>
+            </div>
+          </div>
+
+          {/* Display Name */}
+          <div className="p-4 border-b border-surface-border">
+            <label className="text-xs font-medium text-text-muted block mb-2">Display Name</label>
+            {editingDisplayName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={tempDisplayName}
+                  onChange={(e) => setTempDisplayName(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-lg bg-surface-base text-text-primary border border-surface-border focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+                  placeholder="Enter display name"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSaveDisplayName}
+                  className="p-2 bg-accent text-white rounded-lg hover:bg-accent-dark transition-colors"
+                >
+                  <Check className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setEditingDisplayName(false)}
+                  className="p-2 bg-surface-base text-text-muted rounded-lg hover:bg-surface-border transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => { setTempDisplayName(displayName); setEditingDisplayName(true); }}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-surface-base hover:bg-surface-border transition-colors"
+              >
+                <span className="text-text-primary">{displayName || session.user.email?.split('@')[0]}</span>
+                <Edit2 className="h-4 w-4 text-text-muted" />
+              </button>
+            )}
+          </div>
+
+          {/* Email (Read-only) */}
+          <div className="p-4">
+            <label className="text-xs font-medium text-text-muted block mb-2">Email Address</label>
+            <div className="px-3 py-2 rounded-lg bg-surface-base text-text-secondary">
+              {session.user.email}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Streak Screen - Full streak calendar and details
+  const StreakScreen = () => (
+    <div className="min-h-screen bg-surface-base pb-20">
+      <div className="bg-surface-card border-b border-surface-border pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+        <div className="flex items-center gap-3 px-4 py-4">
+          <button 
+            onClick={() => setView('library')}
+            className="p-2 -ml-2 text-text-secondary hover:bg-surface-base rounded-lg"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-lg font-bold text-text-primary">Reading Streak</h1>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden">
+          <StreakTracker streak={readingStreak} />
+        </div>
+      </div>
+    </div>
+  );
+
+  // Goals Screen - Full reading goals management
+  const GoalsScreen = () => (
+    <div className="min-h-screen bg-surface-base pb-20">
+      <div className="bg-surface-card border-b border-surface-border pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+        <div className="flex items-center gap-3 px-4 py-4">
+          <button 
+            onClick={() => setView('library')}
+            className="p-2 -ml-2 text-text-secondary hover:bg-surface-base rounded-lg"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-lg font-bold text-text-primary">Reading Goals</h1>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden">
+          <ReadingGoals
+            goals={readingGoals}
+            completedBooks={booksReadThisYear}
+            completedThisMonth={booksCompletedThisMonth}
+            onUpdateGoal={handleUpdateGoal}
+            onCreateGoal={handleCreateGoal}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  // Insights Screen - Full reading insights analytics
+  const InsightsScreen = () => (
+    <div className="min-h-screen bg-surface-base pb-20">
+      <div className="bg-surface-card border-b border-surface-border pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+        <div className="flex items-center gap-3 px-4 py-4">
+          <button 
+            onClick={() => setView('library')}
+            className="p-2 -ml-2 text-text-secondary hover:bg-surface-base rounded-lg"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-lg font-bold text-text-primary">Reading Insights</h1>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden">
+          <ReadingInsights
+            books={books}
+            readingSessions={readingSessions}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  // Achievements Screen - Full achievements display
+  const AchievementsScreen = () => (
+    <div className="min-h-screen bg-surface-base pb-20">
+      <div className="bg-surface-card border-b border-surface-border pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+        <div className="flex items-center gap-3 px-4 py-4">
+          <button 
+            onClick={() => setView('library')}
+            className="p-2 -ml-2 text-text-secondary hover:bg-surface-base rounded-lg"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-lg font-bold text-text-primary">Achievements</h1>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden">
+          <Achievements
+            unlockedAchievements={unlockedAchievements}
+            totalBooks={books.filter(b => b.status === ReadingStatus.COMPLETED).length}
+            currentStreak={readingStreak.currentStreak}
+            totalReadingMinutes={totalReadingMinutes}
+            totalNotes={bookNotes.filter(n => n.type === 'note').length}
+            totalQuotes={bookNotes.filter(n => n.type === 'quote').length}
+            uniqueGenres={uniqueGenresCount}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  // Collections Screen - Full collections management
+  const CollectionsScreen = () => (
+    <div className="min-h-screen bg-surface-base pb-20">
+      <div className="bg-surface-card border-b border-surface-border pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+        <div className="flex items-center gap-3 px-4 py-4">
+          <button 
+            onClick={() => setView('library')}
+            className="p-2 -ml-2 text-text-secondary hover:bg-surface-base rounded-lg"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-lg font-bold text-text-primary">Collections</h1>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden">
+          <BookCollections
+            collections={collections}
+            books={books}
+            onCreateCollection={handleCreateCollection}
+            onUpdateCollection={handleUpdateCollection}
+            onDeleteCollection={handleDeleteCollection}
+            onViewCollection={handleViewCollection}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  // Reminders Screen - Full reminders management
+  const RemindersScreen = () => (
+    <div className="min-h-screen bg-surface-base pb-20">
+      <div className="bg-surface-card border-b border-surface-border pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+        <div className="flex items-center gap-3 px-4 py-4">
+          <button 
+            onClick={() => setView('library')}
+            className="p-2 -ml-2 text-text-secondary hover:bg-surface-base rounded-lg"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-lg font-bold text-text-primary">Reading Reminders</h1>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden">
+          <ReadingReminders />
         </div>
       </div>
     </div>
@@ -1953,7 +2230,14 @@ export default function App() {
         />
       )}
       {activeTab === 'home' && !showDashboard && <HomeScreen />}
-      {activeTab === 'profile' && <ProfileScreen />}
+      {activeTab === 'profile' && view === 'library' && <ProfileScreen />}
+      {activeTab === 'profile' && view === 'manage-profile' && <ManageProfileScreen />}
+      {activeTab === 'profile' && view === 'streak' && <StreakScreen />}
+      {activeTab === 'profile' && view === 'goals' && <GoalsScreen />}
+      {activeTab === 'profile' && view === 'insights' && <InsightsScreen />}
+      {activeTab === 'profile' && view === 'achievements' && <AchievementsScreen />}
+      {activeTab === 'profile' && view === 'collections-list' && <CollectionsScreen />}
+      {activeTab === 'profile' && view === 'reminders' && <RemindersScreen />}
       {activeTab === 'community' && session?.user && <Community currentUserId={session.user.id} />}
       {activeTab === 'challenges' && session?.user && <Challenges currentUserId={session.user.id} />}
       {activeTab === 'privacy' && <PrivacyPolicyScreen />}
@@ -2008,7 +2292,7 @@ export default function App() {
             </button>
             
             <button
-              onClick={() => setActiveTab('profile')}
+              onClick={() => { setActiveTab('profile'); setView('library'); }}
               className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                 activeTab === 'profile' 
                   ? 'text-accent' 
