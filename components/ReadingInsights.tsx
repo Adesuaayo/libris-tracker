@@ -195,16 +195,16 @@ export function ReadingInsights({ books, readingSessions }: ReadingInsightsProps
   const maxMonthlyMinutes = Math.max(...analytics.monthlyMinutes.map(m => m.minutes), 1);
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+    <div className="bg-surface-card rounded-2xl border border-surface-border overflow-hidden">
       {/* Header with tabs */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+      <div className="p-4 border-b border-surface-border">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2.5 rounded-xl bg-indigo-100 dark:bg-indigo-900/30">
             <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Reading Insights</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Your reading analytics</p>
+            <h2 className="text-lg font-bold text-text-primary">Reading Insights</h2>
+            <p className="text-sm text-text-muted">Your reading analytics</p>
           </div>
         </div>
 
@@ -217,7 +217,7 @@ export function ReadingInsights({ books, readingSessions }: ReadingInsightsProps
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeTab === tab
                   ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  : 'text-text-secondary hover:bg-surface-base'
               }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -287,15 +287,15 @@ export function ReadingInsights({ books, readingSessions }: ReadingInsightsProps
 
             {/* Longest Session & Best Day */}
             <div className="flex gap-3">
-              <div className="flex-1 bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3">
-                <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Longest Session</div>
-                <div className="text-lg font-semibold text-slate-900 dark:text-white">
+              <div className="flex-1 bg-surface-base rounded-xl p-3">
+                <div className="text-xs text-text-muted mb-1">Longest Session</div>
+                <div className="text-lg font-semibold text-text-primary">
                   {formatTime(analytics.longestSession)}
                 </div>
               </div>
-              <div className="flex-1 bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3">
-                <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Best Day</div>
-                <div className="text-lg font-semibold text-slate-900 dark:text-white">
+              <div className="flex-1 bg-surface-base rounded-xl p-3">
+                <div className="text-xs text-text-muted mb-1">Best Day</div>
+                <div className="text-lg font-semibold text-text-primary">
                   {analytics.mostProductiveDay}
                 </div>
               </div>
@@ -360,20 +360,20 @@ export function ReadingInsights({ books, readingSessions }: ReadingInsightsProps
         {activeTab === 'patterns' && (
           <div className="space-y-5">
             {/* Preferred Reading Time */}
-            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4">
+            <div className="bg-surface-base rounded-xl p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-medium text-slate-900 dark:text-white mb-1">
+                  <div className="text-sm font-medium text-text-primary mb-1">
                     Preferred Reading Time
                   </div>
-                  <div className="text-2xl font-bold text-slate-900 dark:text-white capitalize flex items-center gap-2">
+                  <div className="text-2xl font-bold text-text-primary capitalize flex items-center gap-2">
                     {getTimeIcon(analytics.preferredReadingTime)}
                     {analytics.preferredReadingTime}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Most Active</div>
-                  <div className="text-lg font-semibold text-slate-700 dark:text-slate-300">
+                  <div className="text-xs text-text-muted mb-1">Most Active</div>
+                  <div className="text-lg font-semibold text-text-secondary">
                     {analytics.mostProductiveDay}
                   </div>
                 </div>
@@ -382,7 +382,7 @@ export function ReadingInsights({ books, readingSessions }: ReadingInsightsProps
 
             {/* Top Genres */}
             <div>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
                 <PieChart className="w-4 h-4 text-purple-500" />
                 Top Genres
               </h3>
@@ -395,10 +395,10 @@ export function ReadingInsights({ books, readingSessions }: ReadingInsightsProps
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium text-slate-900 dark:text-white">{g.genre}</span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400">{g.count} books</span>
+                          <span className="text-sm font-medium text-text-primary">{g.genre}</span>
+                          <span className="text-xs text-text-muted">{g.count} books</span>
                         </div>
-                        <div className="h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
+                        <div className="h-2 bg-surface-border rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"
                             style={{ width: `${g.percentage}%` }}
@@ -409,7 +409,7 @@ export function ReadingInsights({ books, readingSessions }: ReadingInsightsProps
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-6 text-slate-500 dark:text-slate-400">
+                <div className="text-center py-6 text-text-muted">
                   <PieChart className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">Complete some books to see genre insights</p>
                 </div>
@@ -419,18 +419,18 @@ export function ReadingInsights({ books, readingSessions }: ReadingInsightsProps
             {/* Genre Diversity Score */}
             <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 dark:from-purple-500/20 dark:to-indigo-500/20 rounded-xl p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-900 dark:text-white">Genre Diversity</span>
+                <span className="text-sm font-medium text-text-primary">Genre Diversity</span>
                 <span className="text-lg font-bold text-purple-600 dark:text-purple-400">
                   {analytics.genreDiversity}%
                 </span>
               </div>
-              <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-2 bg-surface-border rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full transition-all"
                   style={{ width: `${analytics.genreDiversity}%` }}
                 />
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+              <p className="text-xs text-text-muted mt-2">
                 Based on the variety of genres you've read
               </p>
             </div>

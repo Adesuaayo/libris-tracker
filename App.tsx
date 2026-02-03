@@ -1190,7 +1190,7 @@ export default function App() {
         <h1 className="text-xl font-bold text-white text-center mb-4 pt-4">Profile</h1>
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center border-3 border-white/30 overflow-hidden">
+            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/30 overflow-hidden">
               {profilePicture ? (
                 <img src={profilePicture} alt="Profile" className="w-full h-full object-cover" />
               ) : (
@@ -1200,13 +1200,12 @@ export default function App() {
               )}
             </div>
           </div>
-          <div className="flex-1">
-            <h2 className="text-lg font-bold text-white">{displayName || session.user.email?.split('@')[0]}</h2>
-            <p className="text-white/70 text-sm">{session.user.email}</p>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-bold text-white truncate">{displayName || session.user.email?.split('@')[0]}</h2>
           </div>
           <button 
             onClick={() => setView('manage-profile')}
-            className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white text-sm font-medium transition-colors"
+            className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white text-sm font-medium transition-colors flex-shrink-0"
           >
             Manage
           </button>
@@ -1752,24 +1751,24 @@ export default function App() {
         <div className="flex items-center gap-3 px-4 py-4">
           <button 
             onClick={() => setActiveTab('profile')}
-            className="p-2 -ml-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+            className="p-2 -ml-2 text-text-secondary hover:bg-surface-base rounded-lg"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white">Privacy Policy</h1>
+          <h1 className="text-lg font-bold text-text-primary">Privacy Policy</h1>
         </div>
       </div>
 
       {/* Content */}
       <div className="px-4 py-6">
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900 rounded-lg flex items-center justify-center">
-              <BookOpen className="h-5 w-5 text-brand-600 dark:text-brand-400" />
+            <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+              <BookOpen className="h-5 w-5 text-accent" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Privacy Policy for Libris</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: December 2025</p>
+              <h2 className="text-xl font-bold text-text-primary">Privacy Policy for Libris</h2>
+              <p className="text-sm text-text-muted">Last Updated: December 2025</p>
             </div>
           </div>
 
@@ -1845,30 +1844,30 @@ export default function App() {
 
   // Terms of Service Screen
   const TermsOfServiceScreen = () => (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
+    <div className="min-h-screen bg-surface-base pb-20">
       {/* Header */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+      <div className="bg-surface-card border-b border-surface-border pt-[env(safe-area-inset-top)] sticky top-0 z-10">
         <div className="flex items-center gap-3 px-4 py-4">
           <button 
             onClick={() => setActiveTab('profile')}
-            className="p-2 -ml-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+            className="p-2 -ml-2 text-text-secondary hover:bg-surface-base rounded-lg"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white">Terms of Service</h1>
+          <h1 className="text-lg font-bold text-text-primary">Terms of Service</h1>
         </div>
       </div>
 
       {/* Content */}
       <div className="px-4 py-6">
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+        <div className="bg-surface-card rounded-xl shadow-sm border border-surface-border p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900 rounded-lg flex items-center justify-center">
-              <FileText className="h-5 w-5 text-brand-600 dark:text-brand-400" />
+            <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+              <FileText className="h-5 w-5 text-accent" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Terms of Service</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: December 2025</p>
+              <h2 className="text-xl font-bold text-text-primary">Terms of Service</h2>
+              <p className="text-sm text-text-muted">Last Updated: December 2025</p>
             </div>
           </div>
 
@@ -1964,7 +1963,7 @@ export default function App() {
 
   // Home Screen Component
   const HomeScreen = () => (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
+    <div className="min-h-screen bg-surface-base pb-20">
       <main className="p-4 md:p-6 pt-[calc(1rem+env(safe-area-inset-top))]">
         
         {/* Header with Back button */}
@@ -1977,8 +1976,8 @@ export default function App() {
               <ArrowLeft className="text-white h-5 w-5" />
             </button>
             <div>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white">Libris</h1>
-                <p className="text-xs text-slate-500">{view === 'library' ? 'My Library' : view === 'analytics' ? 'Analytics' : view}</p>
+                <h1 className="text-xl font-bold text-text-primary">Libris</h1>
+                <p className="text-xs text-text-muted">{view === 'library' ? 'My Library' : view === 'analytics' ? 'Analytics' : view}</p>
             </div>
           </div>
         </header>
@@ -1990,7 +1989,7 @@ export default function App() {
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
               view === 'library' 
                 ? 'bg-coral text-white shadow-md shadow-coral/20' 
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                : 'bg-surface-card text-text-secondary border border-surface-border'
             }`}
           >
             <BookOpen className="h-4 w-4" />
@@ -2001,7 +2000,7 @@ export default function App() {
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
               view === 'analytics' 
                 ? 'bg-coral text-white shadow-md shadow-coral/20' 
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                : 'bg-surface-card text-text-secondary border border-surface-border'
             }`}
           >
             <BarChart2 className="h-4 w-4" />
@@ -2014,11 +2013,11 @@ export default function App() {
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <LibrarySearch onSearchChange={setSearchTerm} />
             <div className="relative w-full sm:w-44">
-              <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
               <select 
                 value={sortOption}
                 onChange={(e) => setSortOption(e.target.value as SortOption)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent shadow-sm text-sm appearance-none cursor-pointer"
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-surface-border bg-surface-card text-text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent shadow-sm text-sm appearance-none cursor-pointer"
               >
                 <option value="dateAdded">Recent</option>
                 <option value="rating">Rating</option>
@@ -2031,22 +2030,22 @@ export default function App() {
 
         {/* AI Response Area */}
         {(aiResponse || aiLoading) && (
-            <div className="mb-8 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-indigo-100 dark:border-indigo-900/50 p-6 relative overflow-hidden">
+            <div className="mb-8 bg-surface-card rounded-xl shadow-sm border border-indigo-200 dark:border-indigo-900/50 p-6 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
                 <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-2">
                         <BrainCircuit className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                         <h3 className="font-semibold text-indigo-900 dark:text-indigo-100">Gemini AI Insights</h3>
                     </div>
-                    <button onClick={() => setAiResponse(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                    <button onClick={() => setAiResponse(null)} className="text-text-muted hover:text-text-secondary">
                         <X className="h-5 w-5" />
                     </button>
                 </div>
                 {aiLoading ? (
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 animate-pulse">
-                        <div className="h-2 w-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce"></div>
-                        <div className="h-2 w-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce delay-75"></div>
-                        <div className="h-2 w-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce delay-150"></div>
+                    <div className="flex items-center gap-2 text-text-secondary animate-pulse">
+                        <div className="h-2 w-2 bg-text-muted rounded-full animate-bounce"></div>
+                        <div className="h-2 w-2 bg-text-muted rounded-full animate-bounce delay-75"></div>
+                        <div className="h-2 w-2 bg-text-muted rounded-full animate-bounce delay-150"></div>
                         Thinking...
                     </div>
                 ) : (
@@ -2113,29 +2112,29 @@ export default function App() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {isLoadingBooks ? (
                <div className="col-span-full flex justify-center py-12">
-                   <Loader2 className="h-8 w-8 text-brand-600 animate-spin" />
+                   <Loader2 className="h-8 w-8 text-accent animate-spin" />
                </div>
             ) : paginatedBooks.map(book => (
               <div 
                 key={book.id} 
-                className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden hover:shadow-md transition-shadow flex flex-col cursor-pointer"
+                className="bg-surface-card rounded-xl shadow-sm border border-surface-border overflow-hidden hover:shadow-md transition-shadow flex flex-col cursor-pointer"
                 onClick={() => setSelectedBook(book)}
               >
                 <div className="p-4 flex gap-4">
-                  <div className="w-20 h-28 flex-shrink-0 bg-slate-200 dark:bg-slate-700 rounded shadow-sm overflow-hidden relative group">
+                  <div className="w-20 h-28 flex-shrink-0 bg-surface-border rounded shadow-sm overflow-hidden relative group">
                     {book.coverUrl ? (
                         <img src={book.coverUrl} alt={book.title} className="w-full h-full object-cover" />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs text-center p-1">No Cover</div>
+                        <div className="w-full h-full flex items-center justify-center text-text-muted text-xs text-center p-1">No Cover</div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">
-                        <h3 className="font-bold text-slate-900 dark:text-white truncate pr-2" title={book.title}>{book.title}</h3>
+                        <h3 className="font-bold text-text-primary truncate pr-2" title={book.title}>{book.title}</h3>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex-shrink-0 ${
                             book.status === ReadingStatus.COMPLETED ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
                             book.status === ReadingStatus.IN_PROGRESS ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
-                            'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                            'bg-surface-base text-text-secondary'
                         }`}>
                             {book.status}
                         </span>
@@ -2154,24 +2153,24 @@ export default function App() {
                 
                 {book.notes && (
                     <div className="px-4 pb-2">
-                        <p className="text-xs text-slate-500 dark:text-slate-400 italic line-clamp-2">"{book.notes}"</p>
+                        <p className="text-xs text-text-muted italic line-clamp-2">"{book.notes}"</p>
                     </div>
                 )}
 
-                <div className="mt-auto bg-slate-50 dark:bg-slate-900/50 px-4 py-2 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center" onClick={(e) => e.stopPropagation()}>
+                <div className="mt-auto bg-surface-base px-4 py-2 border-t border-surface-border flex justify-between items-center" onClick={(e) => e.stopPropagation()}>
                    <Button variant="ghost" size="sm" className="text-xs h-7 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 p-0" onClick={() => handleBookSummary(book)}>
                       AI Summary
                    </Button>
                    <div className="flex gap-1">
                         <button 
                             onClick={() => handleEdit(book)}
-                            className="p-1.5 text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-colors"
+                            className="p-1.5 text-text-muted hover:text-accent hover:bg-surface-card rounded-md transition-colors"
                         >
                             <Edit2 className="h-4 w-4" />
                         </button>
                         <button 
                             onClick={() => handleDelete(book.id)}
-                            className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-colors"
+                            className="p-1.5 text-text-muted hover:text-red-500 hover:bg-surface-card rounded-md transition-colors"
                         >
                             <Trash2 className="h-4 w-4" />
                         </button>
@@ -2181,7 +2180,7 @@ export default function App() {
             ))}
             
             {!isLoadingBooks && filteredAndSortedBooks.length === 0 && (
-                <div className="col-span-full text-center py-12 text-slate-400">
+                <div className="col-span-full text-center py-12 text-text-muted">
                     <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-20" />
                     <p>No books found matching your criteria.</p>
                     {books.length === 0 && <p className="text-sm mt-2">Add a book to get started!</p>}
@@ -2191,7 +2190,7 @@ export default function App() {
             {/* Load More Button */}
             {!isLoadingBooks && hasMoreBooks && (
                 <div className="col-span-full flex flex-col items-center gap-2 py-8">
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                    <p className="text-sm text-text-muted">
                         Showing {paginatedBooks.length} of {filteredAndSortedBooks.length} books
                     </p>
                     <Button 

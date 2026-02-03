@@ -87,7 +87,7 @@ export const ActivityFeed = memo<ActivityFeedProps>(({ onViewProfile }) => {
       case 'joined_club': return 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400';
       case 'discussion': return 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400';
       case 'achievement': return 'bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400';
-      default: return 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400';
+      default: return 'bg-surface-base text-text-secondary';
     }
   };
 
@@ -145,7 +145,7 @@ export const ActivityFeed = memo<ActivityFeedProps>(({ onViewProfile }) => {
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
               filter === 'all'
                 ? 'bg-violet-500 text-white'
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                : 'bg-surface-base text-text-secondary'
             }`}
           >
             Everyone
@@ -155,7 +155,7 @@ export const ActivityFeed = memo<ActivityFeedProps>(({ onViewProfile }) => {
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
               filter === 'following'
                 ? 'bg-violet-500 text-white'
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                : 'bg-surface-base text-text-secondary'
             }`}
           >
             Following
@@ -165,9 +165,9 @@ export const ActivityFeed = memo<ActivityFeedProps>(({ onViewProfile }) => {
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+          className="p-2 rounded-full hover:bg-surface-base transition-colors disabled:opacity-50"
         >
-          <RefreshCw className={`w-5 h-5 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-5 h-5 text-text-muted ${isRefreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
@@ -192,7 +192,7 @@ export const ActivityFeed = memo<ActivityFeedProps>(({ onViewProfile }) => {
             return (
               <div 
                 key={activity.id}
-                className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                className="bg-surface-card rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="flex gap-3">
                   {/* User Avatar */}

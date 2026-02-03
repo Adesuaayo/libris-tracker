@@ -39,6 +39,14 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
   const [ebookData, setEbookData] = useState<{ data: string; fileName: string; fileType: 'epub' | 'pdf' } | null>(null);
   const bookNotes = notes.filter((n: BookNote) => n.bookId === book.id);
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   // Check if book has an eBook file
   useEffect(() => {
     const checkEbook = async () => {
@@ -89,10 +97,10 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-surface-card rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-brand-500 to-purple-600 p-6 text-white">
+        <div className="relative bg-gradient-to-r from-accent to-purple-600 p-6 text-white">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
@@ -153,18 +161,18 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Book Details */}
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+            <div className="flex items-center gap-2 text-text-secondary">
               <FileText className="w-4 h-4" />
               <span>Format: {book.format}</span>
             </div>
             {book.totalReadingMinutes && book.totalReadingMinutes > 0 && (
-              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-text-secondary">
                 <Clock className="w-4 h-4" />
                 <span>Total: {formatTotalTime(book.totalReadingMinutes)}</span>
               </div>
             )}
             {book.addedAt && (
-              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-text-secondary">
                 <Calendar className="w-4 h-4" />
                 <span>Added: {new Date(book.addedAt).toLocaleDateString()}</span>
               </div>
@@ -173,15 +181,15 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
           
           {/* Book Notes/Personal Notes */}
           {book.notes && (
-            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Your Notes</h4>
-              <p className="text-sm text-slate-600 dark:text-slate-400 italic">{book.notes}</p>
+            <div className="bg-surface-base rounded-lg p-4">
+              <h4 className="text-sm font-medium text-text-secondary mb-2">Your Notes</h4>
+              <p className="text-sm text-text-muted italic">{book.notes}</p>
             </div>
           )}
           
           {/* Reading Timer - Only for In Progress books */}
           {book.status === ReadingStatus.IN_PROGRESS && (
-            <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+            <div className="border-t border-surface-border pt-6">
               <ReadingTimer
                 bookTitle={book.title}
                 totalReadingMinutes={book.totalReadingMinutes || 0}
@@ -191,7 +199,7 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
           )}
           
           {/* Book Quotes & Notes */}
-          <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+          <div className="border-t border-surface-border pt-6">
             <BookNotes
               bookId={book.id}
               bookTitle={book.title}
@@ -203,11 +211,11 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
         </div>
         
         {/* Footer */}
-        <div className="border-t border-slate-200 dark:border-slate-700 p-2 bg-slate-50 dark:bg-slate-900/50">
+        <div className="border-t border-surface-border p-2 bg-surface-base">
           <div className="flex gap-1">
             <button 
               onClick={onClose}
-              className="p-2 text-slate-600 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+              className="p-2 text-text-secondary bg-surface-border rounded-lg hover:bg-surface-card transition-colors"
               title="Close"
             >
               <X className="w-4 h-4" />

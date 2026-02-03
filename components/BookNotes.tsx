@@ -58,13 +58,13 @@ export function BookNotes({
       {/* Add Form Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-xl">
+          <div className="bg-surface-card rounded-2xl p-6 max-w-md w-full shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              <h3 className="text-lg font-bold text-text-primary">
                 Add {noteType === 'quote' ? 'Quote' : 'Note'}
               </h3>
               <button onClick={() => setShowAddForm(false)} className="p-1">
-                <X className="w-5 h-5 text-slate-500" />
+                <X className="w-5 h-5 text-text-muted" />
               </button>
             </div>
 
@@ -77,7 +77,7 @@ export function BookNotes({
                   className={`flex-1 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all ${
                     noteType === 'quote'
                       ? 'bg-brand-500 text-white'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                      : 'bg-surface-base text-text-secondary'
                   }`}
                 >
                   <Quote className="w-4 h-4" />
@@ -89,7 +89,7 @@ export function BookNotes({
                   className={`flex-1 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all ${
                     noteType === 'note'
                       ? 'bg-brand-500 text-white'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                      : 'bg-surface-base text-text-secondary'
                   }`}
                 >
                   <FileText className="w-4 h-4" />
@@ -99,7 +99,7 @@ export function BookNotes({
 
               {/* Content */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   {noteType === 'quote' ? 'Quote text' : 'Your thoughts'}
                 </label>
                 <textarea
@@ -110,14 +110,14 @@ export function BookNotes({
                     : 'What did you think about this part?'
                   }
                   rows={4}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                  className="w-full px-4 py-3 rounded-xl border border-surface-border bg-surface-base text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
                   autoFocus
                 />
               </div>
 
               {/* Page Number */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   Page number (optional)
                 </label>
                 <input
@@ -125,7 +125,7 @@ export function BookNotes({
                   value={page}
                   onChange={(e) => setPage(e.target.value)}
                   placeholder="123"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full px-4 py-2.5 rounded-xl border border-surface-border bg-surface-base text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
 
@@ -199,24 +199,24 @@ function NoteCard({ note, onDelete }: NoteCardProps) {
       className={`relative p-4 rounded-xl ${
         note.type === 'quote' 
           ? 'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-400' 
-          : 'bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700'
+          : 'bg-surface-base border border-surface-border'
       }`}
       onMouseEnter={() => setShowDelete(true)}
       onMouseLeave={() => setShowDelete(false)}
     >
       {note.type === 'quote' ? (
-        <p className="italic text-slate-700 dark:text-slate-300">"{note.content}"</p>
+        <p className="italic text-text-secondary">"{note.content}"</p>
       ) : (
-        <p className="text-slate-700 dark:text-slate-300">{note.content}</p>
+        <p className="text-text-secondary">{note.content}</p>
       )}
       
       <div className="flex items-center justify-between mt-2">
         {note.page && (
-          <span className="text-xs text-slate-500 dark:text-slate-400">
+          <span className="text-xs text-text-muted">
             Page {note.page}
           </span>
         )}
-        <span className="text-xs text-slate-400 dark:text-slate-500">
+        <span className="text-xs text-text-muted">
           {new Date(note.createdAt).toLocaleDateString()}
         </span>
       </div>

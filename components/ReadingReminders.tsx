@@ -245,20 +245,20 @@ export function ReadingReminders({ onSettingsChange }: ReadingRemindersProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700">
+    <div className="bg-surface-card rounded-2xl p-5 border border-surface-border">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-xl ${settings.enabled ? 'bg-brand-100 dark:bg-brand-900/30' : 'bg-slate-100 dark:bg-slate-700'}`}>
+          <div className={`p-2.5 rounded-xl ${settings.enabled ? 'bg-brand-100 dark:bg-brand-900/30' : 'bg-surface-base'}`}>
             {settings.enabled ? (
               <Bell className="w-5 h-5 text-brand-500" />
             ) : (
-              <BellOff className="w-5 h-5 text-slate-400" />
+              <BellOff className="w-5 h-5 text-text-muted" />
             )}
           </div>
           <div>
-            <h3 className="font-semibold text-slate-900 dark:text-white">Reading Reminders</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <h3 className="font-semibold text-text-primary">Reading Reminders</h3>
+            <p className="text-sm text-text-muted">
               {settings.enabled ? 'Daily reminders active' : 'Get daily nudges to read'}
             </p>
           </div>
@@ -268,7 +268,7 @@ export function ReadingReminders({ onSettingsChange }: ReadingRemindersProps) {
         <button
           onClick={toggleEnabled}
           className={`relative w-14 h-8 rounded-full transition-colors ${
-            settings.enabled ? 'bg-brand-500' : 'bg-slate-300 dark:bg-slate-600'
+            settings.enabled ? 'bg-brand-500' : 'bg-surface-border'
           }`}
         >
           <div
@@ -292,7 +292,7 @@ export function ReadingReminders({ onSettingsChange }: ReadingRemindersProps) {
         <div className="space-y-5">
           {/* Time Picker */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               <Clock className="w-4 h-4 inline mr-1" />
               Reminder Time
             </label>
@@ -300,13 +300,13 @@ export function ReadingReminders({ onSettingsChange }: ReadingRemindersProps) {
               type="time"
               value={settings.time}
               onChange={(e) => updateTime(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full px-4 py-2.5 rounded-xl border border-surface-border bg-surface-base text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
           {/* Day Selector */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               Remind me on
             </label>
             <div className="flex gap-2">
@@ -317,7 +317,7 @@ export function ReadingReminders({ onSettingsChange }: ReadingRemindersProps) {
                   className={`w-10 h-10 rounded-full text-sm font-medium transition-all ${
                     settings.days.includes(day.id)
                       ? 'bg-brand-500 text-white'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
+                      : 'bg-surface-base text-text-secondary hover:bg-surface-border'
                   }`}
                   title={day.label}
                 >

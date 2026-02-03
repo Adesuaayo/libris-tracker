@@ -87,7 +87,7 @@ export function Achievements({
     : achievementsWithProgress.filter(a => a.unlocked || a.percentage > 0).slice(0, 6);
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700">
+    <div className="bg-surface-card rounded-2xl p-5 border border-surface-border">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -95,8 +95,8 @@ export function Achievements({
             <Trophy className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <h3 className="font-semibold text-slate-900 dark:text-white">Achievements</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <h3 className="font-semibold text-text-primary">Achievements</h3>
+            <p className="text-sm text-text-muted">
               {unlockedCount} of {ACHIEVEMENTS.length} unlocked
             </p>
           </div>
@@ -112,7 +112,7 @@ export function Achievements({
 
       {/* Progress bar */}
       <div className="mb-4">
-        <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+        <div className="h-2 bg-surface-base rounded-full overflow-hidden">
           <div 
             className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-500"
             style={{ width: `${(unlockedCount / ACHIEVEMENTS.length) * 100}%` }}
@@ -129,23 +129,23 @@ export function Achievements({
             className={`relative p-3 rounded-xl border-2 transition-all ${
               achievement.unlocked
                 ? 'bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border-amber-200 dark:border-amber-800/50'
-                : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 opacity-60 hover:opacity-100'
+                : 'bg-surface-base border-surface-border opacity-60 hover:opacity-100'
             }`}
           >
             <div className="text-2xl mb-1">{achievement.icon}</div>
-            <div className="text-xs font-medium text-slate-900 dark:text-white truncate">
+            <div className="text-xs font-medium text-text-primary truncate">
               {achievement.name}
             </div>
             
             {!achievement.unlocked && achievement.target && (
               <div className="mt-1.5">
-                <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-1 bg-surface-border rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-brand-400 rounded-full"
                     style={{ width: `${achievement.percentage}%` }}
                   />
                 </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
+                <div className="text-[10px] text-text-muted mt-0.5">
                   {achievement.current}/{achievement.target}
                 </div>
               </div>
@@ -168,24 +168,24 @@ export function Achievements({
       {selectedAchievement && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedAchievement(null)}>
           <div 
-            className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            className="bg-surface-card rounded-2xl p-6 max-w-sm w-full shadow-xl"
             onClick={e => e.stopPropagation()}
           >
             <button
               onClick={() => setSelectedAchievement(null)}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-surface-base"
             >
-              <X className="w-5 h-5 text-slate-500" />
+              <X className="w-5 h-5 text-text-muted" />
             </button>
             
             <div className="text-center">
               <div className={`text-6xl mb-4 ${selectedAchievement.unlocked ? '' : 'grayscale opacity-50'}`}>
                 {selectedAchievement.icon}
               </div>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+              <h3 className="text-xl font-bold text-text-primary mb-2">
                 {selectedAchievement.name}
               </h3>
-              <p className="text-slate-600 dark:text-slate-400 mb-4">
+              <p className="text-text-secondary mb-4">
                 {selectedAchievement.description}
               </p>
               
@@ -198,18 +198,18 @@ export function Achievements({
                 </div>
               ) : selectedAchievement.target ? (
                 <div className="space-y-2">
-                  <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div className="h-3 bg-surface-base rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-brand-400 to-brand-500 rounded-full"
                       style={{ width: `${selectedAchievement.percentage}%` }}
                     />
                   </div>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-text-muted">
                     {selectedAchievement.current} / {selectedAchievement.target} ({selectedAchievement.percentage}%)
                   </p>
                 </div>
               ) : (
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 text-sm">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface-base text-text-muted text-sm">
                   <Lock className="w-4 h-4" />
                   Locked
                 </div>

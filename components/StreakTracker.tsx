@@ -82,7 +82,7 @@ export function StreakTracker({ streak }: StreakTrackerProps) {
           
           return (
             <div key={date} className="flex flex-col items-center">
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 mb-1">
+              <span className="text-[10px] text-text-muted mb-1">
                 {dayLabels[dayIndex]}
               </span>
               <div
@@ -90,8 +90,8 @@ export function StreakTracker({ streak }: StreakTrackerProps) {
                   didRead
                     ? 'bg-orange-500 text-white shadow-sm'
                     : isToday
-                    ? 'bg-white dark:bg-slate-700 border-2 border-dashed border-orange-300 dark:border-orange-700 text-slate-600 dark:text-slate-300'
-                    : 'bg-white/50 dark:bg-slate-800/50 text-slate-400'
+                    ? 'bg-surface-card border-2 border-dashed border-orange-300 dark:border-orange-700 text-text-secondary'
+                    : 'bg-surface-base text-text-muted'
                 }`}
               >
                 {new Date(date).getDate()}
@@ -106,10 +106,10 @@ export function StreakTracker({ streak }: StreakTrackerProps) {
         <div className="flex items-center gap-2 flex-1">
           <Trophy className="w-4 h-4 text-amber-500" />
           <div>
-            <div className="text-sm font-semibold text-slate-900 dark:text-white">
+            <div className="text-sm font-semibold text-text-primary">
               {streak.longestStreak}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Best Streak</div>
+            <div className="text-xs text-text-muted">Best Streak</div>
           </div>
         </div>
         

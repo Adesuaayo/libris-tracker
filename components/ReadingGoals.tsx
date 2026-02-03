@@ -92,7 +92,7 @@ export function ReadingGoals({
                 type="number"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                className="w-20 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-center text-sm"
+                className="w-20 px-3 py-1.5 rounded-lg border border-surface-border bg-surface-base text-center text-sm"
                 placeholder="12"
                 min="1"
                 autoFocus
@@ -100,14 +100,14 @@ export function ReadingGoals({
               <button onClick={handleSave} className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
                 <Check className="w-4 h-4" />
               </button>
-              <button onClick={() => setIsEditing(null)} className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500">
+              <button onClick={() => setIsEditing(null)} className="p-1.5 rounded-lg bg-surface-base text-text-muted">
                 <X className="w-4 h-4" />
               </button>
             </div>
           ) : (
             <button
               onClick={() => handleStartEdit('yearly')}
-              className="p-2 rounded-lg hover:bg-white/50 dark:hover:bg-slate-800/50 text-slate-500 hover:text-brand-600 transition-colors"
+              className="p-2 rounded-lg hover:bg-surface-base text-text-muted hover:text-brand-600 transition-colors"
             >
               <Edit2 className="w-4 h-4" />
             </button>
@@ -116,17 +116,17 @@ export function ReadingGoals({
 
         {yearlyGoal ? (
           <>
-            <div className="relative h-4 bg-white/50 dark:bg-slate-800/50 rounded-full overflow-hidden mb-2">
+            <div className="relative h-4 bg-surface-base rounded-full overflow-hidden mb-2">
               <div 
                 className={`absolute inset-y-0 left-0 ${getProgressColor(getProgressPercentage(completedBooks, yearlyGoal.target))} rounded-full transition-all duration-500`}
                 style={{ width: `${getProgressPercentage(completedBooks, yearlyGoal.target)}%` }}
               />
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-slate-600 dark:text-slate-400">
+              <span className="text-text-secondary">
                 {getProgressPercentage(completedBooks, yearlyGoal.target)}% complete
               </span>
-              <span className="text-slate-600 dark:text-slate-400">
+              <span className="text-text-secondary">
                 {Math.max(0, yearlyGoal.target - completedBooks)} books to go
               </span>
             </div>
@@ -146,15 +146,15 @@ export function ReadingGoals({
       </div>
 
       {/* Monthly Goal */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700">
+      <div className="bg-surface-card rounded-2xl p-5 border border-surface-border">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-900/30">
               <TrendingUp className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <h3 className="font-semibold text-slate-900 dark:text-white">{monthNames[currentMonth]} Goal</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <h3 className="font-semibold text-text-primary">{monthNames[currentMonth]} Goal</h3>
+              <p className="text-sm text-text-muted">
                 {monthlyGoal ? `${completedThisMonth} of ${monthlyGoal.target} books` : 'Set a monthly target'}
               </p>
             </div>
@@ -166,7 +166,7 @@ export function ReadingGoals({
                 type="number"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                className="w-20 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-center text-sm"
+                className="w-20 px-3 py-1.5 rounded-lg border border-surface-border bg-surface-base text-center text-sm"
                 placeholder="2"
                 min="1"
                 autoFocus
@@ -174,14 +174,14 @@ export function ReadingGoals({
               <button onClick={handleSave} className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
                 <Check className="w-4 h-4" />
               </button>
-              <button onClick={() => setIsEditing(null)} className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500">
+              <button onClick={() => setIsEditing(null)} className="p-1.5 rounded-lg bg-surface-base text-text-muted">
                 <X className="w-4 h-4" />
               </button>
             </div>
           ) : (
             <button
               onClick={() => handleStartEdit('monthly')}
-              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-purple-600 transition-colors"
+              className="p-2 rounded-lg hover:bg-surface-base text-text-muted hover:text-purple-600 transition-colors"
             >
               <Edit2 className="w-4 h-4" />
             </button>
@@ -190,14 +190,14 @@ export function ReadingGoals({
 
         {monthlyGoal ? (
           <>
-            <div className="relative h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mb-2">
+            <div className="relative h-3 bg-surface-base rounded-full overflow-hidden mb-2">
               <div 
                 className={`absolute inset-y-0 left-0 ${getProgressColor(getProgressPercentage(completedThisMonth, monthlyGoal.target))} rounded-full transition-all duration-500`}
                 style={{ width: `${getProgressPercentage(completedThisMonth, monthlyGoal.target)}%` }}
               />
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500 dark:text-slate-400">
+              <span className="text-text-muted">
                 {getProgressPercentage(completedThisMonth, monthlyGoal.target)}% complete
               </span>
               {completedThisMonth >= monthlyGoal.target ? (

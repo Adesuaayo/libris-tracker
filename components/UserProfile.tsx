@@ -108,7 +108,7 @@ export const UserProfileView = memo<UserProfileViewProps>(({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-surface-base">
       {/* Header */}
       <div className="bg-gradient-to-br from-violet-500 to-purple-600 text-white">
         <div className="max-w-4xl mx-auto px-4 pt-4 pb-8">
@@ -212,7 +212,7 @@ export const UserProfileView = memo<UserProfileViewProps>(({
       </div>
 
       {/* Content Tabs */}
-      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
+      <div className="bg-surface-card border-b border-surface-border sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex gap-4">
             {(['activity', 'followers', 'following'] as const).map((tab) => (
@@ -222,7 +222,7 @@ export const UserProfileView = memo<UserProfileViewProps>(({
                 className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors capitalize ${
                   activeTab === tab
                     ? 'border-violet-500 text-violet-600 dark:text-violet-400'
-                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                    : 'border-transparent text-text-muted hover:text-text-secondary'
                 }`}
               >
                 {tab}
@@ -277,8 +277,8 @@ function ActivityList({ activities }: ActivityListProps) {
   if (activities.length === 0) {
     return (
       <div className="text-center py-12">
-        <Clock className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-        <p className="text-slate-500">No recent activity</p>
+        <Clock className="w-12 h-12 mx-auto text-text-muted mb-4" />
+        <p className="text-text-muted">No recent activity</p>
       </div>
     );
   }
@@ -318,16 +318,16 @@ function ActivityList({ activities }: ActivityListProps) {
         return (
           <div 
             key={activity.id}
-            className="flex gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm"
+            className="flex gap-4 p-4 bg-surface-card rounded-xl shadow-sm"
           >
             <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0">
               <Icon className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-slate-900 dark:text-white">
+              <p className="text-text-primary">
                 {getActivityText(activity)}
               </p>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-text-muted mt-1">
                 {new Date(activity.created_at).toLocaleDateString()}
               </p>
             </div>
@@ -351,8 +351,8 @@ function UserList({ users, onViewProfile }: UserListProps) {
   if (users.length === 0) {
     return (
       <div className="text-center py-12">
-        <Users className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-        <p className="text-slate-500">No users to show</p>
+        <Users className="w-12 h-12 mx-auto text-text-muted mb-4" />
+        <p className="text-text-muted">No users to show</p>
       </div>
     );
   }
@@ -363,7 +363,7 @@ function UserList({ users, onViewProfile }: UserListProps) {
         <button
           key={user.id}
           onClick={() => onViewProfile(user.id)}
-          className="w-full flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          className="w-full flex items-center gap-3 p-3 bg-surface-card rounded-xl hover:bg-surface-base transition-colors"
         >
           {user.avatar_url ? (
             <img 
@@ -377,11 +377,11 @@ function UserList({ users, onViewProfile }: UserListProps) {
             </div>
           )}
           <div className="flex-1 text-left min-w-0">
-            <p className="font-medium text-slate-900 dark:text-white truncate">
+            <p className="font-medium text-text-primary truncate">
               {user.display_name}
             </p>
             {user.username && (
-              <p className="text-sm text-slate-500 truncate">@{user.username}</p>
+              <p className="text-sm text-text-muted truncate">@{user.username}</p>
             )}
           </div>
         </button>
@@ -454,13 +454,13 @@ function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
-      <div className="bg-white dark:bg-slate-800 w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl">
+      <div className="bg-surface-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800">
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
-            <X className="w-5 h-5 text-slate-500" />
+        <div className="flex items-center justify-between p-4 border-b border-surface-border sticky top-0 bg-surface-card">
+          <button onClick={onClose} className="p-2 hover:bg-surface-border rounded-full">
+            <X className="w-5 h-5 text-text-muted" />
           </button>
-          <h2 className="font-semibold text-slate-900 dark:text-white">Edit Profile</h2>
+          <h2 className="font-semibold text-text-primary">Edit Profile</h2>
           <button 
             onClick={handleSave}
             disabled={isSaving}
@@ -478,7 +478,7 @@ function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
         <div className="p-4 space-y-4">
           {/* Avatar URL */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-text-secondary mb-1">
               Avatar URL
             </label>
             <div className="flex gap-3">
@@ -494,14 +494,14 @@ function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
                 value={avatarUrl}
                 onChange={(e) => setAvatarUrl(e.target.value)}
                 placeholder="https://example.com/avatar.jpg"
-                className="flex-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                className="flex-1 px-3 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary"
               />
             </div>
           </div>
 
           {/* Display Name */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-text-secondary mb-1">
               Display Name *
             </label>
             <input
@@ -509,31 +509,31 @@ function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               maxLength={50}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+              className="w-full px-3 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary"
             />
           </div>
 
           {/* Username */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-text-secondary mb-1">
               Username
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">@</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">@</span>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                 maxLength={30}
                 placeholder="username"
-                className="w-full pl-8 pr-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                className="w-full pl-8 pr-3 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary"
               />
             </div>
           </div>
 
           {/* Bio */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-text-secondary mb-1">
               Bio
             </label>
             <textarea
@@ -542,24 +542,24 @@ function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
               maxLength={200}
               rows={3}
               placeholder="Tell others about yourself..."
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary resize-none"
             />
-            <p className="text-xs text-slate-500 mt-1">{bio.length}/200</p>
+            <p className="text-xs text-text-muted mt-1">{bio.length}/200</p>
           </div>
 
           {/* Privacy Toggle */}
-          <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-surface-base rounded-lg">
             <div className="flex items-center gap-3">
               {isPublic ? (
                 <Globe className="w-5 h-5 text-green-500" />
               ) : (
-                <Lock className="w-5 h-5 text-slate-500" />
+                <Lock className="w-5 h-5 text-text-muted" />
               )}
               <div>
-                <p className="font-medium text-slate-900 dark:text-white">
+                <p className="font-medium text-text-primary">
                   {isPublic ? 'Public Profile' : 'Private Profile'}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-text-muted">
                   {isPublic ? 'Anyone can see your activity' : 'Only followers can see your activity'}
                 </p>
               </div>
@@ -578,7 +578,7 @@ function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
 
           {/* Favorite Genres */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               Favorite Genres
             </label>
             <div className="flex flex-wrap gap-2">
@@ -589,7 +589,7 @@ function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
                   className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                     favoriteGenres.includes(genre)
                       ? 'bg-violet-500 text-white'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                      : 'bg-surface-border text-text-secondary hover:bg-surface-base'
                   }`}
                 >
                   {genre}

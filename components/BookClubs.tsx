@@ -76,13 +76,13 @@ export const BookClubsList = memo<BookClubsListProps>(({ currentUserId, onViewPr
     <div className="space-y-6">
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
         <input
           type="text"
           placeholder="Search book clubs..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 ring-violet-500"
+          className="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-card border border-surface-border text-text-primary placeholder-text-muted focus:ring-2 ring-violet-500"
         />
       </div>
 
@@ -93,7 +93,7 @@ export const BookClubsList = memo<BookClubsListProps>(({ currentUserId, onViewPr
           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
             activeTab === 'discover'
               ? 'bg-violet-500 text-white'
-              : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+              : 'bg-surface-border text-text-secondary'
           }`}
         >
           Discover
@@ -103,7 +103,7 @@ export const BookClubsList = memo<BookClubsListProps>(({ currentUserId, onViewPr
           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
             activeTab === 'my-clubs'
               ? 'bg-violet-500 text-white'
-              : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+              : 'bg-surface-border text-text-secondary'
           }`}
         >
           My Clubs
@@ -126,11 +126,11 @@ export const BookClubsList = memo<BookClubsListProps>(({ currentUserId, onViewPr
         </div>
       ) : filteredClubs.length === 0 ? (
         <div className="text-center py-12">
-          <Users className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-          <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
+          <Users className="w-12 h-12 mx-auto text-text-muted mb-4" />
+          <h3 className="text-lg font-medium text-text-secondary mb-2">
             {activeTab === 'my-clubs' ? 'No clubs yet' : 'No clubs found'}
           </h3>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-text-muted">
             {activeTab === 'my-clubs' 
               ? 'Create or join a book club to get started' 
               : 'Be the first to create a club!'
@@ -143,7 +143,7 @@ export const BookClubsList = memo<BookClubsListProps>(({ currentUserId, onViewPr
             <button
               key={club.id}
               onClick={() => setSelectedClub(club)}
-              className="w-full flex gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm hover:shadow-md transition-all text-left"
+              className="w-full flex gap-4 p-4 bg-surface-card rounded-xl shadow-sm hover:shadow-md transition-all text-left"
             >
               {/* Club Cover */}
               {club.cover_image_url ? (
@@ -161,23 +161,23 @@ export const BookClubsList = memo<BookClubsListProps>(({ currentUserId, onViewPr
               {/* Club Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-slate-900 dark:text-white truncate">
+                  <h3 className="font-semibold text-text-primary truncate">
                     {club.name}
                   </h3>
                   {club.is_public ? (
                     <Globe className="w-4 h-4 text-green-500" />
                   ) : (
-                    <Lock className="w-4 h-4 text-slate-400" />
+                    <Lock className="w-4 h-4 text-text-muted" />
                   )}
                 </div>
 
                 {club.description && (
-                  <p className="text-sm text-slate-500 line-clamp-2 mt-1">
+                  <p className="text-sm text-text-muted line-clamp-2 mt-1">
                     {club.description}
                   </p>
                 )}
 
-                <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">
+                <div className="flex items-center gap-4 mt-2 text-xs text-text-muted">
                   <span className="flex items-center gap-1">
                     <Users className="w-3 h-3" />
                     {club.member_count || 0} members
@@ -258,10 +258,10 @@ function CreateClubModal({ onClose, onCreated }: CreateClubModalProps) {
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
       <div className="bg-white dark:bg-slate-800 w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Create Book Club</h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
-            <X className="w-5 h-5 text-slate-500" />
+        <div className="flex items-center justify-between p-4 border-b border-surface-border">
+          <h2 className="text-lg font-semibold text-text-primary">Create Book Club</h2>
+          <button onClick={onClose} className="p-2 hover:bg-surface-border rounded-full">
+            <X className="w-5 h-5 text-text-muted" />
           </button>
         </div>
 
@@ -269,7 +269,7 @@ function CreateClubModal({ onClose, onCreated }: CreateClubModalProps) {
         <div className="p-4 space-y-4">
           {/* Cover URL */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-text-secondary mb-1">
               Cover Image URL
             </label>
             <input
@@ -277,13 +277,13 @@ function CreateClubModal({ onClose, onCreated }: CreateClubModalProps) {
               value={coverUrl}
               onChange={(e) => setCoverUrl(e.target.value)}
               placeholder="https://example.com/cover.jpg"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+              className="w-full px-3 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary"
             />
           </div>
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-text-secondary mb-1">
               Club Name *
             </label>
             <input
@@ -292,13 +292,13 @@ function CreateClubModal({ onClose, onCreated }: CreateClubModalProps) {
               onChange={(e) => setName(e.target.value)}
               maxLength={100}
               placeholder="e.g., Sci-Fi Book Lovers"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+              className="w-full px-3 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-text-secondary mb-1">
               Description
             </label>
             <textarea
@@ -307,23 +307,23 @@ function CreateClubModal({ onClose, onCreated }: CreateClubModalProps) {
               maxLength={500}
               rows={3}
               placeholder="What's your club about?"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary resize-none"
             />
           </div>
 
           {/* Privacy Toggle */}
-          <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-surface-base rounded-lg">
             <div className="flex items-center gap-3">
               {!isPrivate ? (
                 <Globe className="w-5 h-5 text-green-500" />
               ) : (
-                <Lock className="w-5 h-5 text-slate-500" />
+                <Lock className="w-5 h-5 text-text-muted" />
               )}
               <div>
-                <p className="font-medium text-slate-900 dark:text-white">
+                <p className="font-medium text-text-primary">
                   {!isPrivate ? 'Public Club' : 'Private Club'}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-text-muted">
                   {!isPrivate ? 'Anyone can join' : 'Members must be approved'}
                 </p>
               </div>

@@ -116,17 +116,17 @@ export function BookCollections({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+    <div className="bg-surface-card rounded-2xl border border-surface-border overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+      <div className="p-4 border-b border-surface-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-violet-100 dark:bg-violet-900/30">
               <Folder className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Collections</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Organize your library</p>
+              <h2 className="text-lg font-bold text-text-primary">Collections</h2>
+              <p className="text-sm text-text-muted">Organize your library</p>
             </div>
           </div>
           <button
@@ -141,11 +141,11 @@ export function BookCollections({
       <div className="p-4 space-y-3">
         {/* Create New Collection Form */}
         {isCreating && (
-          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 space-y-3">
+          <div className="bg-surface-base rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowIconPicker(!showIconPicker)}
-                className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                className="w-10 h-10 rounded-lg bg-surface-card border border-surface-border flex items-center justify-center text-xl hover:bg-surface-base transition-colors"
               >
                 {newIcon}
               </button>
@@ -154,18 +154,18 @@ export function BookCollections({
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Collection name"
-                className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="flex-1 px-3 py-2 bg-surface-card border border-surface-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-violet-500"
                 autoFocus
               />
             </div>
 
             {showIconPicker && (
-              <div className="grid grid-cols-8 gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+              <div className="grid grid-cols-8 gap-2 p-2 bg-surface-card rounded-lg border border-surface-border">
                 {COLLECTION_ICONS.map(icon => (
                   <button
                     key={icon}
                     onClick={() => { setNewIcon(icon); setShowIconPicker(false); }}
-                    className={`w-8 h-8 rounded flex items-center justify-center text-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${newIcon === icon ? 'bg-violet-100 dark:bg-violet-900/30' : ''}`}
+                    className={`w-8 h-8 rounded flex items-center justify-center text-lg hover:bg-surface-base transition-colors ${newIcon === icon ? 'bg-violet-100 dark:bg-violet-900/30' : ''}`}
                   >
                     {icon}
                   </button>
@@ -178,7 +178,7 @@ export function BookCollections({
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               placeholder="Description (optional)"
-              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+              className="w-full px-3 py-2 bg-surface-card border border-surface-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
             />
 
             <div>
@@ -232,11 +232,11 @@ export function BookCollections({
 
             if (isEditing) {
               return (
-                <div key={collection.id} className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 space-y-3">
+                <div key={collection.id} className="bg-surface-base rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setShowIconPicker(!showIconPicker)}
-                      className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-xl"
+                      className="w-10 h-10 rounded-lg bg-surface-card border border-surface-border flex items-center justify-center text-xl"
                     >
                       {newIcon}
                     </button>
@@ -244,17 +244,17 @@ export function BookCollections({
                       type="text"
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      className="flex-1 px-3 py-2 bg-surface-card border border-surface-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-violet-500"
                     />
                   </div>
 
                   {showIconPicker && (
-                    <div className="grid grid-cols-8 gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                    <div className="grid grid-cols-8 gap-2 p-2 bg-surface-card rounded-lg border border-surface-border">
                       {COLLECTION_ICONS.map(icon => (
                         <button
                           key={icon}
                           onClick={() => { setNewIcon(icon); setShowIconPicker(false); }}
-                          className={`w-8 h-8 rounded flex items-center justify-center text-lg hover:bg-slate-100 dark:hover:bg-slate-700 ${newIcon === icon ? 'bg-violet-100 dark:bg-violet-900/30' : ''}`}
+                          className={`w-8 h-8 rounded flex items-center justify-center text-lg hover:bg-surface-base ${newIcon === icon ? 'bg-violet-100 dark:bg-violet-900/30' : ''}`}
                         >
                           {icon}
                         </button>
@@ -267,7 +267,7 @@ export function BookCollections({
                     value={newDescription}
                     onChange={(e) => setNewDescription(e.target.value)}
                     placeholder="Description"
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="w-full px-3 py-2 bg-surface-card border border-surface-border rounded-lg text-text-primary placeholder-text-muted text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                   />
 
                   <div className="flex flex-wrap gap-2">

@@ -174,11 +174,11 @@ export function ReadingTimer({
       {/* Confirm Modal */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full shadow-xl">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+          <div className="bg-surface-card rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <h3 className="text-lg font-bold text-text-primary mb-2">
               Save Reading Session?
             </h3>
-            <p className="text-slate-600 dark:text-slate-400 mb-4">
+            <p className="text-text-secondary mb-4">
               You read for <strong>{formatTime(seconds)}</strong>. Save this session?
             </p>
             <div className="flex gap-3">

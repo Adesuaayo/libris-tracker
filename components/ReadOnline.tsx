@@ -169,7 +169,7 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col">
+      <div className="bg-surface-card w-full max-w-lg rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-violet-500 to-purple-600 p-5 text-white relative">
           <button
@@ -205,7 +205,7 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
           {availability.loading && (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="w-5 h-5 animate-spin text-violet-500 mr-2" />
-              <span className="text-sm text-slate-500 dark:text-slate-400">
+              <span className="text-sm text-text-muted">
                 Checking availability...
               </span>
             </div>
@@ -214,7 +214,7 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
           {sources.map((source) => (
             <div
               key={source.id}
-              className="bg-slate-50 dark:bg-slate-700/50 rounded-xl overflow-hidden"
+              className="bg-surface-base rounded-xl overflow-hidden"
             >
               <div className="flex items-center gap-4 p-4">
                 <div className={`p-3 rounded-xl ${
@@ -230,24 +230,24 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-slate-900 dark:text-white">
+                    <span className="font-medium text-text-primary">
                       {source.name}
                     </span>
                     <span className="text-lg">{source.icon}</span>
                     {getAvailabilityBadge(source)}
                   </div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                  <p className="text-sm text-text-muted">
                     {source.description}
                   </p>
                 </div>
               </div>
               
               {/* Action Buttons */}
-              <div className="flex border-t border-slate-200 dark:border-slate-600">
+              <div className="flex border-t border-surface-border">
                 <button
                   onClick={() => handleOpenSource(source, true)}
                   disabled={openingSource !== null}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors disabled:opacity-50 border-r border-slate-200 dark:border-slate-600"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors disabled:opacity-50 border-r border-surface-border"
                 >
                   {openingSource === source.id ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -259,7 +259,7 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
                 <button
                   onClick={() => handleOpenSource(source, false)}
                   disabled={openingSource !== null}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-border transition-colors disabled:opacity-50"
                 >
                   <ExternalLink className="w-4 h-4" />
                   Open External
@@ -270,10 +270,10 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-900/50">
+        <div className="border-t border-surface-border p-4 bg-surface-base">
           <button
             onClick={onClose}
-            className="w-full py-3 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+            className="w-full py-3 bg-surface-border text-text-secondary rounded-xl font-medium hover:bg-surface-border/80 transition-colors"
           >
             Close
           </button>
@@ -282,7 +282,7 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
 
       {/* In-App Reader */}
       {inAppUrl && (
-        <div className="fixed inset-0 z-[70] bg-white dark:bg-slate-900 flex flex-col">
+        <div className="fixed inset-0 z-[70] bg-surface-card flex flex-col">
           {/* Reader Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-violet-600 text-white safe-area-top">
             <button
@@ -319,10 +319,10 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
 
           {/* Loading indicator */}
           {iframeLoading && (
-            <div className="absolute inset-0 top-14 flex items-center justify-center bg-white dark:bg-slate-900 z-10">
+            <div className="absolute inset-0 top-14 flex items-center justify-center bg-surface-card z-10">
               <div className="text-center">
                 <Loader2 className="w-8 h-8 animate-spin text-violet-500 mx-auto mb-3" />
-                <p className="text-sm text-slate-500 dark:text-slate-400">Loading reader...</p>
+                <p className="text-sm text-text-muted">Loading reader...</p>
               </div>
             </div>
           )}

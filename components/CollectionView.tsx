@@ -93,7 +93,7 @@ export function CollectionView({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
+    <div className="min-h-screen bg-surface-base pb-20">
       {/* Header */}
       <div className={`bg-gradient-to-r ${getColorClass(collection.color, 'gradient')} pt-[env(safe-area-inset-top)] pb-6 px-4`}>
         <div className="flex items-center gap-3 pt-4 mb-4">
@@ -132,11 +132,11 @@ export function CollectionView({
       <div className="px-4 py-6">
         {books.length === 0 ? (
           <div className="text-center py-12">
-            <BookOpen className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-            <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <BookOpen className="w-16 h-16 mx-auto text-text-muted mb-4" />
+            <h3 className="text-lg font-medium text-text-secondary mb-2">
               No books in this collection
             </h3>
-            <p className="text-slate-500 dark:text-slate-400 mb-4">
+            <p className="text-text-muted mb-4">
               Add books to organize your library
             </p>
             <button
@@ -151,7 +151,7 @@ export function CollectionView({
             {books.map(book => (
               <div
                 key={book.id}
-                className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 group relative"
+                className="bg-surface-card rounded-xl overflow-hidden shadow-sm border border-surface-border group relative"
               >
                 {/* Remove Button */}
                 <button
@@ -163,7 +163,7 @@ export function CollectionView({
 
                 {/* Book Cover */}
                 <div 
-                  className="aspect-[2/3] bg-slate-100 dark:bg-slate-700 cursor-pointer"
+                  className="aspect-[2/3] bg-surface-border cursor-pointer"
                   onClick={() => onViewBook(book)}
                 >
                   {book.coverUrl ? (
@@ -181,10 +181,10 @@ export function CollectionView({
 
                 {/* Book Info */}
                 <div className="p-3">
-                  <h4 className="font-medium text-sm text-slate-900 dark:text-white line-clamp-1">
+                  <h4 className="font-medium text-sm text-text-primary line-clamp-1">
                     {book.title}
                   </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
+                  <p className="text-xs text-text-muted line-clamp-1">
                     {book.author}
                   </p>
                   <span className={`inline-block mt-2 px-2 py-0.5 rounded-full text-xs ${getStatusBadge(book.status)}`}>
@@ -200,16 +200,16 @@ export function CollectionView({
       {/* Add Books Modal */}
       {showAddBooks && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white dark:bg-slate-800 w-full max-w-lg max-h-[80vh] rounded-t-2xl sm:rounded-2xl overflow-hidden">
+          <div className="bg-surface-card w-full max-w-lg max-h-[80vh] rounded-t-2xl sm:rounded-2xl overflow-hidden">
             {/* Modal Header */}
-            <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+            <div className="p-4 border-b border-surface-border">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                <h3 className="text-lg font-semibold text-text-primary">
                   Add Books to Collection
                 </h3>
                 <button
                   onClick={() => { setShowAddBooks(false); setSelectedBooks([]); setSearchTerm(''); }}
-                  className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+                  className="p-2 text-text-muted hover:bg-surface-border rounded-lg"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -217,13 +217,13 @@ export function CollectionView({
 
               {/* Search */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search books..."
-                  className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full pl-10 pr-4 py-2 bg-surface-base rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>
             </div>
@@ -231,7 +231,7 @@ export function CollectionView({
             {/* Book List */}
             <div className="overflow-y-auto max-h-[50vh] p-4 space-y-2">
               {filteredAvailableBooks.length === 0 ? (
-                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                <div className="text-center py-8 text-text-muted">
                   {availableBooks.length === 0 
                     ? 'All your books are already in this collection'
                     : 'No books found'}
@@ -244,7 +244,7 @@ export function CollectionView({
                     className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors ${
                       selectedBooks.includes(book.id)
                         ? 'bg-violet-100 dark:bg-violet-900/30 border-2 border-violet-500'
-                        : 'bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border-2 border-transparent'
+                        : 'bg-surface-base hover:bg-surface-border border-2 border-transparent'
                     }`}
                   >
                     {/* Checkbox */}
@@ -257,7 +257,7 @@ export function CollectionView({
                     </div>
 
                     {/* Book Cover */}
-                    <div className="w-10 h-14 rounded overflow-hidden bg-slate-200 dark:bg-slate-600 flex-shrink-0">
+                    <div className="w-10 h-14 rounded overflow-hidden bg-surface-border flex-shrink-0">
                       {book.coverUrl ? (
                         <img src={book.coverUrl} alt={book.title} className="w-full h-full object-cover" />
                       ) : (
@@ -269,10 +269,10 @@ export function CollectionView({
 
                     {/* Book Info */}
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-slate-900 dark:text-white text-sm line-clamp-1">
+                      <h4 className="font-medium text-text-primary text-sm line-clamp-1">
                         {book.title}
                       </h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
+                      <p className="text-xs text-text-muted line-clamp-1">
                         {book.author}
                       </p>
                     </div>
@@ -282,7 +282,7 @@ export function CollectionView({
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-slate-200 dark:border-slate-700">
+            <div className="p-4 border-t border-surface-border">
               <button
                 onClick={handleAddSelectedBooks}
                 disabled={selectedBooks.length === 0}

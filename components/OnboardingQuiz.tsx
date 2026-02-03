@@ -121,7 +121,7 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                     preferences.favoriteGenres.includes(genre)
                       ? 'bg-brand-500 text-white shadow-md'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                      : 'bg-surface-base text-text-secondary hover:bg-surface-border'
                   }`}
                 >
                   {preferences.favoriteGenres.includes(genre) && (
@@ -248,7 +248,7 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-white dark:bg-slate-900 z-50 flex flex-col">
+    <div className="fixed inset-0 bg-surface-base z-50 flex flex-col">
       {/* Progress bar */}
       {step > 0 && (
         <div className="p-4">
@@ -257,7 +257,7 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
               <div
                 key={s}
                 className={`h-1.5 flex-1 rounded-full transition-all ${
-                  s <= step ? 'bg-brand-500' : 'bg-slate-200 dark:bg-slate-700'
+                  s <= step ? 'bg-brand-500' : 'bg-surface-border'
                 }`}
               />
             ))}
