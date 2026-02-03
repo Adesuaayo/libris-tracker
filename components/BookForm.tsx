@@ -371,17 +371,6 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
 
   return (
     <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg max-w-2xl mx-auto border border-slate-100 dark:border-slate-700">
-      {/* Debug Panel */}
-      <div className="mb-4 p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-[10px] text-yellow-800 dark:text-yellow-200 space-y-1">
-        <p><strong>DEBUG:</strong></p>
-        <p>Title: "{formData.title}" | Author: "{formData.author}"</p>
-        <p>eBook State: {ebookFile ? `YES (${(ebookFile.length/1024).toFixed(0)}KB)` : 'NO'}</p>
-        <p>eBook Ref: {ebookDataRef.current ? `YES (${ebookDataRef.current.name})` : 'NO'}</p>
-        <p>eBook Module: {pendingEbookData ? `YES (${pendingEbookData.name})` : 'NO'}</p>
-        <p>eBook Session: {sessionStorage.getItem(EBOOK_SESSION_KEY) ? 'YES' : 'NO'}</p>
-        <p>FileName: {ebookFileName || 'none'}</p>
-      </div>
-
       <div className="mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
         <h2 className="text-xl font-bold text-slate-800 dark:text-white">{initialData ? 'Edit Book' : 'Add New Book'}</h2>
         {!initialData && (

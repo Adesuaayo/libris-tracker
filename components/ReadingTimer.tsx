@@ -18,6 +18,17 @@ export function ReadingTimer({
   const [showConfirm, setShowConfirm] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
+  const secondsRef = useRef(seconds);
+  const onSessionCompleteRef = useRef(onSessionComplete);
+
+  // Keep refs updated
+  useEffect(() => {
+    secondsRef.current = seconds;
+  }, [seconds]);
+
+  useEffect(() => {
+    onSessionCompleteRef.current = onSessionComplete;
+  }, [onSessionComplete]);
 
   useEffect(() => {
     if (isRunning) {
@@ -37,6 +48,17 @@ export function ReadingTimer({
       }
     };
   }, [isRunning]);
+
+  // Auto-save on unmount if timer has significant time (> 60 seconds)
+  useEffect(() => {
+    return () => {
+      const currentSeconds = secondsRef.current;
+      if (currentSeconds >= 60) {
+        const minutes = Math.floor(currentSeconds / 60);
+        onSessionCompleteRef.current(minutes);
+      }
+    };
+  }, []);
 
   const formatTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);

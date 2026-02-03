@@ -68,7 +68,7 @@ export default function App() {
   // AI State
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiMode, setAiMode] = useState<'recommend' | 'analyze' | null>(null);
+  const [aiMode, setAiMode] = useState<'recommend' | 'analyze' | 'summary' | null>(null);
 
   // Profile Picture State
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
@@ -188,8 +188,10 @@ export default function App() {
       setDisplayName(session?.user?.email?.split('@')[0] || '');
     }
     
-    // Load avatar
-    if (metadata?.avatar_url) {
+    // Load avatar - prioritize custom_avatar_url over OAuth provider avatar
+    if (metadata?.custom_avatar_url) {
+      setProfilePicture(metadata.custom_avatar_url);
+    } else if (metadata?.avatar_url) {
       setProfilePicture(metadata.avatar_url);
     } else {
       // Fallback to localStorage for existing users (migration)
@@ -859,8 +861,9 @@ export default function App() {
         .getPublicUrl(fileName);
 
       // Save to Supabase user metadata (persists across sessions)
+      // Use custom_avatar_url to avoid being overwritten by OAuth providers
       const { error: updateError } = await supabase.auth.updateUser({
-        data: { avatar_url: publicUrl }
+        data: { custom_avatar_url: publicUrl }
       });
 
       if (updateError) {
@@ -994,6 +997,9 @@ export default function App() {
     setShowDashboard(false); // Make sure to show the library view where AI response is displayed
     setView('library');
     
+    // Scroll to top immediately so user sees the loading state
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     try {
         let text = "";
         if (mode === 'recommend') {
@@ -1003,6 +1009,10 @@ export default function App() {
             text = await analyzeReadingHabits(books);
         }
         setAiResponse(text);
+        // Scroll to top again when response arrives
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 100);
     } catch (e: any) {
         setAiResponse(`Error: ${e.message || "Failed to connect to AI service. Please try again."}`);
     } finally {
@@ -1014,10 +1024,16 @@ export default function App() {
       toast.info(`Generating summary for "${book.title}"...`);
       try {
         const summary = await getBookSummary(book.title, book.author);
-        // For long content, we'll show a brief success message
-        // The full summary could be displayed in a modal in the future
-        toast.success(`Summary generated! Check console for details.`);
-        console.log(`AI Summary for ${book.title}:\n\n${summary}`);
+        // Show summary in the AI response modal
+        setAiMode('summary');
+        setAiResponse(summary);
+        // Navigate to home to show the modal
+        setActiveTab('home');
+        setShowDashboard(true);
+        // Scroll to top after a brief delay
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 100);
       } catch (e: any) {
         toast.error(`Failed to generate summary: ${e.message}`);
       }

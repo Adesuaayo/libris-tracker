@@ -73,6 +73,9 @@ const mapToApp = (row: any): Book => ({
     notes: row.notes,
     coverUrl: row.cover_url,
     addedAt: row.added_at,
+    currentPage: row.current_page,
+    totalPages: row.total_pages,
+    totalReadingMinutes: row.total_reading_minutes,
 });
 
 /**
@@ -91,6 +94,9 @@ const mapToDb = (book: Book, userId: string) => ({
     notes: book.notes,
     cover_url: book.coverUrl,
     added_at: book.addedAt,
+    current_page: book.currentPage,
+    total_pages: book.totalPages,
+    total_reading_minutes: book.totalReadingMinutes,
 });
 
 export const bookApi = {
