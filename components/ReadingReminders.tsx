@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bell, BellOff, Clock, Check, AlertCircle } from 'lucide-react';
 import { Button } from './Button';
 import { Capacitor } from '@capacitor/core';
@@ -39,20 +39,49 @@ export function ReadingReminders({ onSettingsChange }: ReadingRemindersProps) {
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'unknown'>('unknown');
   const [isNative] = useState(Capacitor.isNativePlatform());
   const [testSending, setTestSending] = useState(false);
+  const scheduleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     checkNotificationPermission();
+    
+    // Add notification received listener to prevent re-triggering
+    if (isNative) {
+      LocalNotifications.addListener('localNotificationReceived', (notification) => {
+        console.log('Notification received:', notification.id);
+      });
+    }
+    
+    return () => {
+      if (isNative) {
+        LocalNotifications.removeAllListeners();
+      }
+    };
   }, []);
 
+  // Debounced settings effect - only reschedule after 500ms of no changes
   useEffect(() => {
     localStorage.setItem('libris-reminder-settings', JSON.stringify(settings));
     onSettingsChange?.(settings);
     
-    if (settings.enabled) {
-      scheduleReminders();
-    } else {
-      cancelAllReminders();
+    // Clear any pending reschedule
+    if (scheduleTimeoutRef.current) {
+      clearTimeout(scheduleTimeoutRef.current);
     }
+    
+    // Debounce the scheduling to prevent rapid rescheduling
+    scheduleTimeoutRef.current = setTimeout(() => {
+      if (settings.enabled) {
+        scheduleReminders();
+      } else {
+        cancelAllReminders();
+      }
+    }, 500);
+    
+    return () => {
+      if (scheduleTimeoutRef.current) {
+        clearTimeout(scheduleTimeoutRef.current);
+      }
+    };
   }, [settings]);
 
   const checkNotificationPermission = async () => {
@@ -116,7 +145,7 @@ export function ReadingReminders({ onSettingsChange }: ReadingRemindersProps) {
         const [hours, minutes] = settings.time.split(':').map(Number);
         const notifications: ScheduleOptions['notifications'] = [];
         
-        settings.days.forEach((day, index) => {
+        settings.days.forEach((day) => {
           // Create a date for the next occurrence of this day
           const now = new Date();
           const targetDate = new Date();
@@ -128,23 +157,50 @@ export function ReadingReminders({ onSettingsChange }: ReadingRemindersProps) {
           targetDate.setDate(now.getDate() + daysUntil);
           targetDate.setHours(hours, minutes, 0, 0);
           
+          // Use day-based ID to ensure consistency (1000 + day number)
+          // This ensures Sunday=1000, Monday=1001, etc.
           notifications.push({
-            id: 1000 + index,
+            id: 1000 + day,
             title: '📚 Time to Read!',
             body: 'Your daily reading reminder from Libris. Pick up where you left off!',
             schedule: {
               at: targetDate,
               repeats: true,
-              every: 'week'
+              every: 'week',
+              allowWhileIdle: true // Ensures notification fires even in Doze mode
             },
             sound: 'default',
             smallIcon: 'ic_stat_book',
-            largeIcon: 'ic_launcher'
+            largeIcon: 'ic_launcher',
+            channelId: 'libris-reading-reminders'
           });
         });
         
         if (notifications.length > 0) {
+          // Create notification channel first (required for Android 8+)
+          try {
+            await LocalNotifications.createChannel({
+              id: 'libris-reading-reminders',
+              name: 'Reading Reminders',
+              description: 'Daily reminders to read',
+              importance: 4, // HIGH importance
+              visibility: 1, // PUBLIC
+              sound: 'default',
+              vibration: true
+            });
+          } catch (channelError) {
+            // Channel may already exist, continue
+            console.log('Channel creation:', channelError);
+          }
+          
           await LocalNotifications.schedule({ notifications });
+          
+          // Log scheduled notifications for debugging
+          const pending = await LocalNotifications.getPending();
+          console.log('Scheduled notifications:', pending.notifications.map(n => ({
+            id: n.id,
+            schedule: n.schedule
+          })));
         }
       } catch (e) {
         console.error('Error scheduling notifications:', e);

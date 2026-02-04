@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { communityApi, UserProfile, Activity } from '../services/community';
 import { useToastActions } from './Toast';
+import { useSwipeBack } from './useSwipeBack';
 
 interface UserProfileViewProps {
   profile: UserProfile;
@@ -107,8 +108,14 @@ export const UserProfileView = memo<UserProfileViewProps>(({
     { label: 'Following', value: followingCount, icon: Users, onClick: () => setActiveTab('following') },
   ];
 
+  const swipeBack = useSwipeBack({ onBack });
+
   return (
-    <div className="min-h-screen bg-surface-base">
+    <div 
+      className="min-h-screen bg-surface-base"
+      onTouchStart={swipeBack.onTouchStart}
+      onTouchEnd={swipeBack.onTouchEnd}
+    >
       {/* Header */}
       <div className="bg-gradient-to-br from-violet-500 to-purple-600 text-white">
         <div className="max-w-4xl mx-auto px-4 pt-4 pb-8">

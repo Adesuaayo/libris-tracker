@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { communityApi, Notification } from '../services/community';
 import { useToastActions } from './Toast';
+import { useSwipeBack } from './useSwipeBack';
 
 interface NotificationsProps {
   onBack?: () => void;
@@ -138,8 +139,17 @@ export const Notifications = memo<NotificationsProps>(({ onBack, onViewProfile }
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
+  const swipeBack = useSwipeBack({ 
+    onBack: onBack || (() => {}),
+    enabled: !!onBack 
+  });
+
   return (
-    <div className="min-h-screen bg-surface-base pb-24">
+    <div 
+      className="min-h-screen bg-surface-base pb-24"
+      onTouchStart={swipeBack.onTouchStart}
+      onTouchEnd={swipeBack.onTouchEnd}
+    >
       {/* Header */}
       <div className="sticky top-0 z-20 bg-surface-base/95 backdrop-blur-sm border-b border-surface-border">
         <div className="flex items-center justify-between px-4 py-3">

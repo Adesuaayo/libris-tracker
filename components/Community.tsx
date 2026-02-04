@@ -19,6 +19,7 @@ import { UserProfileView } from './UserProfile';
 import { BookClubsList } from './BookClubs';
 import { useToastActions } from './Toast';
 import { Notifications, NotificationBell } from './Notifications';
+import { useSwipeBack } from './useSwipeBack';
 
 interface CommunityProps {
   currentUserId: string;
@@ -57,6 +58,20 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Swipe-from-edge back navigation handlers
+  const clubsSwipeBack = useSwipeBack({ 
+    onBack: () => setShowClubs(false),
+    enabled: showClubs
+  });
+  
+  const trendingSwipeBack = useSwipeBack({
+    onBack: () => {
+      setSelectedTrendingBook(null);
+      setBookReviews([]);
+    },
+    enabled: !!selectedTrendingBook
+  });
 
   useToastActions();
 
@@ -194,7 +209,11 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
   // Show book clubs full view
   if (showClubs) {
     return (
-      <div className="min-h-screen bg-surface-base pb-24">
+      <div 
+        className="min-h-screen bg-surface-base pb-24"
+        onTouchStart={clubsSwipeBack.onTouchStart}
+        onTouchEnd={clubsSwipeBack.onTouchEnd}
+      >
         <div className="bg-surface-card border-b border-surface-border sticky top-0 z-10">
           <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
             <button
@@ -219,7 +238,11 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
   // Show trending book reviews
   if (selectedTrendingBook) {
     return (
-      <div className="min-h-screen bg-surface-base pb-24">
+      <div 
+        className="min-h-screen bg-surface-base pb-24"
+        onTouchStart={trendingSwipeBack.onTouchStart}
+        onTouchEnd={trendingSwipeBack.onTouchEnd}
+      >
         <div className="bg-surface-card border-b border-surface-border sticky top-0 z-10">
           <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
             <button

@@ -53,6 +53,8 @@ function PDFViewer({ fileData, bookTitle, onClose, onProgressUpdate }: PDFViewer
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPageLoading, setIsPageLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
@@ -102,7 +104,8 @@ function PDFViewer({ fileData, bookTitle, onClose, onProgressUpdate }: PDFViewer
   };
 
   const goToPrev = () => {
-    if (pageNumber > 1) {
+    if (pageNumber > 1 && !isPageLoading) {
+      setIsPageLoading(true);
       const newPage = pageNumber - 1;
       setPageNumber(newPage);
       localStorage.setItem(`libris-pdf-page-${bookTitle}`, String(newPage));
@@ -111,12 +114,21 @@ function PDFViewer({ fileData, bookTitle, onClose, onProgressUpdate }: PDFViewer
   };
 
   const goToNext = () => {
-    if (pageNumber < numPages) {
+    if (pageNumber < numPages && !isPageLoading) {
+      setIsPageLoading(true);
       const newPage = pageNumber + 1;
       setPageNumber(newPage);
       localStorage.setItem(`libris-pdf-page-${bookTitle}`, String(newPage));
       onProgressUpdate?.(newPage, numPages);
     }
+  };
+
+  const onPageLoadSuccess = () => {
+    setIsPageLoading(false);
+  };
+
+  const onPageLoadError = () => {
+    setIsPageLoading(false);
   };
 
   const zoomIn = () => setScale(prev => Math.min(prev + 0.25, 3.0));
@@ -206,17 +218,39 @@ function PDFViewer({ fileData, bookTitle, onClose, onProgressUpdate }: PDFViewer
           file={fileData}
           onLoadSuccess={onDocumentLoadSuccess}
           onLoadError={onDocumentLoadError}
-          loading=""
+          onLoadProgress={({ loaded, total }) => setLoadingProgress(Math.round((loaded / total) * 100))}
+          loading={
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <Loader2 className="w-8 h-8 animate-spin text-violet-500 mx-auto mb-3" />
+                <p className="text-sm text-slate-400">Loading PDF... {loadingProgress}%</p>
+              </div>
+            </div>
+          }
           className="flex justify-center"
         >
+          {isPageLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-800/80 z-10">
+              <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
+            </div>
+          )}
           <Page
             pageNumber={pageNumber}
             scale={scale}
             width={containerWidth > 0 ? Math.min(containerWidth, 800) : undefined}
-            loading=""
+            loading={
+              <div className="flex items-center justify-center h-96 w-full bg-slate-700 rounded-lg">
+                <div className="text-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-violet-400 mx-auto mb-2" />
+                  <p className="text-xs text-slate-400">Loading page {pageNumber}...</p>
+                </div>
+              </div>
+            }
+            onLoadSuccess={onPageLoadSuccess}
+            onLoadError={onPageLoadError}
             className="shadow-2xl"
-            renderTextLayer={true}
-            renderAnnotationLayer={true}
+            renderTextLayer={false}
+            renderAnnotationLayer={false}
           />
         </Document>
       </div>
