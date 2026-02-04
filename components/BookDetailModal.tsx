@@ -97,6 +97,7 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
   };
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-surface-card rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
@@ -246,6 +247,7 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
           </div>
         </div>
       </div>
+    </div>
 
       {/* Read Online Modal */}
       {showReadOnline && (
@@ -269,7 +271,7 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
           }}
         />
       )}
-    </div>
+    </>
   );
 });
 
