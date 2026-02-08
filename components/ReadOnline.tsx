@@ -94,7 +94,7 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
           toolbarColor: '#6366f1'
         });
       } else {
-        window.open(url, '_blank');
+        window.open(url, '_blank', 'noopener,noreferrer');
       }
     } catch (error) {
       console.error('Error opening source:', error);
@@ -112,7 +112,7 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
           toolbarColor: '#6366f1'
         });
       } else {
-        window.open(inAppUrl, '_blank');
+        window.open(inAppUrl, '_blank', 'noopener,noreferrer');
       }
     }
   };
@@ -138,7 +138,7 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
           Preview Available
         </span>
       ) : (
-        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs rounded-full">
+        <span className="px-2 py-0.5 bg-surface-base text-text-muted text-xs rounded-full">
           Search
         </span>
       );
@@ -150,7 +150,7 @@ export function ReadOnline({ bookTitle, bookAuthor, onClose }: ReadOnlineProps) 
           Available
         </span>
       ) : (
-        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs rounded-full">
+        <span className="px-2 py-0.5 bg-surface-base text-text-muted text-xs rounded-full">
           Search
         </span>
       );

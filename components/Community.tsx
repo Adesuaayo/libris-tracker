@@ -113,6 +113,8 @@ export const Community = memo<CommunityProps>(({ currentUserId }) => {
       setLatestReviews(reviewsData);
       setRecommendations(recsData.filter((r: any) => !r.is_read).slice(0, 3));
       setUnreadCount(unread);
+    } catch (error) {
+      console.error('Failed to load community data:', error);
     } finally {
       setIsLoading(false);
     }

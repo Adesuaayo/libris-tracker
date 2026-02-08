@@ -645,13 +645,16 @@ export const bookClubsApi = {
       }
 
       // Map profiles to members
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      const profileMap = new Map<string, UserProfile>(profiles?.map(p => [p.id, p as unknown as UserProfile]) || []);
 
-      return members.map(m => ({
-        ...m,
-        user: profileMap.get(m.user_id) || { id: m.user_id },
-        profile: profileMap.get(m.user_id) || { id: m.user_id }
-      }));
+      return members.map(m => {
+        const profile = profileMap.get(m.user_id);
+        return {
+          ...m,
+          user: profile || { id: m.user_id } as unknown as UserProfile,
+          profile: profile || { id: m.user_id } as unknown as UserProfile
+        };
+      });
     } catch (err) {
       console.error('Error in getMembers:', err);
       return [];
@@ -950,7 +953,7 @@ export const discussionsApi = {
         .eq('id', discussion.author_id)
         .single();
 
-      return { ...discussion, author: author || { id: discussion.author_id } };
+      return { ...discussion, author: (author || { id: discussion.author_id }) as unknown as UserProfile };
     } catch (err) {
       console.error('Error in getDiscussion:', err);
       return null;
@@ -1043,11 +1046,11 @@ export const discussionsApi = {
       }
 
       // Map authors to discussions
-      const authorMap = new Map(authors?.map(a => [a.id, a]) || []);
+      const authorMap = new Map<string, UserProfile>(authors?.map(a => [a.id, a as unknown as UserProfile]) || []);
 
       return discussions.map(d => ({
         ...d,
-        author: authorMap.get(d.author_id) || { id: d.author_id }
+        author: authorMap.get(d.author_id) || { id: d.author_id } as unknown as UserProfile
       }));
     } catch (err) {
       console.error('Error in getDiscussionsForBook:', err);
@@ -1088,11 +1091,11 @@ export const discussionsApi = {
       }
 
       // Map authors to discussions
-      const authorMap = new Map(authors?.map(a => [a.id, a]) || []);
+      const authorMap = new Map<string, UserProfile>(authors?.map(a => [a.id, a as unknown as UserProfile]) || []);
 
       return discussions.map(d => ({
         ...d,
-        author: authorMap.get(d.author_id) || { id: d.author_id }
+        author: authorMap.get(d.author_id) || { id: d.author_id } as unknown as UserProfile
       }));
     } catch (err) {
       console.error('Error in getDiscussionsForClub:', err);
@@ -1162,11 +1165,11 @@ export const discussionsApi = {
       }
 
       // Map authors to replies
-      const authorMap = new Map(authors?.map(a => [a.id, a]) || []);
+      const authorMap = new Map<string, UserProfile>(authors?.map(a => [a.id, a as unknown as UserProfile]) || []);
 
       return replies.map(r => ({
         ...r,
-        author: authorMap.get(r.author_id) || { id: r.author_id }
+        author: authorMap.get(r.author_id) || { id: r.author_id } as unknown as UserProfile
       }));
     } catch (err) {
       console.error('Error in getReplies:', err);

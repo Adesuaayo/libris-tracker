@@ -187,7 +187,7 @@ export function ReadingInsights({ books, readingSessions }: ReadingInsightsProps
       case 'afternoon': return <Sun className="w-5 h-5 text-yellow-500" />;
       case 'evening': return <Sunset className="w-5 h-5 text-purple-500" />;
       case 'night': return <Moon className="w-5 h-5 text-indigo-500" />;
-      default: return <Clock className="w-5 h-5 text-slate-500" />;
+      default: return <Clock className="w-5 h-5 text-text-muted" />;
     }
   };
 
@@ -308,7 +308,7 @@ export function ReadingInsights({ books, readingSessions }: ReadingInsightsProps
           <div className="space-y-5">
             {/* Books per Month Chart */}
             <div>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-brand-500" />
                 Books Completed
               </h3>
@@ -324,7 +324,7 @@ export function ReadingInsights({ books, readingSessions }: ReadingInsightsProps
                         style={{ height: `${(m.count / maxMonthlyBooks) * 100}%`, minHeight: m.count > 0 ? '4px' : '2px' }}
                       />
                     </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-2">{m.month}</span>
+                    <span className="text-xs text-text-muted mt-2">{m.month}</span>
                   </div>
                 ))}
               </div>
@@ -332,7 +332,7 @@ export function ReadingInsights({ books, readingSessions }: ReadingInsightsProps
 
             {/* Reading Minutes Chart */}
             <div>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-emerald-500" />
                 Reading Time
               </h3>
@@ -348,7 +348,7 @@ export function ReadingInsights({ books, readingSessions }: ReadingInsightsProps
                         style={{ height: `${(m.minutes / maxMonthlyMinutes) * 100}%`, minHeight: m.minutes > 0 ? '4px' : '2px' }}
                       />
                     </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-2">{m.month}</span>
+                    <span className="text-xs text-text-muted mt-2">{m.month}</span>
                   </div>
                 ))}
               </div>

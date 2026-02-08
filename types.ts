@@ -232,3 +232,63 @@ export const COLLECTION_ICONS = [
 export type ViewMode = 'library' | 'analytics' | 'add' | 'details' | 'collection' | 'goals' | 'manage-profile' | 'streak' | 'insights' | 'achievements' | 'collections-list' | 'reminders';
 
 export type Theme = 'light' | 'dark' | 'system';
+
+export type FontSize = 'small' | 'default' | 'large' | 'xl';
+export type LineSpacing = 'compact' | 'default' | 'relaxed';
+export type FontFamily = 'sans' | 'serif' | 'dyslexic';
+
+export interface AccessibilitySettings {
+  fontSize: FontSize;
+  lineSpacing: LineSpacing;
+  fontFamily: FontFamily;
+}
+
+export const DEFAULT_ACCESSIBILITY: AccessibilitySettings = {
+  fontSize: 'default',
+  lineSpacing: 'default',
+  fontFamily: 'sans',
+};
+
+export const FONT_SIZE_MAP: Record<FontSize, string> = {
+  small: '14px',
+  default: '16px',
+  large: '18px',
+  xl: '20px',
+};
+
+export const LINE_HEIGHT_MAP: Record<LineSpacing, string> = {
+  compact: '1.4',
+  default: '1.5',
+  relaxed: '1.8',
+};
+
+export const FONT_FAMILY_MAP: Record<FontFamily, string> = {
+  sans: 'ui-sans-serif, system-ui, -apple-system, sans-serif',
+  serif: 'ui-serif, Georgia, Cambria, "Times New Roman", serif',
+  dyslexic: '"OpenDyslexic", "Comic Sans MS", sans-serif',
+};
+
+// --- Premium / Monetization ---
+
+export type SubscriptionTier = 'free' | 'premium' | 'lifetime';
+
+export interface PremiumState {
+  tier: SubscriptionTier;
+  expiresAt?: string;          // ISO date for monthly/yearly subs
+  purchasedAt?: string;        // ISO date of original purchase
+  trialAiUsesRemaining: number; // free AI uses before paywall
+}
+
+export const DEFAULT_PREMIUM: PremiumState = {
+  tier: 'free',
+  trialAiUsesRemaining: 3,
+};
+
+export const PREMIUM_FEATURES = [
+  { icon: '🧠', title: 'Unlimited AI Insights', description: 'Recommendations, habit analysis & book summaries — no limits' },
+  { icon: '📊', title: 'Advanced Analytics', description: 'Deep reading stats, trends, and yearly comparisons' },
+  { icon: '🎯', title: 'Smart Goals', description: 'AI-powered goal suggestions based on your pace' },
+  { icon: '🔓', title: 'Unlimited Collections', description: 'Organise your library with unlimited custom collections' },
+  { icon: '☁️', title: 'Cloud Sync', description: 'Seamless backup & sync across all your devices' },
+  { icon: '🚫', title: 'No Ads, Ever', description: 'A completely clean, distraction-free experience' },
+] as const;

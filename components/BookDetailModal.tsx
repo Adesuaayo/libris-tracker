@@ -35,7 +35,6 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
   const [showReadOnline, setShowReadOnline] = useState(false);
   const [showEBookReader, setShowEBookReader] = useState(false);
   const [hasEbook, setHasEbook] = useState(false);
-  const [storedCount, setStoredCount] = useState(0);
   const [ebookData, setEbookData] = useState<{ data: string; fileName: string; fileType: 'epub' | 'pdf' } | null>(null);
   const bookNotes = notes.filter((n: BookNote) => n.bookId === book.id);
 
@@ -52,7 +51,6 @@ export const BookDetailModal = memo<BookDetailModalProps>(({
     const checkEbook = async () => {
       console.log('[BookDetailModal] Checking for eBook. book.id:', book.id);
       const ebookList = await ebookStorage.list();
-      setStoredCount(ebookList.length);
       console.log('[BookDetailModal] All stored eBooks:', ebookList);
       const stored = await ebookStorage.get(book.id);
       console.log('[BookDetailModal] Found stored eBook:', !!stored, stored?.fileName);

@@ -36,7 +36,19 @@
         }
       }
     </script>
+    <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/opendyslexic" />
     <style type="text/tailwindcss">
+      /* Accessibility variables */
+      :root {
+        --a11y-font-size: 16px;
+        --a11y-line-height: 1.5;
+        --a11y-font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      }
+      html {
+        font-size: var(--a11y-font-size);
+        line-height: var(--a11y-line-height);
+        font-family: var(--a11y-font-family);
+      }
       /* Light mode surface colors */
       :root {
         --color-surface-base: #F8FAFC;
@@ -75,7 +87,7 @@
       .bg-surface-base\/95 { background-color: color-mix(in srgb, var(--color-surface-base) 95%, transparent); }
     </style>
     <script>
-      // Initialize theme before React loads to prevent flash
+      // Initialize theme + accessibility before React loads to prevent flash
       try {
         const savedTheme = localStorage.getItem('libris-theme') || 'system';
         const root = document.documentElement;
@@ -84,6 +96,18 @@
           root.classList.add('dark');
         } else {
           root.classList.remove('dark');
+        }
+
+        // Apply saved accessibility settings
+        var a11y = localStorage.getItem('libris-accessibility');
+        if (a11y) {
+          var s = JSON.parse(a11y);
+          var fsMap = { small: '14px', default: '16px', large: '18px', xl: '20px' };
+          var lhMap = { compact: '1.4', default: '1.5', relaxed: '1.8' };
+          var ffMap = { sans: 'ui-sans-serif, system-ui, -apple-system, sans-serif', serif: 'ui-serif, Georgia, Cambria, "Times New Roman", serif', dyslexic: '"OpenDyslexic", "Comic Sans MS", sans-serif' };
+          if (s.fontSize) root.style.setProperty('--a11y-font-size', fsMap[s.fontSize] || '16px');
+          if (s.lineSpacing) root.style.setProperty('--a11y-line-height', lhMap[s.lineSpacing] || '1.5');
+          if (s.fontFamily) root.style.setProperty('--a11y-font-family', ffMap[s.fontFamily] || ffMap.sans);
         }
       } catch (e) {}
     </script>

@@ -103,15 +103,15 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
       role="alert"
     >
       <ToastIcon type={toast.type} />
-      <p className="flex-1 text-sm font-medium text-slate-700 dark:text-slate-200">
+      <p className="flex-1 text-sm font-medium text-text-primary">
         {toast.message}
       </p>
       <button
         onClick={handleClose}
-        className="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+        className="p-1 rounded-full hover:bg-surface-elevated transition-colors"
         aria-label="Dismiss"
       >
-        <svg className="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>

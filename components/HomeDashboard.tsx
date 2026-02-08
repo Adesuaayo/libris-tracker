@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Book, ReadingStatus, ReadingStreak, Achievement } from '../types';
 import { PullToRefresh } from './PullToRefresh';
+import { DailyReadingPrompt } from './DailyReadingPrompt';
 
 interface HomeDashboardProps {
   books: Book[];
@@ -244,6 +245,14 @@ export const HomeDashboard = memo<HomeDashboardProps>(({
             </button>
           </section>
         )}
+
+        {/* Daily Reading Prompt */}
+        <DailyReadingPrompt
+          books={books}
+          readingStreak={readingStreak}
+          onSelectBook={onSelectBook}
+          onNavigateToLibrary={onNavigateToLibrary}
+        />
 
         {/* Quick Actions */}
         <section className="mb-5">

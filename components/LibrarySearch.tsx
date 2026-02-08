@@ -18,7 +18,7 @@ export const LibrarySearch: React.FC<LibrarySearchProps> = memo(({ onSearchChang
 
   return (
     <div className="relative flex-1">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
       <input
         ref={inputRef}
         type="search"
@@ -38,7 +38,7 @@ export const LibrarySearch: React.FC<LibrarySearchProps> = memo(({ onSearchChang
             inputRef.current?.blur();
           }
         }}
-        className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent shadow-sm text-sm"
+        className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-surface-border bg-surface-card text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent shadow-sm text-sm"
       />
     </div>
   );

@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, lazy, Suspense, useCallback, useRef } from 'react';
-import { Book, ReadingStatus, ViewMode, Theme, ReadingPreferences, DEFAULT_PREFERENCES, BookNote, ReadingGoal, ReadingStreak, DEFAULT_STREAK, Achievement, ACHIEVEMENTS, AchievementId, ReadingSession, BookCollection, DEFAULT_COLLECTIONS } from './types';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { Book, ReadingStatus, ViewMode, Theme, ReadingPreferences, DEFAULT_PREFERENCES, BookNote, ReadingGoal, ReadingStreak, DEFAULT_STREAK, Achievement, ACHIEVEMENTS, AchievementId, ReadingSession, BookCollection, DEFAULT_COLLECTIONS, AccessibilitySettings, DEFAULT_ACCESSIBILITY, FONT_SIZE_MAP, LINE_HEIGHT_MAP, FONT_FAMILY_MAP, FontSize, LineSpacing, FontFamily, PremiumState, DEFAULT_PREMIUM } from './types';
 import { Button } from './components/Button';
 import { Auth } from './components/Auth';
 import { LibrarySearch } from './components/LibrarySearch';
@@ -15,17 +15,18 @@ import { CollectionView } from './components/CollectionView';
 import { Community } from './components/Community';
 import { Challenges } from './components/Challenges';
 import { HomeDashboard } from './components/HomeDashboard';
+import { ReadingSessionSummary } from './components/ReadingSessionSummary';
+import { PremiumPaywall } from './components/PremiumPaywall';
 
 // Lazy load heavy components for better initial load time
 const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })));
-const BookForm = lazy(() => import('./components/BookForm').then(m => ({ default: m.BookForm })));
-const BookNotes = lazy(() => import('./components/BookNotes').then(m => ({ default: m.BookNotes })));
+const BookForm = lazy(() => import('./components/BookForm').then(m => ({ default: m.BookForm as React.ComponentType<any> })));
 import { supabase, bookApi } from './services/supabase';
 import { ebookStorage } from './services/ebookStorage';
-import { BookOpen, BarChart2, Plus, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, CheckCircle2, Moon, Sun, Laptop, LogOut, Loader2, ExternalLink, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText, Globe, Check, Flame, Target, Lightbulb, Library, Bell, Settings } from 'lucide-react';
+import { BookOpen, BarChart2, Plus, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, Moon, Sun, Laptop, LogOut, Loader2, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText, Globe, Check, Flame, Target, Lightbulb, Library, Bell, Eye, Crown, Sparkles } from 'lucide-react';
 import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
 import { App as CapApp } from '@capacitor/app';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { useToastActions } from './components/Toast';
@@ -53,6 +54,12 @@ export default function App() {
       return (localStorage.getItem('libris-theme') as Theme) || 'system';
   });
 
+  const [accessibility, setAccessibility] = useState<AccessibilitySettings>(() => {
+    const saved = localStorage.getItem('libris-accessibility');
+    return saved ? JSON.parse(saved) : DEFAULT_ACCESSIBILITY;
+  });
+  const [showAccessibility, setShowAccessibility] = useState(false);
+
   const [view, setView] = useState<ViewMode>('library');
   const [activeTab, setActiveTab] = useState<TabView>('home');
   const [showDashboard, setShowDashboard] = useState(true); // Show new dashboard by default
@@ -69,6 +76,14 @@ export default function App() {
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMode, setAiMode] = useState<'recommend' | 'analyze' | 'summary' | null>(null);
+
+  // Premium / Monetization State
+  const [premiumState, setPremiumState] = useState<PremiumState>(() => {
+    const saved = localStorage.getItem('libris-premium');
+    return saved ? JSON.parse(saved) : DEFAULT_PREMIUM;
+  });
+  const [showPaywall, setShowPaywall] = useState(false);
+  const isPremium = premiumState.tier !== 'free';
 
   // Profile Picture State
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
@@ -122,6 +137,15 @@ export default function App() {
     const saved = localStorage.getItem('libris-reading-sessions');
     return saved ? JSON.parse(saved) : [];
   });
+
+  // Session Summary overlay state
+  const [sessionSummary, setSessionSummary] = useState<{
+    durationMinutes: number;
+    bookTitle: string;
+    totalBookMinutes: number;
+    currentStreak: number;
+    streakIncremented: boolean;
+  } | null>(null);
 
   // Collections State
   const [collections, setCollections] = useState<BookCollection[]>(() => {
@@ -183,6 +207,10 @@ export default function App() {
           setReadingGoals([]);
           setBookNotes([]);
           setReadingPreferences(DEFAULT_PREFERENCES);
+          setPremiumState(DEFAULT_PREMIUM);
+          setAccessibility(DEFAULT_ACCESSIBILITY);
+          setShowPaywall(false);
+          setSessionSummary(null);
           
           // Clear localStorage for user-specific data
           localStorage.removeItem('libris-reading-streak');
@@ -194,6 +222,20 @@ export default function App() {
           localStorage.removeItem('libris-reading-preferences');
           localStorage.removeItem('libris-profile-picture');
           localStorage.removeItem('libris-goal');
+          localStorage.removeItem('libris-accessibility');
+          localStorage.removeItem('libris-premium');
+          localStorage.removeItem('libris-reminders');
+          localStorage.removeItem('libris-ebook-settings');
+          
+          // Clear dynamic ebook/pdf position keys
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.startsWith('ebook-position-') || key.startsWith('pdf-position-'))) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach(key => localStorage.removeItem(key));
       }
     });
 
@@ -243,6 +285,12 @@ export default function App() {
       }
     }
 
+    // Load premium state from user metadata
+    if (metadata?.premium_state) {
+      setPremiumState(metadata.premium_state);
+      localStorage.setItem('libris-premium', JSON.stringify(metadata.premium_state));
+    }
+
     // Load book notes from user metadata
     if (metadata?.book_notes) {
       setBookNotes(metadata.book_notes);
@@ -276,6 +324,20 @@ export default function App() {
     }
   }, [theme]);
 
+  // --- Accessibility Effect ---
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--a11y-font-size', FONT_SIZE_MAP[accessibility.fontSize]);
+    root.style.setProperty('--a11y-line-height', LINE_HEIGHT_MAP[accessibility.lineSpacing]);
+    root.style.setProperty('--a11y-font-family', FONT_FAMILY_MAP[accessibility.fontFamily]);
+    localStorage.setItem('libris-accessibility', JSON.stringify(accessibility));
+  }, [accessibility]);
+
+  // --- Premium State Persist ---
+  useEffect(() => {
+    localStorage.setItem('libris-premium', JSON.stringify(premiumState));
+  }, [premiumState]);
+
   useEffect(() => {
       localStorage.setItem('libris-goal', readingGoal.toString());
   }, [readingGoal]);
@@ -290,7 +352,11 @@ export default function App() {
     const handleBackButton = async () => {
         CapApp.addListener('backButton', () => {
             // Priority: Close modals/readers first, then navigate views
-            if (isEBookReaderOpen) {
+            if (showPaywall) {
+                setShowPaywall(false);
+            } else if (sessionSummary) {
+                setSessionSummary(null);
+            } else if (isEBookReaderOpen) {
                 // Close eBook reader first - increment trigger to notify component
                 setCloseReaderTrigger(prev => prev + 1);
             } else if (selectedBook) {
@@ -327,7 +393,7 @@ export default function App() {
     return () => {
         CapApp.removeAllListeners();
     };
-  }, [view, activeTab, selectedBook, showOnboarding, aiResponse, showDashboard, isEBookReaderOpen]);
+  }, [view, activeTab, selectedBook, showOnboarding, aiResponse, showDashboard, isEBookReaderOpen, showPaywall, sessionSummary]);
 
 
   // --- Handlers ---
@@ -438,17 +504,39 @@ export default function App() {
   };
 
   // Handle onboarding completion
-  const handleOnboardingComplete = async (preferences: ReadingPreferences) => {
+  const handleOnboardingComplete = async (preferences: ReadingPreferences, yearlyGoalTarget?: number) => {
     setReadingPreferences(preferences);
     setShowOnboarding(false);
     localStorage.setItem('libris-reading-preferences', JSON.stringify(preferences));
     
+    // Create yearly reading goal if user set one
+    if (yearlyGoalTarget && yearlyGoalTarget > 0) {
+      const currentYear = new Date().getFullYear();
+      // Check if a yearly goal for this year already exists
+      const existingYearlyGoal = readingGoals.find(
+        g => g.type === 'yearly' && g.year === currentYear
+      );
+      if (!existingYearlyGoal) {
+        const newGoal: ReadingGoal = {
+          id: `goal-${Date.now()}`,
+          type: 'yearly',
+          target: yearlyGoalTarget,
+          year: currentYear,
+          progress: 0,
+          createdAt: Date.now()
+        };
+        const updated = [...readingGoals, newGoal];
+        setReadingGoals(updated);
+        localStorage.setItem('libris-reading-goals', JSON.stringify(updated));
+      }
+    }
+
     // Sync to Supabase
     try {
       await supabase.auth.updateUser({
         data: { reading_preferences: preferences }
       });
-      toast.success('Preferences saved! AI recommendations are now personalized.');
+      toast.success('Preferences saved! Your reading journey begins now 📚');
     } catch (error) {
       console.error('Failed to sync preferences:', error);
     }
@@ -563,21 +651,37 @@ export default function App() {
     
     setBooks(updatedBooks);
     
+    // Capture pre-update streak to detect if it incremented
+    const today = new Date().toISOString().split('T')[0];
+    const hadReadToday = readingStreak.streakHistory?.includes(today) || false;
+    const preStreak = readingStreak.currentStreak;
+    
     // Update reading streak
     updateReadingStreak();
     
     // Check for achievements
     checkAchievements(updatedBooks, durationMinutes);
     
-    // Find and update the book in the database
+    // Show session summary overlay
     const book = books.find(b => b.id === bookId);
     if (book) {
+      const newTotalMinutes = (book.totalReadingMinutes || 0) + durationMinutes;
+      const streakIncremented = !hadReadToday;
+      const newStreak = streakIncremented ? preStreak + 1 : preStreak;
+
+      setSessionSummary({
+        durationMinutes,
+        bookTitle: book.title,
+        totalBookMinutes: newTotalMinutes,
+        currentStreak: newStreak > 0 ? newStreak : 1,
+        streakIncremented,
+      });
+
       try {
         await bookApi.updateBook({
           ...book,
-          totalReadingMinutes: (book.totalReadingMinutes || 0) + durationMinutes
+          totalReadingMinutes: newTotalMinutes
         });
-        toast.success(`Added ${durationMinutes} minutes to your reading time!`);
       } catch (error) {
         console.error('Failed to update reading time:', error);
       }
@@ -819,33 +923,16 @@ export default function App() {
 
   const handleRateApp = () => {
     const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.libris.app';
-    window.open(playStoreUrl, '_blank');
+    window.open(playStoreUrl, '_blank', 'noopener,noreferrer');
   };
 
   const openExternalLink = (url: string) => {
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleEdit = (book: Book) => {
     setEditingBook(book);
     setView('add');
-  };
-
-  const updateGoal = async () => {
-      const newGoal = prompt("Set your yearly reading goal:", readingGoal.toString());
-      if (newGoal && !isNaN(parseInt(newGoal))) {
-          const goalValue = parseInt(newGoal);
-          setReadingGoal(goalValue);
-          
-          // Save to Supabase user metadata for cross-device sync
-          try {
-            await supabase.auth.updateUser({
-              data: { reading_goal: goalValue }
-            });
-          } catch (error) {
-            console.error('Failed to sync reading goal:', error);
-          }
-      }
   };
 
   const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -980,7 +1067,7 @@ export default function App() {
             path: filename,
             data: csvContent,
             directory: Directory.Cache,
-            encoding: 'utf8'
+            encoding: Encoding.UTF8
           });
 
           // Share the file
@@ -1020,30 +1107,62 @@ export default function App() {
     }
   };
 
+  // --- Premium Handlers (SOFT-LAUNCH: upgrades blocked) ---
+  const handleUpgrade = async (_tier: 'premium' | 'lifetime') => {
+    // SOFT-LAUNCH: Do NOT set tier or persist any paid entitlement.
+    // Capture interest and show waitlist message instead.
+    try {
+      await supabase.auth.updateUser({ data: { wants_premium: true, wanted_tier: _tier, wanted_at: new Date().toISOString() } });
+    } catch (e) {
+      console.error('Failed to capture premium interest:', e);
+    }
+    setShowPaywall(false);
+    toast.info('Premium billing is launching shortly. Join the waitlist! 🚀');
+  };
+
+  const getAffiliateLink = (title: string, author: string) => {
+    const query = encodeURIComponent(`${title} ${author} book`);
+    const base = `https://www.amazon.com/s?k=${query}`;
+    // Append affiliate tag from env when available (e.g. VITE_AMAZON_AFFILIATE_TAG)
+    const tag = import.meta.env.VITE_AMAZON_AFFILIATE_TAG;
+    return tag ? `${base}&tag=${tag}` : base;
+  };
+
   const handleGeminiAction = async (mode: 'recommend' | 'analyze') => {
+    // Gate behind premium or trial uses
+    if (!isPremium && premiumState.trialAiUsesRemaining <= 0) {
+      setShowPaywall(true);
+      return;
+    }
+
     setAiLoading(true);
     setAiMode(mode);
     setAiResponse(null);
-    setActiveTab('home'); // Switch to home tab to show results
-    setShowDashboard(false); // Make sure to show the library view where AI response is displayed
+    setActiveTab('home');
+    setShowDashboard(false);
     setView('library');
     
-    // Scroll to top immediately so user sees the loading state
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
     try {
         let text = "";
         if (mode === 'recommend') {
-            // Pass reading preferences for better recommendations
             text = await getBookRecommendations(books, readingPreferences);
         } else {
             text = await analyzeReadingHabits(books);
         }
         setAiResponse(text);
-        // Scroll to top again when response arrives
         setTimeout(() => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }, 100);
+
+        // Decrement trial uses for free users
+        if (!isPremium) {
+          setPremiumState(prev => ({
+            ...prev,
+            trialAiUsesRemaining: Math.max(0, prev.trialAiUsesRemaining - 1)
+          }));
+        }
     } catch (e: any) {
         setAiResponse(`Error: ${e.message || "Failed to connect to AI service. Please try again."}`);
     } finally {
@@ -1052,20 +1171,31 @@ export default function App() {
   };
 
   const handleBookSummary = async (book: Book) => {
+      // Gate behind premium or trial uses
+      if (!isPremium && premiumState.trialAiUsesRemaining <= 0) {
+        setShowPaywall(true);
+        return;
+      }
+
       toast.info(`Generating summary for "${book.title}"...`);
       try {
         const summary = await getBookSummary(book.title, book.author);
-        // Show summary in the AI response modal
         setAiMode('summary');
         setAiResponse(summary);
-        // Navigate to library view (not dashboard) to show the AI response
         setActiveTab('home');
         setShowDashboard(false);
         setView('library');
-        // Scroll to top after a brief delay
         setTimeout(() => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }, 100);
+
+        // Decrement trial uses for free users
+        if (!isPremium) {
+          setPremiumState(prev => ({
+            ...prev,
+            trialAiUsesRemaining: Math.max(0, prev.trialAiUsesRemaining - 1)
+          }));
+        }
       } catch (e: any) {
         toast.error(`Failed to generate summary: ${e.message}`);
       }
@@ -1130,7 +1260,7 @@ export default function App() {
     return parts.map((part, index) => {
       // Odd indices are the content that was inside **
       if (index % 2 === 1) {
-        return <strong key={index} className="font-semibold text-slate-900 dark:text-white">{part}</strong>;
+        return <strong key={index} className="font-semibold text-text-primary">{part}</strong>;
       }
       return part;
     });
@@ -1143,26 +1273,26 @@ export default function App() {
           try {
               const recommendations = JSON.parse(aiResponse);
               if (!Array.isArray(recommendations)) {
-                  return <div className="prose prose-sm dark:prose-invert text-slate-700 dark:text-slate-300 whitespace-pre-line">{renderFormattedText(aiResponse)}</div>;
+                  return <div className="prose prose-sm dark:prose-invert text-text-secondary whitespace-pre-line">{renderFormattedText(aiResponse)}</div>;
               }
 
               return (
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {recommendations.map((rec: any, idx: number) => (
                           <div key={idx} className="bg-indigo-50/50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 p-4 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors">
-                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1">{rec.title}</h4>
+                              <h4 className="font-bold text-text-primary text-sm mb-1">{rec.title}</h4>
                               <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mb-2 uppercase tracking-wide">{rec.author}</p>
-                              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{rec.reason}</p>
+                              <p className="text-xs text-text-secondary leading-relaxed">{rec.reason}</p>
                           </div>
                       ))}
                   </div>
               );
           } catch (e) {
-              return <div className="prose prose-sm dark:prose-invert text-slate-700 dark:text-slate-300 whitespace-pre-line">{renderFormattedText(aiResponse)}</div>;
+              return <div className="prose prose-sm dark:prose-invert text-text-secondary whitespace-pre-line">{renderFormattedText(aiResponse)}</div>;
           }
       }
       return (
-          <div className="prose prose-sm dark:prose-invert text-slate-700 dark:text-slate-300 max-w-none whitespace-pre-line">
+          <div className="prose prose-sm dark:prose-invert text-text-secondary max-w-none whitespace-pre-line">
               {renderFormattedText(aiResponse)}
           </div>
       );
@@ -1238,9 +1368,27 @@ export default function App() {
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-text-secondary px-2 mb-3">AI Assistant</h3>
           <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-sm p-4">
-            <div className="flex items-center gap-2 text-white font-semibold mb-2">
-              <BrainCircuit className="h-5 w-5" />
-              <span>Gemini 2.5 Insights</span>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 text-white font-semibold">
+                <BrainCircuit className="h-5 w-5" />
+                <span>Gemini 2.5 Insights</span>
+              </div>
+              {isPremium ? (
+                <span className="text-[10px] font-bold bg-white/25 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Crown className="w-3 h-3" /> PRO
+                </span>
+              ) : premiumState.trialAiUsesRemaining > 0 ? (
+                <span className="text-[10px] bg-white/20 text-white/90 px-2 py-0.5 rounded-full">
+                  {premiumState.trialAiUsesRemaining} free {premiumState.trialAiUsesRemaining === 1 ? 'use' : 'uses'} left
+                </span>
+              ) : (
+                <button
+                  onClick={() => setShowPaywall(true)}
+                  className="text-[10px] font-bold bg-amber-400 text-amber-900 px-2 py-0.5 rounded-full flex items-center gap-1"
+                >
+                  🔒 Unlock
+                </button>
+              )}
             </div>
             <p className="text-indigo-100 text-xs mb-3">Get smart book recommendations and habit analysis</p>
             <div className="grid grid-cols-2 gap-2">
@@ -1251,6 +1399,15 @@ export default function App() {
                 📊 Analyze
               </Button>
             </div>
+            {!isPremium && (
+              <button
+                onClick={() => setShowPaywall(true)}
+                className="w-full mt-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white/90 text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Upgrade to Premium for unlimited AI
+              </button>
+            )}
           </div>
         </div>
 
@@ -1407,6 +1564,105 @@ export default function App() {
               </div>
               <ChevronRight className="h-4 w-4 text-text-muted" />
             </button>
+            <div className="border-t border-surface-border"></div>
+            <button 
+              onClick={() => setShowAccessibility(!showAccessibility)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-base transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+                  <Eye className="h-5 w-5 text-teal-500" />
+                </div>
+                <div className="text-left">
+                  <span className="text-text-primary text-sm block font-medium">Accessibility</span>
+                  <span className="text-xs text-text-muted">Font size, spacing & family</span>
+                </div>
+              </div>
+              <ChevronRight className={`h-4 w-4 text-text-muted transition-transform ${showAccessibility ? 'rotate-90' : ''}`} />
+            </button>
+
+            {/* Accessibility Panel (inline expand) */}
+            {showAccessibility && (
+              <div className="px-4 py-4 bg-surface-base space-y-5 border-t border-surface-border">
+                {/* Font Size */}
+                <div>
+                  <p className="text-xs font-medium text-text-muted mb-2">Font Size</p>
+                  <div className="flex items-center bg-surface-card p-1 rounded-lg border border-surface-border">
+                    {([['small', 'S'], ['default', 'M'], ['large', 'L'], ['xl', 'XL']] as [FontSize, string][]).map(([val, label]) => (
+                      <button
+                        key={val}
+                        onClick={() => setAccessibility(prev => ({ ...prev, fontSize: val }))}
+                        className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                          accessibility.fontSize === val
+                            ? 'bg-accent text-white shadow-sm'
+                            : 'text-text-muted hover:text-text-secondary'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Line Spacing */}
+                <div>
+                  <p className="text-xs font-medium text-text-muted mb-2">Line Spacing</p>
+                  <div className="flex items-center bg-surface-card p-1 rounded-lg border border-surface-border">
+                    {([['compact', 'Compact'], ['default', 'Default'], ['relaxed', 'Relaxed']] as [LineSpacing, string][]).map(([val, label]) => (
+                      <button
+                        key={val}
+                        onClick={() => setAccessibility(prev => ({ ...prev, lineSpacing: val }))}
+                        className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                          accessibility.lineSpacing === val
+                            ? 'bg-accent text-white shadow-sm'
+                            : 'text-text-muted hover:text-text-secondary'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Font Family */}
+                <div>
+                  <p className="text-xs font-medium text-text-muted mb-2">Font Family</p>
+                  <div className="flex items-center bg-surface-card p-1 rounded-lg border border-surface-border">
+                    {([['sans', 'Sans'], ['serif', 'Serif'], ['dyslexic', 'Dyslexic']] as [FontFamily, string][]).map(([val, label]) => (
+                      <button
+                        key={val}
+                        onClick={() => setAccessibility(prev => ({ ...prev, fontFamily: val }))}
+                        className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                          accessibility.fontFamily === val
+                            ? 'bg-accent text-white shadow-sm'
+                            : 'text-text-muted hover:text-text-secondary'
+                        }`}
+                        style={{ fontFamily: val === 'sans' ? 'system-ui, sans-serif' : val === 'serif' ? 'Georgia, serif' : '"OpenDyslexic", "Comic Sans MS", sans-serif' }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preview */}
+                <div className="bg-surface-card rounded-xl p-3 border border-surface-border">
+                  <p className="text-xs text-text-muted mb-1">Preview</p>
+                  <p className="text-text-primary">The quick brown fox jumps over the lazy dog.</p>
+                  <p className="text-text-secondary text-sm">Reading should be comfortable for everyone.</p>
+                </div>
+
+                {/* Reset */}
+                {(accessibility.fontSize !== 'default' || accessibility.lineSpacing !== 'default' || accessibility.fontFamily !== 'sans') && (
+                  <button
+                    onClick={() => setAccessibility(DEFAULT_ACCESSIBILITY)}
+                    className="text-xs text-accent hover:underline"
+                  >
+                    Reset to defaults
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1772,8 +2028,8 @@ export default function App() {
             </div>
           </div>
 
-          <div className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Introduction</h3>
+          <div className="prose prose-sm dark:prose-invert max-w-none text-text-secondary">
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">Introduction</h3>
             <p className="mb-4">
               Libris ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application (the "App").
             </p>
@@ -1781,7 +2037,7 @@ export default function App() {
               Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the App.
             </p>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Information We Collect</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">Information We Collect</h3>
             <p className="mb-4">
               <strong>Personal Information:</strong> When you create an account, we collect your email address and any profile information you choose to provide.
             </p>
@@ -1792,7 +2048,7 @@ export default function App() {
               <strong>Usage Data:</strong> We may collect information about how you use the App, including your reading goals and preferences.
             </p>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">How We Use Your Information</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">How We Use Your Information</h3>
             <p className="mb-4">We use the information we collect to:</p>
             <ul className="list-disc pl-6 mb-4 space-y-2">
               <li>Provide, maintain, and improve the App</li>
@@ -1802,17 +2058,17 @@ export default function App() {
               <li>Respond to your comments and questions</li>
             </ul>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Data Storage & Security</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">Data Storage & Security</h3>
             <p className="mb-4">
               Your data is securely stored using Supabase, a trusted cloud infrastructure provider. We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.
             </p>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Third-Party Services</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">Third-Party Services</h3>
             <p className="mb-4">
               We use Google's Gemini AI to provide book recommendations and reading analysis. When using these features, relevant book data is processed by Google's AI services in accordance with their privacy policies.
             </p>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Your Rights</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">Your Rights</h3>
             <p className="mb-4">You have the right to:</p>
             <ul className="list-disc pl-6 mb-4 space-y-2">
               <li>Access and export your personal data</li>
@@ -1821,17 +2077,17 @@ export default function App() {
               <li>Update or correct your personal information</li>
             </ul>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Children's Privacy</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">Children's Privacy</h3>
             <p className="mb-4">
               The App is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.
             </p>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Changes to This Policy</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">Changes to This Policy</h3>
             <p className="mb-4">
               We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.
             </p>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">Contact Us</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">Contact Us</h3>
             <p className="mb-4">
               If you have questions or concerns about this Privacy Policy, please contact us at:
             </p>
@@ -1871,8 +2127,8 @@ export default function App() {
             </div>
           </div>
 
-          <div className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">1. Acceptance of Terms</h3>
+          <div className="prose prose-sm dark:prose-invert max-w-none text-text-secondary">
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">1. Acceptance of Terms</h3>
             <p className="mb-4">
               Welcome to Libris. By accessing or using our mobile application ("App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use the App.
             </p>
@@ -1880,7 +2136,7 @@ export default function App() {
               These Terms constitute a legally binding agreement between you and Libris ("we," "us," or "our"). By creating an account or using the App, you acknowledge that you have read, understood, and agree to be bound by these Terms.
             </p>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">2. Description of Service</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">2. Description of Service</h3>
             <p className="mb-4">
               Libris is a personal book tracking application that allows users to:
             </p>
@@ -1893,7 +2149,7 @@ export default function App() {
               <li>Export their book library data</li>
             </ul>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">3. User Accounts</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">3. User Accounts</h3>
             <p className="mb-4">
               To use certain features of the App, you must create an account. You are responsible for:
             </p>
@@ -1904,12 +2160,12 @@ export default function App() {
               <li>Notifying us immediately of any unauthorized use</li>
             </ul>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">4. User Content</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">4. User Content</h3>
             <p className="mb-4">
               You retain ownership of any content you submit to the App, including book notes, reviews, and profile information. By submitting content, you grant us a non-exclusive license to use, store, and display that content as necessary to provide the Service.
             </p>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">5. Acceptable Use</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">5. Acceptable Use</h3>
             <p className="mb-4">You agree not to:</p>
             <ul className="list-disc pl-6 mb-4 space-y-2">
               <li>Use the App for any illegal purpose</li>
@@ -1920,37 +2176,37 @@ export default function App() {
               <li>Create multiple accounts for abusive purposes</li>
             </ul>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">6. AI Features</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">6. AI Features</h3>
             <p className="mb-4">
               The App includes AI-powered features for book recommendations and reading analysis. These features are provided "as is" and recommendations are for informational purposes only. We do not guarantee the accuracy or suitability of AI-generated content.
             </p>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">7. Intellectual Property</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">7. Intellectual Property</h3>
             <p className="mb-4">
               The App and its original content, features, and functionality are owned by Libris and are protected by international copyright, trademark, and other intellectual property laws.
             </p>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">8. Termination</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">8. Termination</h3>
             <p className="mb-4">
               We may terminate or suspend your account and access to the App immediately, without prior notice, for any reason, including breach of these Terms. Upon termination, your right to use the App will cease immediately.
             </p>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">9. Disclaimer of Warranties</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">9. Disclaimer of Warranties</h3>
             <p className="mb-4">
               THE APP IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND. WE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
             </p>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">10. Limitation of Liability</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">10. Limitation of Liability</h3>
             <p className="mb-4">
               IN NO EVENT SHALL LIBRIS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM YOUR USE OF THE APP.
             </p>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">11. Changes to Terms</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">11. Changes to Terms</h3>
             <p className="mb-4">
               We reserve the right to modify these Terms at any time. We will notify users of any material changes by updating the "Last Updated" date. Continued use of the App after changes constitutes acceptance of the modified Terms.
             </p>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3">12. Contact Information</h3>
+            <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">12. Contact Information</h3>
             <p className="mb-4">
               For questions about these Terms, please contact us at:
             </p>
@@ -2139,13 +2395,13 @@ export default function App() {
                             {book.status}
                         </span>
                     </div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 truncate">{book.author}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{book.genre} • {book.format}</p>
+                    <p className="text-sm text-text-secondary truncate">{book.author}</p>
+                    <p className="text-xs text-text-muted mt-1">{book.genre} • {book.format}</p>
                     
                     {book.rating && book.rating > 0 ? (
                         <div className="flex items-center mt-2 text-amber-400 text-sm">
                             {'★'.repeat(Math.floor(book.rating))}
-                            <span className="text-slate-300 dark:text-slate-600">{'★'.repeat(5 - Math.floor(book.rating))}</span>
+                            <span className="text-text-muted">{'★'.repeat(5 - Math.floor(book.rating))}</span>
                         </div>
                     ) : null}
                   </div>
@@ -2158,9 +2414,20 @@ export default function App() {
                 )}
 
                 <div className="mt-auto bg-surface-base px-4 py-2 border-t border-surface-border flex justify-between items-center" onClick={(e) => e.stopPropagation()}>
-                   <Button variant="ghost" size="sm" className="text-xs h-7 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 p-0" onClick={() => handleBookSummary(book)}>
-                      AI Summary
-                   </Button>
+                   <div className="flex items-center gap-2">
+                     <Button variant="ghost" size="sm" className="text-xs h-7 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 p-0" onClick={() => handleBookSummary(book)}>
+                        AI Summary
+                     </Button>
+                     <a
+                       href={getAffiliateLink(book.title, book.author)}
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       className="text-xs h-7 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium flex items-center gap-0.5"
+                       onClick={(e) => e.stopPropagation()}
+                     >
+                       Buy 🛒
+                     </a>
+                   </div>
                    <div className="flex gap-1">
                         <button 
                             onClick={() => handleEdit(book)}
@@ -2321,6 +2588,27 @@ export default function App() {
           onProgressUpdate={handleReadingProgressUpdate}
           onReaderStateChange={setIsEBookReaderOpen}
           closeReaderTrigger={closeReaderTrigger}
+        />
+      )}
+
+      {/* Reading Session Summary Overlay */}
+      {sessionSummary && (
+        <ReadingSessionSummary
+          durationMinutes={sessionSummary.durationMinutes}
+          bookTitle={sessionSummary.bookTitle}
+          totalBookMinutes={sessionSummary.totalBookMinutes}
+          currentStreak={sessionSummary.currentStreak}
+          streakIncremented={sessionSummary.streakIncremented}
+          onClose={() => setSessionSummary(null)}
+        />
+      )}
+
+      {/* Premium Paywall Modal */}
+      {showPaywall && (
+        <PremiumPaywall
+          premiumState={premiumState}
+          onUpgrade={handleUpgrade}
+          onClose={() => setShowPaywall(false)}
         />
       )}
 

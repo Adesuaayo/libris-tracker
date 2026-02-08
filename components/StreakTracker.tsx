@@ -38,7 +38,7 @@ export function StreakTracker({ streak }: StreakTrackerProps) {
     if (streak.currentStreak >= 30) return 'text-orange-500';
     if (streak.currentStreak >= 7) return 'text-amber-500';
     if (streak.currentStreak >= 3) return 'text-yellow-500';
-    return 'text-slate-400';
+    return 'text-text-muted';
   };
 
   const getFlameSize = () => {
@@ -56,18 +56,18 @@ export function StreakTracker({ streak }: StreakTrackerProps) {
             <Flame className={`${getFlameSize()} ${getFlameColor()} transition-all`} />
           </div>
           <div>
-            <h3 className="font-semibold text-slate-900 dark:text-white">Reading Streak</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <h3 className="font-semibold text-text-primary">Reading Streak</h3>
+            <p className="text-sm text-text-muted">
               {getStreakMessage()}
             </p>
           </div>
         </div>
         
         <div className="text-right">
-          <div className={`text-3xl font-bold ${streak.currentStreak > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400'}`}>
+          <div className={`text-3xl font-bold ${streak.currentStreak > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-text-muted'}`}>
             {streak.currentStreak}
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="text-xs text-text-muted">
             {streak.currentStreak === 1 ? 'day' : 'days'}
           </div>
         </div>
@@ -116,10 +116,10 @@ export function StreakTracker({ streak }: StreakTrackerProps) {
         <div className="flex items-center gap-2 flex-1">
           <Calendar className="w-4 h-4 text-brand-500" />
           <div>
-            <div className="text-sm font-semibold text-slate-900 dark:text-white">
+            <div className="text-sm font-semibold text-text-primary">
               {streak.streakHistory.length}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Days Read</div>
+            <div className="text-xs text-text-muted">Days Read</div>
           </div>
         </div>
         

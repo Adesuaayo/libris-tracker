@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bell, BellOff, Clock, Check, AlertCircle } from 'lucide-react';
-import { Button } from './Button';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications, ScheduleOptions } from '@capacitor/local-notifications';
 
@@ -38,7 +37,6 @@ export function ReadingReminders({ onSettingsChange }: ReadingRemindersProps) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'unknown'>('unknown');
   const [isNative] = useState(Capacitor.isNativePlatform());
-  const [testSending, setTestSending] = useState(false);
   const scheduleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -238,68 +236,6 @@ export function ReadingReminders({ onSettingsChange }: ReadingRemindersProps) {
     setSettings(prev => ({ ...prev, time }));
   };
 
-  // Test notification - works for both web and native
-  const sendTestNotification = async () => {
-    setTestSending(true);
-    
-    try {
-      if (isNative) {
-        // Request permission if not granted
-        if (permissionStatus !== 'granted') {
-          const granted = await requestPermission();
-          if (!granted) {
-            alert('Please enable notifications to test reminders.');
-            setTestSending(false);
-            return;
-          }
-        }
-        
-        // Send immediate notification on Android
-        await LocalNotifications.schedule({
-          notifications: [
-            {
-              id: 9999,
-              title: '📚 Time to Read!',
-              body: 'This is a test reminder from Libris. Your actual reminders will appear at your scheduled time!',
-              schedule: { at: new Date(Date.now() + 1000) }, // 1 second from now
-              sound: 'default',
-              smallIcon: 'ic_stat_book',
-              largeIcon: 'ic_launcher'
-            }
-          ]
-        });
-        
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 2000);
-      } else {
-        // Web notification
-        if (permissionStatus !== 'granted') {
-          const granted = await requestPermission();
-          if (!granted) {
-            alert('Please enable notifications in your browser to test reminders.');
-            setTestSending(false);
-            return;
-          }
-        }
-        
-        new Notification('📚 Time to Read!', {
-          body: 'This is a test reminder from Libris. Your actual reminders will appear at your scheduled time!',
-          icon: '/favicon.ico',
-          tag: 'libris-test-reminder',
-          requireInteraction: false
-        });
-        
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 2000);
-      }
-    } catch (e) {
-      console.error('Error sending test notification:', e);
-      alert('Failed to send test notification. Please check your notification settings.');
-    }
-    
-    setTestSending(false);
-  };
-
   return (
     <div className="bg-surface-card rounded-2xl p-5 border border-surface-border">
       {/* Header */}
@@ -328,7 +264,7 @@ export function ReadingReminders({ onSettingsChange }: ReadingRemindersProps) {
           }`}
         >
           <div
-            className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-transform ${
+            className={`absolute top-1 w-6 h-6 rounded-full bg-surface-card shadow transition-transform ${
               settings.enabled ? 'translate-x-7' : 'translate-x-1'
             }`}
           />

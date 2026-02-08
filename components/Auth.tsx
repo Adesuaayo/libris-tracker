@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase, checkSupabaseConfig, supabaseConfigDebug } from '../services/supabase';
 import { Button } from './Button';
 import { BookOpen, Mail, Lock, AlertCircle, Settings, Check, X, KeyRound, ArrowLeft, Sparkles } from 'lucide-react';
@@ -34,7 +34,7 @@ export const Auth: React.FC = () => {
   // Listen for password recovery event and deep links
   useEffect(() => {
     // Supabase auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, _session) => {
       console.log('Auth event:', event);
       if (event === 'PASSWORD_RECOVERY') {
         setIsResetPassword(true);
@@ -264,21 +264,21 @@ export const Auth: React.FC = () => {
 
   if (configError) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex justify-center items-center p-4">
-        <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-red-200 dark:border-red-900/50 p-8">
+      <div className="min-h-screen bg-surface-base flex justify-center items-center p-4">
+        <div className="w-full max-w-lg bg-surface-card rounded-2xl shadow-xl border border-red-200 dark:border-red-900/50 p-8">
             <div className="flex flex-col items-center mb-6 text-center">
                 <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
                     <Settings className="text-red-600 dark:text-red-400 h-6 w-6" />
                 </div>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white">Configuration Required</h1>
-                <p className="text-slate-600 dark:text-slate-300 mt-2">
+                <h1 className="text-xl font-bold text-text-primary">Configuration Required</h1>
+                <p className="text-text-secondary mt-2">
                     Libris needs to connect to Supabase to save your books.
                 </p>
             </div>
             
             <div className="space-y-4 mb-6">
-                <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg text-sm text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                    <p className="font-semibold text-slate-900 dark:text-white mb-2">Debug Info (What the app sees):</p>
+                <div className="bg-surface-base p-4 rounded-lg text-sm text-text-secondary border border-surface-border">
+                    <p className="font-semibold text-text-primary mb-2">Debug Info (What the app sees):</p>
                     <div className="space-y-2 font-mono text-xs">
                         <div className="flex items-center gap-2">
                              {supabaseConfigDebug.url ? <Check className="text-emerald-500 h-3 w-3" /> : <X className="text-red-500 h-3 w-3" />}
@@ -321,17 +321,17 @@ export const Auth: React.FC = () => {
             <BookOpen className="text-white h-12 w-12" />
           </div>
           
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">Libris</h1>
+          <h1 className="text-4xl font-bold text-text-primary mb-2">Libris</h1>
           
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="h-4 w-4 text-brand-500" />
-            <p className="text-slate-600 dark:text-slate-400 text-center">
+            <p className="text-text-secondary text-center">
               AI-Powered Book Tracking
             </p>
             <Sparkles className="h-4 w-4 text-brand-500" />
           </div>
           
-          <p className="text-slate-500 dark:text-slate-400 text-center mb-12 max-w-xs">
+          <p className="text-text-muted text-center mb-12 max-w-xs">
             Track your reading journey, get personalized recommendations, and gain insights into your reading habits.
           </p>
 
@@ -358,13 +358,13 @@ export const Auth: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center p-4">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-8">
+    <div className="min-h-screen bg-surface-base flex flex-col justify-center items-center p-4">
+      <div className="w-full max-w-md bg-surface-card rounded-2xl shadow-xl border border-surface-border p-8">
         {/* Back button - only show if not in password reset mode */}
         {!isResetPassword && !isForgotPassword && (
           <button
             onClick={() => setShowWelcome(true)}
-            className="flex items-center gap-1 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 mb-4 -mt-2 text-sm transition-colors"
+            className="flex items-center gap-1 text-text-muted hover:text-text-secondary mb-4 -mt-2 text-sm transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -375,10 +375,10 @@ export const Auth: React.FC = () => {
           <div className={`w-12 h-12 ${isResetPassword ? 'bg-amber-500' : 'bg-brand-600'} rounded-xl flex items-center justify-center mb-4 shadow-lg ${isResetPassword ? 'shadow-amber-500/30' : 'shadow-brand-500/30'}`}>
             {isResetPassword ? <KeyRound className="text-white h-7 w-7" /> : <BookOpen className="text-white h-7 w-7" />}
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-text-primary">
             {isResetPassword ? 'Reset Password' : isForgotPassword ? 'Forgot Password' : isSignUp ? 'Create Account' : 'Welcome Back'}
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2 text-center">
+          <p className="text-text-muted mt-2 text-center">
             {isResetPassword 
               ? 'Enter your new password below' 
               : isForgotPassword 
@@ -395,10 +395,10 @@ export const Auth: React.FC = () => {
             <button
               onClick={handleGoogleSignIn}
               disabled={googleLoading}
-              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-slate-700 dark:text-slate-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-surface-border rounded-lg bg-surface-card hover:bg-surface-elevated transition-colors text-text-secondary font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {googleLoading ? (
-                <div className="w-5 h-5 border-2 border-slate-300 border-t-brand-500 rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-surface-border border-t-brand-500 rounded-full animate-spin" />
               ) : (
                 <GoogleIcon />
               )}
@@ -407,9 +407,9 @@ export const Auth: React.FC = () => {
 
             {/* Divider */}
             <div className="flex items-center gap-4 my-5">
-              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
-              <span className="text-sm text-slate-400 dark:text-slate-500">or</span>
-              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+              <div className="flex-1 h-px bg-surface-border"></div>
+              <span className="text-sm text-text-muted">or</span>
+              <div className="flex-1 h-px bg-surface-border"></div>
             </div>
           </>
         )}
@@ -419,31 +419,31 @@ export const Auth: React.FC = () => {
           {isResetPassword ? (
             <>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">New Password</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">New Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
                   <input
                     type="password"
                     required
                     minLength={6}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
                     placeholder="••••••••"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Confirm Password</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Confirm Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
                   <input
                     type="password"
                     required
                     minLength={6}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
                     placeholder="••••••••"
                   />
                 </div>
@@ -452,15 +452,15 @@ export const Auth: React.FC = () => {
           ) : (
             /* Email Input - shown for login, signup, and forgot password */
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Email</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
                   placeholder="you@example.com"
                 />
               </div>
@@ -470,7 +470,7 @@ export const Auth: React.FC = () => {
           {!isForgotPassword && !isResetPassword && (
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+                <label className="block text-sm font-medium text-text-secondary">Password</label>
                 {!isSignUp && (
                   <button
                     type="button"
@@ -482,14 +482,14 @@ export const Auth: React.FC = () => {
                 )}
               </div>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
                 <input
                   type="password"
                   required
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
                   placeholder="••••••••"
                 />
               </div>
@@ -518,7 +518,7 @@ export const Auth: React.FC = () => {
 
         <div className="mt-6 text-center">
           {isResetPassword ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-sm text-text-secondary">
               Changed your mind?
               <button
                 onClick={() => {
@@ -534,7 +534,7 @@ export const Auth: React.FC = () => {
               </button>
             </p>
           ) : isForgotPassword ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-sm text-text-secondary">
               Remember your password?
               <button
                 onClick={() => setIsForgotPassword(false)}
@@ -544,7 +544,7 @@ export const Auth: React.FC = () => {
               </button>
             </p>
           ) : (
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-sm text-text-secondary">
               {isSignUp ? 'Already have an account?' : "Don't have an account?"}
               <button
                 onClick={() => setIsSignUp(!isSignUp)}

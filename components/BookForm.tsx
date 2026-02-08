@@ -370,9 +370,9 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg max-w-2xl mx-auto border border-slate-100 dark:border-slate-700">
-      <div className="mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-white">{initialData ? 'Edit Book' : 'Add New Book'}</h2>
+    <div className="bg-surface-card p-6 rounded-lg shadow-lg max-w-2xl mx-auto border border-surface-border">
+      <div className="mb-6 border-b border-surface-border pb-4">
+        <h2 className="text-xl font-bold text-text-primary">{initialData ? 'Edit Book' : 'Add New Book'}</h2>
         {!initialData && (
           <BookSearch onSelectBook={handleBookSelect} />
         )}
@@ -382,33 +382,33 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         {/* Title & Author */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Title</label>
+            <label className="block text-sm font-medium text-text-secondary">Title</label>
             <input 
               required
               name="title" 
               value={formData.title} 
               onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2" 
+              className="mt-1 block w-full rounded-md border-surface-border bg-surface-card text-text-primary shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2" 
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Author</label>
+            <label className="block text-sm font-medium text-text-secondary">Author</label>
             <input 
               required
               name="author" 
               value={formData.author} 
               onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2" 
+              className="mt-1 block w-full rounded-md border-surface-border bg-surface-card text-text-primary shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2" 
             />
           </div>
         </div>
 
         {/* Cover Image Section */}
-        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Book Cover</label>
+        <div className="bg-surface-base p-4 rounded-lg border border-surface-border">
+            <label className="block text-sm font-medium text-text-secondary mb-2">Book Cover</label>
             <div className="flex flex-col sm:flex-row gap-4 items-start">
                 {/* Preview */}
-                <div className="relative w-24 h-36 flex-shrink-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-sm flex items-center justify-center overflow-hidden group">
+                <div className="relative w-24 h-36 flex-shrink-0 bg-surface-card border border-surface-border rounded-md shadow-sm flex items-center justify-center overflow-hidden group">
                     {previewUrl ? (
                         <>
                             <img src={previewUrl} alt="Cover Preview" className="w-full h-full object-cover" />
@@ -428,8 +428,8 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
                         </>
                     ) : (
                         <div className="text-center p-2">
-                             <ImageIcon className="w-6 h-6 text-slate-300 dark:text-slate-600 mx-auto mb-1" />
-                             <span className="text-[10px] text-slate-400 dark:text-slate-500">No Image</span>
+                             <ImageIcon className="w-6 h-6 text-text-muted mx-auto mb-1" />
+                             <span className="text-[10px] text-text-muted">No Image</span>
                         </div>
                     )}
                 </div>
@@ -437,7 +437,7 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
                 {/* Inputs */}
                 <div className="flex-1 w-full space-y-3">
                     <div>
-                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Image URL (from web)</label>
+                        <label className="block text-xs text-text-muted mb-1">Image URL (from web)</label>
                         <input
                             type="text"
                             name="coverUrl"
@@ -448,11 +448,11 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
                                 setPreviewUrl(e.target.value);
                                 setSelectedFile(null);
                             }}
-                            className="block w-full rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2 text-sm"
+                            className="block w-full rounded-md border-surface-border bg-surface-card text-text-primary shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2 text-sm"
                         />
                     </div>
                     <div className="relative">
-                        <span className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Or upload from device</span>
+                        <span className="block text-xs text-text-muted mb-1">Or upload from device</span>
                         <input
                             type="file"
                             accept="image/*"
@@ -462,12 +462,12 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
                         />
                         <label
                             htmlFor="cover-upload"
-                            className="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 dark:border-slate-600 shadow-sm text-sm font-medium rounded-md text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer w-full sm:w-auto justify-center"
+                            className="inline-flex items-center gap-2 px-3 py-2 border border-surface-border shadow-sm text-sm font-medium rounded-md text-text-secondary bg-surface-card hover:bg-surface-elevated cursor-pointer w-full sm:w-auto justify-center"
                         >
                             <Upload className="w-4 h-4" />
                             Choose Image
                         </label>
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 ml-1">Max 5MB. Stored locally.</p>
+                        <p className="text-[10px] text-text-muted mt-1 ml-1">Max 5MB. Stored locally.</p>
                     </div>
                 </div>
             </div>
@@ -475,16 +475,16 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
 
         {/* eBook File Section */}
         <div className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 p-4 rounded-lg border border-violet-100 dark:border-violet-800">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               <BookOpen className="w-4 h-4 inline mr-2" />
               eBook File (EPUB/PDF)
             </label>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+            <p className="text-xs text-text-muted mb-3">
               Attach an EPUB or PDF file to read directly in the app
             </p>
             
             {(ebookFileName || ebookDataRef.current?.name) ? (
-              <div className="flex items-center gap-3 bg-white dark:bg-slate-800 rounded-lg p-3 border border-violet-200 dark:border-violet-700">
+              <div className="flex items-center gap-3 bg-surface-card rounded-lg p-3 border border-violet-200 dark:border-violet-700">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                   (ebookFileType || ebookDataRef.current?.type) === 'epub' 
                     ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' 
@@ -493,8 +493,8 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
                   <FileText className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{ebookFileName || ebookDataRef.current?.name}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase">{ebookFileType || ebookDataRef.current?.type} file</p>
+                  <p className="text-sm font-medium text-text-secondary truncate">{ebookFileName || ebookDataRef.current?.name}</p>
+                  <p className="text-xs text-text-muted uppercase">{ebookFileType || ebookDataRef.current?.type} file</p>
                 </div>
                 <button
                   type="button"
@@ -516,12 +516,12 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
                 />
                 <label
                   htmlFor="ebook-upload"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-violet-300 dark:border-violet-600 text-sm font-medium rounded-lg text-violet-700 dark:text-violet-300 bg-white/50 dark:bg-slate-800/50 hover:bg-violet-50 dark:hover:bg-violet-900/20 cursor-pointer transition-colors w-full justify-center"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-violet-300 dark:border-violet-600 text-sm font-medium rounded-lg text-violet-700 dark:text-violet-300 bg-white/50 dark:bg-surface-elevated hover:bg-violet-50 dark:hover:bg-violet-900/20 cursor-pointer transition-colors w-full justify-center"
                 >
                   <Upload className="w-4 h-4" />
                   Choose EPUB or PDF File
                 </label>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 text-center">Max 50MB. Stored locally on your device.</p>
+                <p className="text-[10px] text-text-muted mt-2 text-center">Max 50MB. Stored locally on your device.</p>
               </div>
             )}
         </div>
@@ -529,21 +529,21 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         {/* Genre & Format */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Genre</label>
+                <label className="block text-sm font-medium text-text-secondary">Genre</label>
                 <input 
                 name="genre" 
                 value={formData.genre} 
                 onChange={handleChange}
-                className="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2" 
+                className="mt-1 block w-full rounded-md border-surface-border bg-surface-card text-text-primary shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2" 
                 />
             </div>
             <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Format</label>
+                <label className="block text-sm font-medium text-text-secondary">Format</label>
                 <select 
                 name="format" 
                 value={formData.format} 
                 onChange={handleChange}
-                className="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2"
+                className="mt-1 block w-full rounded-md border-surface-border bg-surface-card text-text-primary shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2"
                 >
                 {Object.values(BookFormat).map(f => (
                     <option key={f} value={f}>{f}</option>
@@ -555,12 +555,12 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
         {/* Dates & Status */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
+            <label className="block text-sm font-medium text-text-secondary">Status</label>
             <select 
               name="status" 
               value={formData.status} 
               onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2"
+              className="mt-1 block w-full rounded-md border-surface-border bg-surface-card text-text-primary shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2"
             >
               {Object.values(ReadingStatus).map(s => (
                 <option key={s} value={s}>{s}</option>
@@ -568,29 +568,29 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Date Started</label>
+            <label className="block text-sm font-medium text-text-secondary">Date Started</label>
             <input 
               type="date"
               name="dateStarted" 
               value={formData.dateStarted || ''} 
               onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2" 
+              className="mt-1 block w-full rounded-md border-surface-border bg-surface-card text-text-primary shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2" 
             />
           </div>
            <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Date Finished</label>
+            <label className="block text-sm font-medium text-text-secondary">Date Finished</label>
             <input 
               type="date"
               name="dateFinished" 
               value={formData.dateFinished || ''} 
               onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2" 
+              className="mt-1 block w-full rounded-md border-surface-border bg-surface-card text-text-primary shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2" 
             />
           </div>
         </div>
 
         <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Rating (0-5)</label>
+            <label className="block text-sm font-medium text-text-secondary">Rating (0-5)</label>
             <div className="flex items-center gap-2">
                 <input 
                 type="number"
@@ -600,24 +600,24 @@ export const BookForm: React.FC<BookFormProps> = ({ initialData, onSubmit, onCan
                 name="rating" 
                 value={formData.rating} 
                 onChange={handleChange}
-                className="mt-1 block w-20 rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2" 
+                className="mt-1 block w-20 rounded-md border-surface-border bg-surface-card text-text-primary shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2" 
                 />
-                 <span className="text-sm text-slate-400 dark:text-slate-500 mt-1">/ 5</span>
+                 <span className="text-sm text-text-muted mt-1">/ 5</span>
             </div>
         </div>
 
         <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Notes / Thoughts</label>
+            <label className="block text-sm font-medium text-text-secondary">Notes / Thoughts</label>
             <textarea 
                 name="notes" 
                 rows={3}
                 value={formData.notes} 
                 onChange={handleChange}
-                className="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2" 
+                className="mt-1 block w-full rounded-md border-surface-border bg-surface-card text-text-primary shadow-sm focus:border-brand-500 focus:ring-brand-500 border px-3 py-2" 
             />
         </div>
         
-        <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+        <div className="flex justify-end gap-3 pt-4 border-t border-surface-border">
           <Button type="button" variant="secondary" onClick={onCancel} disabled={isUploading}>Cancel</Button>
           <Button type="submit" disabled={isUploading}>
             {isUploading ? 'Uploading...' : 'Save Book'}

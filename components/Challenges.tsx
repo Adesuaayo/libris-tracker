@@ -717,7 +717,7 @@ const CreateChallengeForm = ({ onBack, onCreate }: CreateChallengeFormProps) => 
               formData.is_public ? 'bg-accent' : 'bg-surface-border'
             }`}
           >
-            <div className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform ${
+            <div className={`w-5 h-5 rounded-full bg-surface-card shadow transform transition-transform ${
               formData.is_public ? 'translate-x-5' : 'translate-x-0.5'
             }`} />
           </button>

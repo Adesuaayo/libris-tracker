@@ -141,7 +141,7 @@ export const UserProfileView = memo<UserProfileViewProps>(({
                 onClick={handleFollow}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors text-sm font-medium ${
                   isFollowing
-                    ? 'bg-white text-violet-600 hover:bg-slate-100'
+                    ? 'bg-white text-violet-600 hover:bg-white/90'
                     : 'bg-white/20 hover:bg-white/30'
                 }`}
               >
@@ -180,7 +180,7 @@ export const UserProfileView = memo<UserProfileViewProps>(({
 
               {/* Privacy Badge */}
               <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center shadow ${
-                profile.is_public ? 'bg-green-500' : 'bg-slate-500'
+                profile.is_public ? 'bg-green-500' : 'bg-surface-border'
               }`}>
                 {profile.is_public ? (
                   <Globe className="w-4 h-4" />
@@ -574,10 +574,10 @@ function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
             <button
               onClick={() => setIsPublic(!isPublic)}
               className={`w-12 h-7 rounded-full transition-colors ${
-                isPublic ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'
+                isPublic ? 'bg-green-500' : 'bg-surface-border'
               }`}
             >
-              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+              <div className={`w-5 h-5 rounded-full bg-surface-card shadow transition-transform ${
                 isPublic ? 'translate-x-6' : 'translate-x-1'
               }`} />
             </button>

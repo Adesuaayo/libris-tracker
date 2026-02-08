@@ -47,7 +47,7 @@ export function BookNotes({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-brand-500" />
-          <h3 className="font-semibold text-slate-900 dark:text-white">Notes & Quotes</h3>
+          <h3 className="font-semibold text-text-primary">Notes & Quotes</h3>
         </div>
         <Button onClick={() => setShowAddForm(true)} className="text-sm py-1.5 px-3">
           <Plus className="w-4 h-4 mr-1" />
@@ -150,7 +150,7 @@ export function BookNotes({
 
       {/* Notes List */}
       {notes.length === 0 ? (
-        <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+        <div className="text-center py-8 text-text-muted">
           <Quote className="w-10 h-10 mx-auto mb-2 opacity-50" />
           <p>No quotes or notes yet</p>
           <p className="text-sm">Save your favorite passages!</p>
@@ -160,7 +160,7 @@ export function BookNotes({
           {/* Quotes Section */}
           {quotes.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <h4 className="text-sm font-medium text-text-muted flex items-center gap-1">
                 <Quote className="w-4 h-4" /> Quotes ({quotes.length})
               </h4>
               {quotes.map((note: BookNote) => (
@@ -172,7 +172,7 @@ export function BookNotes({
           {/* Notes Section */}
           {personalNotes.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <h4 className="text-sm font-medium text-text-muted flex items-center gap-1">
                 <FileText className="w-4 h-4" /> Notes ({personalNotes.length})
               </h4>
               {personalNotes.map((note: BookNote) => (
@@ -192,17 +192,13 @@ interface NoteCardProps {
 }
 
 function NoteCard({ note, onDelete }: NoteCardProps) {
-  const [showDelete, setShowDelete] = useState(false);
-
   return (
     <div 
-      className={`relative p-4 rounded-xl ${
+      className={`relative p-4 rounded-xl group ${
         note.type === 'quote' 
           ? 'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-400' 
           : 'bg-surface-base border border-surface-border'
       }`}
-      onMouseEnter={() => setShowDelete(true)}
-      onMouseLeave={() => setShowDelete(false)}
     >
       {note.type === 'quote' ? (
         <p className="italic text-text-secondary">"{note.content}"</p>
@@ -221,12 +217,11 @@ function NoteCard({ note, onDelete }: NoteCardProps) {
         </span>
       </div>
 
-      {/* Delete Button */}
+      {/* Delete Button - always visible on touch, hover on desktop */}
       <button
         onClick={() => onDelete(note.id)}
-        className={`absolute top-2 right-2 p-1.5 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-500 hover:bg-red-200 dark:hover:bg-red-900/50 transition-opacity ${
-          showDelete ? 'opacity-100' : 'opacity-0'
-        }`}
+        className="absolute top-2 right-2 p-1.5 rounded-lg bg-surface-base dark:bg-surface-elevated text-text-muted hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all opacity-60 sm:opacity-0 sm:group-hover:opacity-100"
+        aria-label="Delete note"
       >
         <Trash2 className="w-4 h-4" />
       </button>

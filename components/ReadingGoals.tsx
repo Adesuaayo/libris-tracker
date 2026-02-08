@@ -64,7 +64,7 @@ export function ReadingGoals({
     if (percentage >= 100) return 'bg-emerald-500';
     if (percentage >= 75) return 'bg-brand-500';
     if (percentage >= 50) return 'bg-amber-500';
-    return 'bg-slate-400';
+    return 'bg-surface-border';
   };
 
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -79,8 +79,8 @@ export function ReadingGoals({
               <Target className="w-5 h-5 text-brand-600 dark:text-brand-400" />
             </div>
             <div>
-              <h3 className="font-semibold text-slate-900 dark:text-white">{currentYear} Reading Goal</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <h3 className="font-semibold text-text-primary">{currentYear} Reading Goal</h3>
+              <p className="text-sm text-text-muted">
                 {yearlyGoal ? `${completedBooks} of ${yearlyGoal.target} books` : 'Set your yearly target'}
               </p>
             </div>
@@ -205,7 +205,7 @@ export function ReadingGoals({
                   ✓ Done!
                 </span>
               ) : (
-                <span className="text-slate-500 dark:text-slate-400">
+                <span className="text-text-muted">
                   {monthlyGoal.target - completedThisMonth} more to go
                 </span>
               )}
@@ -214,7 +214,7 @@ export function ReadingGoals({
         ) : (
           <button
             onClick={() => handleStartEdit('monthly')}
-            className="w-full py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl text-slate-500 dark:text-slate-400 hover:border-purple-300 dark:hover:border-purple-700 hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-sm"
+            className="w-full py-2.5 border-2 border-dashed border-surface-border rounded-xl text-text-muted hover:border-purple-300 dark:hover:border-purple-700 hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-sm"
           >
             + Add Monthly Goal
           </button>

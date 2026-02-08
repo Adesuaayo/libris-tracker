@@ -4,7 +4,7 @@ import { Button } from './Button';
 import { BookOpen, ChevronRight, ChevronLeft, Sparkles, Clock, Heart, BookMarked, Check } from 'lucide-react';
 
 interface OnboardingQuizProps {
-  onComplete: (preferences: ReadingPreferences) => void;
+  onComplete: (preferences: ReadingPreferences, yearlyGoalTarget?: number) => void;
   onSkip: () => void;
 }
 
@@ -42,6 +42,7 @@ const BOOK_LENGTHS = [
 export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
   const [step, setStep] = useState(0);
   const [preferences, setPreferences] = useState<ReadingPreferences>(DEFAULT_PREFERENCES);
+  const [yearlyGoalTarget, setYearlyGoalTarget] = useState<number>(12);
 
   const handleGenreToggle = (genre: string) => {
     setPreferences(prev => ({
@@ -65,6 +66,13 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
     onComplete({
       ...preferences,
       hasCompletedOnboarding: true
+    }, yearlyGoalTarget);
+  };
+
+  const handleSkipGoal = () => {
+    onComplete({
+      ...preferences,
+      hasCompletedOnboarding: true
     });
   };
 
@@ -77,10 +85,10 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
               <div className="w-20 h-20 bg-gradient-to-br from-brand-400 to-brand-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <BookOpen className="w-10 h-10 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              <h2 className="text-2xl font-bold text-text-primary mb-2">
                 Welcome to Libris! 📚
               </h2>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p className="text-text-secondary">
                 Let's personalize your reading experience. Answer a few quick questions to get better book recommendations.
               </p>
             </div>
@@ -92,7 +100,7 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
               </Button>
               <button
                 onClick={onSkip}
-                className="text-slate-500 dark:text-slate-400 text-sm hover:underline"
+                className="text-text-muted text-sm hover:underline"
               >
                 Skip for now
               </button>
@@ -105,10 +113,10 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
           <div className="space-y-6">
             <div className="text-center">
               <Heart className="w-10 h-10 text-brand-500 mx-auto mb-3" />
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+              <h2 className="text-xl font-bold text-text-primary mb-2">
                 What genres do you love?
               </h2>
-              <p className="text-slate-600 dark:text-slate-400 text-sm">
+              <p className="text-text-secondary text-sm">
                 Select all that interest you (at least 2)
               </p>
             </div>
@@ -132,7 +140,7 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
               ))}
             </div>
             
-            <p className="text-xs text-slate-500 text-center">
+            <p className="text-xs text-text-muted text-center">
               Selected: {preferences.favoriteGenres.length} genres
             </p>
           </div>
@@ -143,10 +151,10 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
           <div className="space-y-6">
             <div className="text-center">
               <Clock className="w-10 h-10 text-brand-500 mx-auto mb-3" />
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+              <h2 className="text-xl font-bold text-text-primary mb-2">
                 How often do you read?
               </h2>
-              <p className="text-slate-600 dark:text-slate-400 text-sm">
+              <p className="text-text-secondary text-sm">
                 This helps us tailor recommendations to your pace
               </p>
             </div>
@@ -159,14 +167,14 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
                   className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
                     preferences.readingPace === pace.id
                       ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                      : 'border-surface-border hover:border-brand-300 dark:hover:border-brand-700'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{pace.icon}</span>
                     <div>
-                      <div className="font-semibold text-slate-900 dark:text-white">{pace.label}</div>
-                      <div className="text-sm text-slate-500 dark:text-slate-400">{pace.description}</div>
+                      <div className="font-semibold text-text-primary">{pace.label}</div>
+                      <div className="text-sm text-text-muted">{pace.description}</div>
                     </div>
                     {preferences.readingPace === pace.id && (
                       <Check className="w-5 h-5 text-brand-500 ml-auto" />
@@ -183,10 +191,10 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
           <div className="space-y-6">
             <div className="text-center">
               <Sparkles className="w-10 h-10 text-brand-500 mx-auto mb-3" />
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+              <h2 className="text-xl font-bold text-text-primary mb-2">
                 What mood are you looking for?
               </h2>
-              <p className="text-slate-600 dark:text-slate-400 text-sm">
+              <p className="text-text-secondary text-sm">
                 Select the vibes you enjoy in books
               </p>
             </div>
@@ -199,11 +207,11 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
                   className={`p-4 rounded-xl border-2 transition-all text-center ${
                     preferences.preferredMoods.includes(mood.id)
                       ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                      : 'border-surface-border hover:border-brand-300 dark:hover:border-brand-700'
                   }`}
                 >
                   <span className="text-2xl block mb-1">{mood.emoji}</span>
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{mood.label}</span>
+                  <span className="text-sm font-medium text-text-secondary">{mood.label}</span>
                 </button>
               ))}
             </div>
@@ -215,10 +223,10 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
           <div className="space-y-6">
             <div className="text-center">
               <BookMarked className="w-10 h-10 text-brand-500 mx-auto mb-3" />
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+              <h2 className="text-xl font-bold text-text-primary mb-2">
                 Preferred book length?
               </h2>
-              <p className="text-slate-600 dark:text-slate-400 text-sm">
+              <p className="text-text-secondary text-sm">
                 We'll prioritize recommendations accordingly
               </p>
             </div>
@@ -231,13 +239,57 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
                   className={`p-4 rounded-xl border-2 transition-all text-center ${
                     preferences.bookLengthPreference === length.id
                       ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                      : 'border-surface-border hover:border-brand-300 dark:hover:border-brand-700'
                   }`}
                 >
-                  <div className="font-semibold text-slate-900 dark:text-white">{length.label}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">{length.description}</div>
+                  <div className="font-semibold text-text-primary">{length.label}</div>
+                  <div className="text-xs text-text-muted">{length.description}</div>
                 </button>
               ))}
+            </div>
+          </div>
+        );
+
+      case 5:
+        return (
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-3xl font-serif font-bold text-text-primary leading-tight">
+                Set your {new Date().getFullYear()} reading goal
+              </h2>
+              <p className="text-lg text-text-secondary mt-3">
+                How many books are you hoping to read this year? (Don't worry—you can always adjust this later!)
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-text-primary mb-2">
+                Number of books
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={365}
+                value={yearlyGoalTarget}
+                onChange={(e) => setYearlyGoalTarget(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-full px-4 py-3 text-lg rounded-xl border border-surface-border bg-surface-card text-text-primary focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                placeholder="12"
+              />
+            </div>
+
+            <div className="mt-auto pt-8 space-y-3">
+              <button
+                onClick={handleComplete}
+                className="w-full py-4 bg-text-primary text-surface-card rounded-full font-semibold text-lg transition-colors hover:opacity-90"
+              >
+                Set Goal
+              </button>
+              <button
+                onClick={handleSkipGoal}
+                className="w-full py-4 bg-surface-card border border-surface-border text-text-primary rounded-full font-semibold text-lg transition-colors hover:bg-surface-elevated"
+              >
+                I'll set my goal later
+              </button>
             </div>
           </div>
         );
@@ -250,7 +302,7 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
   return (
     <div className="fixed inset-0 bg-surface-base z-50 flex flex-col">
       {/* Progress bar */}
-      {step > 0 && (
+      {step > 0 && step < 5 && (
         <div className="p-4">
           <div className="flex gap-2">
             {[1, 2, 3, 4].map(s => (
@@ -265,14 +317,26 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
         </div>
       )}
 
+      {/* Back button for goal step */}
+      {step === 5 && (
+        <div className="p-4">
+          <button
+            onClick={() => setStep(4)}
+            className="w-10 h-10 rounded-full bg-surface-card shadow flex items-center justify-center"
+          >
+            <ChevronLeft className="w-5 h-5 text-text-primary" />
+          </button>
+        </div>
+      )}
+
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {renderStep()}
       </div>
 
       {/* Navigation */}
-      {step > 0 && (
-        <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex gap-3">
+      {step > 0 && step < 5 && (
+        <div className="p-4 border-t border-surface-border flex gap-3">
           <Button
             variant="secondary"
             onClick={() => setStep(s => s - 1)}
@@ -292,9 +356,9 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
               <ChevronRight className="w-5 h-5 ml-1" />
             </Button>
           ) : (
-            <Button onClick={handleComplete} className="flex-1">
-              <Sparkles className="w-5 h-5 mr-1" />
-              Start Reading!
+            <Button onClick={() => setStep(5)} className="flex-1">
+              Next
+              <ChevronRight className="w-5 h-5 ml-1" />
             </Button>
           )}
         </div>

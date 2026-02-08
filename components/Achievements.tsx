@@ -152,7 +152,7 @@ export function Achievements({
             )}
             
             {!achievement.unlocked && !achievement.target && (
-              <Lock className="absolute top-2 right-2 w-3 h-3 text-slate-400" />
+              <Lock className="absolute top-2 right-2 w-3 h-3 text-text-muted" />
             )}
             
             {achievement.unlocked && (

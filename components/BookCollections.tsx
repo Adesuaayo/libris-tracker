@@ -182,13 +182,13 @@ export function BookCollections({
             />
 
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Color</p>
+              <p className="text-xs text-text-muted mb-2">Color</p>
               <div className="flex flex-wrap gap-2">
                 {COLLECTION_COLORS.slice(0, 12).map(color => (
                   <button
                     key={color}
                     onClick={() => setNewColor(color)}
-                    className={`w-6 h-6 rounded-full ${getColorClass(color, 'bg')} ${newColor === color ? 'ring-2 ring-offset-2 ring-violet-500 dark:ring-offset-slate-700' : ''} transition-all`}
+                    className={`w-6 h-6 rounded-full ${getColorClass(color, 'bg')} ${newColor === color ? 'ring-2 ring-offset-2 ring-violet-500 dark:ring-offset-surface-card' : ''} transition-all`}
                   />
                 ))}
               </div>
@@ -197,7 +197,7 @@ export function BookCollections({
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => { setIsCreating(false); resetForm(); }}
-                className="px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated rounded-lg transition-colors"
               >
                 Cancel
               </button>
@@ -215,8 +215,8 @@ export function BookCollections({
         {/* Collection List */}
         {collections.length === 0 && !isCreating ? (
           <div className="text-center py-8">
-            <Folder className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-            <p className="text-slate-500 dark:text-slate-400 mb-2">No collections yet</p>
+            <Folder className="w-12 h-12 mx-auto text-text-muted mb-3" />
+            <p className="text-text-muted mb-2">No collections yet</p>
             <button
               onClick={() => setIsCreating(true)}
               className="text-sm text-violet-600 dark:text-violet-400 hover:underline"
@@ -275,7 +275,7 @@ export function BookCollections({
                       <button
                         key={color}
                         onClick={() => setNewColor(color)}
-                        className={`w-6 h-6 rounded-full ${getColorClass(color, 'bg')} ${newColor === color ? 'ring-2 ring-offset-2 ring-violet-500 dark:ring-offset-slate-700' : ''}`}
+                        className={`w-6 h-6 rounded-full ${getColorClass(color, 'bg')} ${newColor === color ? 'ring-2 ring-offset-2 ring-violet-500 dark:ring-offset-surface-card' : ''}`}
                       />
                     ))}
                   </div>
@@ -283,7 +283,7 @@ export function BookCollections({
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() => { setEditingId(null); resetForm(); }}
-                      className="p-2 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg"
+                      className="p-2 text-text-muted hover:bg-surface-elevated rounded-lg"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -312,11 +312,11 @@ export function BookCollections({
                         {collection.name}
                       </h3>
                       {collection.description && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        <p className="text-xs text-text-muted mt-0.5">
                           {collection.description}
                         </p>
                       )}
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      <p className="text-xs text-text-muted mt-1">
                         {bookCount} {bookCount === 1 ? 'book' : 'books'}
                       </p>
                     </div>
@@ -327,13 +327,13 @@ export function BookCollections({
                       <>
                         <button
                           onClick={() => handleStartEdit(collection)}
-                          className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-800/50 rounded-lg transition-colors"
+                          className="p-1.5 text-text-muted hover:text-text-secondary hover:bg-white/50 dark:hover:bg-surface-elevated rounded-lg transition-colors"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => onDeleteCollection(collection.id)}
-                          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-white/50 dark:hover:bg-slate-800/50 rounded-lg transition-colors"
+                          className="p-1.5 text-text-muted hover:text-red-500 hover:bg-white/50 dark:hover:bg-surface-elevated rounded-lg transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -345,21 +345,21 @@ export function BookCollections({
 
                 {/* Book Preview */}
                 {previewBooks.length > 0 && (
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-600/50">
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-surface-border/50">
                     {previewBooks.map(book => (
-                      <div key={book.id} className="w-10 h-14 rounded overflow-hidden bg-white dark:bg-slate-800 shadow-sm">
+                      <div key={book.id} className="w-10 h-14 rounded overflow-hidden bg-surface-card shadow-sm">
                         {book.coverUrl ? (
                           <img src={book.coverUrl} alt={book.title} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <BookOpen className="w-4 h-4 text-slate-400" />
+                            <BookOpen className="w-4 h-4 text-text-muted" />
                           </div>
                         )}
                       </div>
                     ))}
                     {bookCount > 3 && (
-                      <div className="w-10 h-14 rounded bg-white/50 dark:bg-slate-700/50 flex items-center justify-center">
-                        <span className="text-xs text-slate-500 dark:text-slate-400">+{bookCount - 3}</span>
+                      <div className="w-10 h-14 rounded bg-surface-base flex items-center justify-center">
+                        <span className="text-xs text-text-muted">+{bookCount - 3}</span>
                       </div>
                     )}
                   </div>

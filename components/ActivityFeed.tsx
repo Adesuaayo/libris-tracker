@@ -174,9 +174,9 @@ export const ActivityFeed = memo<ActivityFeedProps>(({ onViewProfile }) => {
       {/* Activity Cards */}
       {activities.length === 0 ? (
         <div className="text-center py-12">
-          <Clock className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-          <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">No activity yet</h3>
-          <p className="text-sm text-slate-500">
+          <Clock className="w-12 h-12 mx-auto text-text-muted mb-4" />
+          <h3 className="text-lg font-medium text-text-secondary mb-2">No activity yet</h3>
+          <p className="text-sm text-text-muted">
             {filter === 'following' 
               ? 'Follow other readers to see their activity here'
               : 'Be the first to share your reading journey!'
@@ -216,25 +216,25 @@ export const ActivityFeed = memo<ActivityFeedProps>(({ onViewProfile }) => {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     {/* Activity Text */}
-                    <p className="text-sm text-slate-700 dark:text-slate-300">
+                    <p className="text-sm text-text-secondary">
                       {getActivityText(activity)}
                     </p>
 
                     {/* Book Author if applicable */}
                     {activity.book_author && (
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-xs text-text-muted mt-0.5">
                         by {activity.book_author}
                       </p>
                     )}
 
                     {/* Timestamp */}
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-text-muted mt-1">
                       {formatTime(activity.created_at)}
                     </p>
 
                     {/* Review Content Preview */}
                     {activity.activity_type === 'review' && activity.content && (
-                      <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 line-clamp-2 italic">
+                      <p className="mt-2 text-sm text-text-secondary line-clamp-2 italic">
                         "{activity.content}"
                       </p>
                     )}
@@ -248,7 +248,7 @@ export const ActivityFeed = memo<ActivityFeedProps>(({ onViewProfile }) => {
                             className={`w-4 h-4 ${
                               star <= activity.metadata!.rating
                                 ? 'text-yellow-400 fill-current'
-                                : 'text-slate-300 dark:text-slate-600'
+                                : 'text-text-muted'
                             }`}
                           />
                         ))}
@@ -263,7 +263,7 @@ export const ActivityFeed = memo<ActivityFeedProps>(({ onViewProfile }) => {
                         className={`flex items-center gap-1.5 text-sm transition-colors ${
                           likedActivities[activity.id]
                             ? 'text-red-500'
-                            : 'text-slate-400 hover:text-red-500'
+                            : 'text-text-muted hover:text-red-500'
                         }`}
                       >
                         <Heart 

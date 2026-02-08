@@ -121,7 +121,7 @@ export const BookReviewSection = memo<BookReviewSectionProps>(({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-text-primary">
             Community Reviews
           </h3>
           {reviews.length > 0 && (
@@ -133,12 +133,12 @@ export const BookReviewSection = memo<BookReviewSectionProps>(({
                     className={`w-4 h-4 ${
                       star <= Math.round(averageRating)
                         ? 'text-yellow-400 fill-current'
-                        : 'text-slate-300 dark:text-slate-600'
+                        : 'text-text-muted'
                     }`}
                   />
                 ))}
               </div>
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-text-muted">
                 {averageRating.toFixed(1)} • {reviews.length} review{reviews.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -157,10 +157,10 @@ export const BookReviewSection = memo<BookReviewSectionProps>(({
 
       {/* Review Form */}
       {showReviewForm && (
-        <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 space-y-4">
+        <div className="bg-surface-base rounded-xl p-4 space-y-4">
           {/* Star Rating */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               Your Rating
             </label>
             <div className="flex gap-1">
@@ -176,7 +176,7 @@ export const BookReviewSection = memo<BookReviewSectionProps>(({
                     className={`w-8 h-8 ${
                       star <= (hoverRating || rating)
                         ? 'text-yellow-400 fill-current'
-                        : 'text-slate-300 dark:text-slate-600'
+                        : 'text-text-muted'
                     }`}
                   />
                 </button>
@@ -186,7 +186,7 @@ export const BookReviewSection = memo<BookReviewSectionProps>(({
 
           {/* Review Text */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               Your Review (optional)
             </label>
             <textarea
@@ -194,7 +194,7 @@ export const BookReviewSection = memo<BookReviewSectionProps>(({
               onChange={(e) => setReviewText(e.target.value)}
               placeholder="Share your thoughts about this book..."
               rows={4}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary resize-none"
             />
           </div>
 
@@ -204,9 +204,9 @@ export const BookReviewSection = memo<BookReviewSectionProps>(({
               type="checkbox"
               checked={isSpoiler}
               onChange={(e) => setIsSpoiler(e.target.checked)}
-              className="w-4 h-4 rounded border-slate-300 text-violet-500 focus:ring-violet-500"
+              className="w-4 h-4 rounded border-surface-border text-violet-500 focus:ring-violet-500"
             />
-            <span className="text-sm text-slate-600 dark:text-slate-400">
+            <span className="text-sm text-text-secondary">
               Contains spoilers
             </span>
           </label>
@@ -215,7 +215,7 @@ export const BookReviewSection = memo<BookReviewSectionProps>(({
           <div className="flex gap-2">
             <button
               onClick={() => setShowReviewForm(false)}
-              className="px-4 py-2 text-slate-600 dark:text-slate-400 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
+              className="px-4 py-2 text-text-secondary text-sm font-medium hover:bg-surface-elevated rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -243,7 +243,7 @@ export const BookReviewSection = memo<BookReviewSectionProps>(({
           <div className="animate-spin w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full" />
         </div>
       ) : reviews.length === 0 ? (
-        <div className="text-center py-8 text-slate-500">
+        <div className="text-center py-8 text-text-muted">
           <Star className="w-10 h-10 mx-auto mb-2 opacity-30" />
           <p>No reviews yet. Be the first to review this book!</p>
         </div>
@@ -252,7 +252,7 @@ export const BookReviewSection = memo<BookReviewSectionProps>(({
           {displayedReviews.map((review) => (
             <div 
               key={review.id}
-              className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700"
+              className="bg-surface-card rounded-xl p-4 border border-surface-border"
             >
               {/* User Info */}
               <div className="flex items-center gap-3 mb-3">
@@ -268,10 +268,10 @@ export const BookReviewSection = memo<BookReviewSectionProps>(({
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-900 dark:text-white text-sm truncate">
+                  <p className="font-medium text-text-primary text-sm truncate">
                     {review.user?.display_name || review.author?.display_name || 'Anonymous'}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-text-muted">
                     {new Date(review.created_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -285,7 +285,7 @@ export const BookReviewSection = memo<BookReviewSectionProps>(({
                     className={`w-4 h-4 ${
                       star <= review.rating
                         ? 'text-yellow-400 fill-current'
-                        : 'text-slate-300 dark:text-slate-600'
+                        : 'text-text-muted'
                     }`}
                   />
                 ))}
@@ -299,12 +299,12 @@ export const BookReviewSection = memo<BookReviewSectionProps>(({
                       <summary className="text-sm text-red-500 cursor-pointer hover:text-red-600">
                         ⚠️ Contains spoilers - click to reveal
                       </summary>
-                      <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
+                      <p className="mt-2 text-sm text-text-secondary">
                         {review.review_text || review.content}
                       </p>
                     </details>
                   ) : (
-                    <p className="text-sm text-slate-700 dark:text-slate-300">
+                    <p className="text-sm text-text-secondary">
                       {review.review_text || review.content}
                     </p>
                   )}
@@ -312,13 +312,13 @@ export const BookReviewSection = memo<BookReviewSectionProps>(({
               )}
 
               {/* Actions */}
-              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-surface-border">
                 <button
                   onClick={() => handleLike(review.id)}
                   className={`flex items-center gap-1 text-sm transition-colors ${
                     review.is_liked
                       ? 'text-violet-500'
-                      : 'text-slate-500 hover:text-violet-500'
+                      : 'text-text-muted hover:text-violet-500'
                   }`}
                 >
                   <ThumbsUp className={`w-4 h-4 ${review.is_liked ? 'fill-current' : ''}`} />

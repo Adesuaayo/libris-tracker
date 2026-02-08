@@ -191,7 +191,7 @@ export const BookClubsList = memo<BookClubsListProps>(({ currentUserId, onViewPr
                 </div>
               </div>
 
-              <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+              <ChevronRight className="w-5 h-5 text-text-muted flex-shrink-0" />
             </button>
           ))}
         </div>
@@ -256,7 +256,7 @@ function CreateClubModal({ onClose, onCreated }: CreateClubModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
-      <div className="bg-white dark:bg-slate-800 w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl">
+      <div className="bg-surface-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-surface-border">
           <h2 className="text-lg font-semibold text-text-primary">Create Book Club</h2>
@@ -331,10 +331,10 @@ function CreateClubModal({ onClose, onCreated }: CreateClubModalProps) {
             <button
               onClick={() => setIsPrivate(!isPrivate)}
               className={`w-12 h-7 rounded-full transition-colors ${
-                !isPrivate ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'
+                !isPrivate ? 'bg-green-500' : 'bg-surface-border'
               }`}
             >
-              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+              <div className={`w-5 h-5 rounded-full bg-surface-card shadow transition-transform ${
                 !isPrivate ? 'translate-x-6' : 'translate-x-1'
               }`} />
             </button>
@@ -473,25 +473,25 @@ function ClubDetailView({ club: initialClub, currentUserId, onBack, onViewProfil
 
         {/* Club Info */}
         <div className="px-4 -mt-8 relative">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-lg">
+          <div className="bg-surface-card rounded-xl p-4 shadow-lg">
             <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+              <h1 className="text-xl font-bold text-text-primary">
                 {club.name}
               </h1>
               {club.is_public ? (
                 <Globe className="w-4 h-4 text-green-500" />
               ) : (
-                <Lock className="w-4 h-4 text-slate-400" />
+                <Lock className="w-4 h-4 text-text-muted" />
               )}
             </div>
 
             {club.description && (
-              <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+              <p className="text-sm text-text-secondary mb-3">
                 {club.description}
               </p>
             )}
 
-            <div className="flex items-center gap-4 text-sm text-slate-500 mb-4">
+            <div className="flex items-center gap-4 text-sm text-text-muted mb-4">
               <span className="flex items-center gap-1">
                 <Users className="w-4 h-4" />
                 {members.length} members
@@ -545,7 +545,7 @@ function ClubDetailView({ club: initialClub, currentUserId, onBack, onViewProfil
           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
             activeTab === 'discussions'
               ? 'bg-violet-500 text-white'
-              : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+              : 'bg-surface-base text-text-secondary'
           }`}
         >
           Discussions
@@ -555,7 +555,7 @@ function ClubDetailView({ club: initialClub, currentUserId, onBack, onViewProfil
           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
             activeTab === 'members'
               ? 'bg-violet-500 text-white'
-              : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+              : 'bg-surface-base text-text-secondary'
           }`}
         >
           Members
@@ -583,17 +583,17 @@ function ClubDetailView({ club: initialClub, currentUserId, onBack, onViewProfil
 
               {discussions.length === 0 ? (
                 <div className="text-center py-8">
-                  <MessageCircle className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-                  <p className="text-slate-500">No discussions yet</p>
+                  <MessageCircle className="w-12 h-12 mx-auto text-text-muted mb-4" />
+                  <p className="text-text-muted">No discussions yet</p>
                 </div>
               ) : (
                 discussions.map((discussion) => (
                   <button
                     key={discussion.id}
                     onClick={() => setSelectedDiscussion(discussion)}
-                    className="w-full text-left p-4 bg-white dark:bg-slate-800 rounded-xl hover:shadow-md transition-all"
+                    className="w-full text-left p-4 bg-surface-card rounded-xl hover:shadow-md transition-all"
                   >
-                    <h3 className="font-semibold text-slate-900 dark:text-white">
+                    <h3 className="font-semibold text-text-primary">
                       {discussion.title}
                     </h3>
                     {discussion.book_title && (
@@ -601,10 +601,10 @@ function ClubDetailView({ club: initialClub, currentUserId, onBack, onViewProfil
                         About: {discussion.book_title}
                       </p>
                     )}
-                    <p className="text-sm text-slate-500 mt-2 line-clamp-2">
+                    <p className="text-sm text-text-muted mt-2 line-clamp-2">
                       {discussion.content}
                     </p>
-                    <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
+                    <div className="flex items-center gap-4 mt-3 text-xs text-text-muted">
                       <span>{new Date(discussion.created_at).toLocaleDateString()}</span>
                       <span className="flex items-center gap-1">
                         <MessageCircle className="w-3 h-3" />
@@ -623,7 +623,7 @@ function ClubDetailView({ club: initialClub, currentUserId, onBack, onViewProfil
                 <button
                   key={member.id}
                   onClick={() => onViewProfile(member.user_id)}
-                  className="w-full flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700"
+                  className="w-full flex items-center gap-3 p-3 bg-surface-card rounded-xl hover:bg-surface-elevated"
                 >
                   {member.user?.avatar_url ? (
                     <img 
@@ -638,14 +638,14 @@ function ClubDetailView({ club: initialClub, currentUserId, onBack, onViewProfil
                   )}
                   <div className="flex-1 text-left">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-slate-900 dark:text-white">
+                      <p className="font-medium text-text-primary">
                         {member.user?.display_name || 'Unknown'}
                       </p>
                       {member.role === 'admin' && (
                         <Crown className="w-4 h-4 text-yellow-500" />
                       )}
                     </div>
-                    <p className="text-xs text-slate-500 capitalize">{member.role}</p>
+                    <p className="text-xs text-text-muted capitalize">{member.role}</p>
                   </div>
                 </button>
               ))}
@@ -732,19 +732,19 @@ function NewDiscussionModal({ clubId, onClose, onCreated }: NewDiscussionModalPr
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
-      <div className="bg-white dark:bg-slate-800 w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl">
+      <div className="bg-surface-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">New Discussion</h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
-            <X className="w-5 h-5 text-slate-500" />
+        <div className="flex items-center justify-between p-4 border-b border-surface-border">
+          <h2 className="text-lg font-semibold text-text-primary">New Discussion</h2>
+          <button onClick={onClose} className="p-2 hover:bg-surface-elevated rounded-full">
+            <X className="w-5 h-5 text-text-muted" />
           </button>
         </div>
 
         {/* Form */}
         <div className="p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-text-secondary mb-1">
               Title *
             </label>
             <input
@@ -752,12 +752,12 @@ function NewDiscussionModal({ clubId, onClose, onCreated }: NewDiscussionModalPr
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What do you want to discuss?"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+              className="w-full px-3 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-text-secondary mb-1">
               About a book? (optional)
             </label>
             <input
@@ -765,12 +765,12 @@ function NewDiscussionModal({ clubId, onClose, onCreated }: NewDiscussionModalPr
               value={bookTitle}
               onChange={(e) => setBookTitle(e.target.value)}
               placeholder="Book title"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+              className="w-full px-3 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-text-secondary mb-1">
               Your thoughts *
             </label>
             <textarea
@@ -778,7 +778,7 @@ function NewDiscussionModal({ clubId, onClose, onCreated }: NewDiscussionModalPr
               onChange={(e) => setContent(e.target.value)}
               rows={4}
               placeholder="Share your thoughts..."
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-surface-border bg-surface-card text-text-primary resize-none"
             />
           </div>
 
@@ -931,7 +931,7 @@ function DiscussionDetailView({ discussion: initialDiscussion, currentUserId, on
           )}
         </div>
 
-        <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+        <h1 className="text-xl font-bold text-text-primary mb-2">
           {discussion.title}
         </h1>
 
@@ -952,7 +952,7 @@ function DiscussionDetailView({ discussion: initialDiscussion, currentUserId, on
           onChange={(e) => setReplyContent(e.target.value)}
           rows={3}
           placeholder="Share your thoughts..."
-          className="w-full px-3 py-2 rounded-lg border border-violet-300 dark:border-violet-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white resize-none text-sm mb-3"
+          className="w-full px-3 py-2 rounded-lg border border-violet-300 dark:border-violet-600 bg-surface-card text-text-primary resize-none text-sm mb-3"
         />
         <button
           onClick={handleAddReply}
@@ -964,11 +964,11 @@ function DiscussionDetailView({ discussion: initialDiscussion, currentUserId, on
       </div>
 
       {/* Discussion Content */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-        <p className="text-slate-600 dark:text-slate-400 mb-4">
+      <div className="bg-surface-card rounded-xl p-4 border border-surface-border">
+        <p className="text-text-secondary mb-4">
           {discussion.content}
         </p>
-        <div className="flex items-center justify-between text-sm text-slate-500 pt-3 border-t border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between text-sm text-text-muted pt-3 border-t border-surface-border">
           <span>{new Date(discussion.created_at).toLocaleDateString()}</span>
           <span>{replies.length} replies</span>
         </div>
@@ -981,13 +981,13 @@ function DiscussionDetailView({ discussion: initialDiscussion, currentUserId, on
         </div>
       ) : replies.length === 0 ? (
         <div className="text-center py-8">
-          <MessageCircle className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-          <p className="text-slate-500">No replies yet. Be the first to respond!</p>
+          <MessageCircle className="w-12 h-12 mx-auto text-text-muted mb-4" />
+          <p className="text-text-muted">No replies yet. Be the first to respond!</p>
         </div>
       ) : (
         <div className="space-y-4">
           {replies.map((reply) => (
-            <div key={reply.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+            <div key={reply.id} className="p-4 bg-surface-base rounded-xl">
               <div className="flex items-start gap-3 mb-2">
                 {reply.author?.avatar_url ? (
                   <img 
@@ -1004,7 +1004,7 @@ function DiscussionDetailView({ discussion: initialDiscussion, currentUserId, on
                   <div className="flex items-center justify-between">
                     <button 
                       onClick={() => onViewProfile(reply.author_id)}
-                      className="font-medium text-slate-900 dark:text-white hover:text-violet-600"
+                      className="font-medium text-text-primary hover:text-violet-600"
                     >
                       {reply.author?.display_name || 'Unknown'}
                     </button>
@@ -1019,12 +1019,12 @@ function DiscussionDetailView({ discussion: initialDiscussion, currentUserId, on
                       </button>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-text-muted">
                     {new Date(reply.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p className="text-text-secondary">
                 {reply.content}
               </p>
             </div>

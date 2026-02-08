@@ -53,26 +53,26 @@ export const SocialShare = memo<SocialShareProps>(({ title, text, url, type }) =
   const handleTwitterShare = () => {
     const tweetText = encodeURIComponent(text);
     const tweetUrl = encodeURIComponent(shareUrl);
-    window.open(`https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`, '_blank');
+    window.open(`https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`, '_blank', 'noopener,noreferrer');
     setShowOptions(false);
   };
 
   const handleFacebookShare = () => {
     const fbUrl = encodeURIComponent(shareUrl);
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${fbUrl}`, '_blank');
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${fbUrl}`, '_blank', 'noopener,noreferrer');
     setShowOptions(false);
   };
 
   const handleWhatsAppShare = () => {
     const waText = encodeURIComponent(fullText);
-    window.open(`https://wa.me/?text=${waText}`, '_blank');
+    window.open(`https://wa.me/?text=${waText}`, '_blank', 'noopener,noreferrer');
     setShowOptions(false);
   };
 
   const handleTelegramShare = () => {
     const tgText = encodeURIComponent(text);
     const tgUrl = encodeURIComponent(shareUrl);
-    window.open(`https://t.me/share/url?url=${tgUrl}&text=${tgText}`, '_blank');
+    window.open(`https://t.me/share/url?url=${tgUrl}&text=${tgText}`, '_blank', 'noopener,noreferrer');
     setShowOptions(false);
   };
 
@@ -113,66 +113,66 @@ export const SocialShare = memo<SocialShareProps>(({ title, text, url, type }) =
 
       {/* Share Options Dropdown (Web fallback) */}
       {showOptions && (
-        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
+        <div className="absolute right-0 mt-2 w-56 bg-surface-card rounded-xl shadow-xl border border-surface-border overflow-hidden z-50">
           <div className="p-2">
-            <p className="px-3 py-2 text-xs font-medium text-slate-500 uppercase">
+            <p className="px-3 py-2 text-xs font-medium text-text-muted uppercase">
               Share to
             </p>
 
             <button
               onClick={handleTwitterShare}
-              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-elevated rounded-lg transition-colors"
             >
               <div className="w-8 h-8 rounded-full bg-[#1DA1F2] flex items-center justify-center">
                 <Twitter className="w-4 h-4 text-white" />
               </div>
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Twitter / X</span>
+              <span className="text-sm font-medium text-text-secondary">Twitter / X</span>
             </button>
 
             <button
               onClick={handleFacebookShare}
-              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-elevated rounded-lg transition-colors"
             >
               <div className="w-8 h-8 rounded-full bg-[#1877F2] flex items-center justify-center">
                 <Facebook className="w-4 h-4 text-white" />
               </div>
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Facebook</span>
+              <span className="text-sm font-medium text-text-secondary">Facebook</span>
             </button>
 
             <button
               onClick={handleWhatsAppShare}
-              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-elevated rounded-lg transition-colors"
             >
               <div className="w-8 h-8 rounded-full bg-[#25D366] flex items-center justify-center">
                 <MessageCircle className="w-4 h-4 text-white" />
               </div>
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">WhatsApp</span>
+              <span className="text-sm font-medium text-text-secondary">WhatsApp</span>
             </button>
 
             <button
               onClick={handleTelegramShare}
-              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-elevated rounded-lg transition-colors"
             >
               <div className="w-8 h-8 rounded-full bg-[#0088cc] flex items-center justify-center">
                 <Send className="w-4 h-4 text-white" />
               </div>
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Telegram</span>
+              <span className="text-sm font-medium text-text-secondary">Telegram</span>
             </button>
 
-            <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
+            <div className="border-t border-surface-border my-2" />
 
             <button
               onClick={handleCopyLink}
-              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-elevated rounded-lg transition-colors"
             >
-              <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-surface-elevated flex items-center justify-center">
                 {copied ? (
                   <Check className="w-4 h-4 text-green-500" />
                 ) : (
-                  <Link className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  <Link className="w-4 h-4 text-text-muted" />
                 )}
               </div>
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <span className="text-sm font-medium text-text-secondary">
                 {copied ? 'Copied!' : 'Copy link'}
               </span>
             </button>

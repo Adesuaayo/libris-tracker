@@ -45,7 +45,7 @@ export const BookSearch: React.FC<BookSearchProps> = memo(({ onSelectBook }) => 
 
   return (
     <div className="mt-4">
-      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+      <label className="block text-sm font-medium text-text-secondary mb-1">
         Auto-fill from Google Books
       </label>
       <div className="flex gap-2">
@@ -66,7 +66,7 @@ export const BookSearch: React.FC<BookSearchProps> = memo(({ onSelectBook }) => 
             }
           }}
           placeholder="Search by title or ISBN..."
-          className="flex-1 rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border"
+          className="flex-1 rounded-lg border-surface-border bg-surface-card text-text-primary shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border"
         />
         <Button 
           type="button" 
@@ -83,7 +83,7 @@ export const BookSearch: React.FC<BookSearchProps> = memo(({ onSelectBook }) => 
       </div>
       
       {showResults && searchResults.length > 0 && (
-        <ul className="mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-800 max-h-48 overflow-y-auto">
+        <ul className="mt-2 bg-surface-card border border-surface-border rounded-lg divide-y divide-surface-border max-h-48 overflow-y-auto">
           {searchResults.map((item) => {
             let thumbnailUrl = item.volumeInfo.imageLinks?.smallThumbnail || '';
             if (thumbnailUrl?.startsWith('http://')) {
@@ -93,17 +93,17 @@ export const BookSearch: React.FC<BookSearchProps> = memo(({ onSelectBook }) => 
             return (
               <li
                 key={item.id}
-                className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-3"
+                className="p-2 hover:bg-surface-elevated cursor-pointer flex items-center gap-3"
                 onClick={() => handleSelect(item)}
               >
                 {thumbnailUrl && (
                   <img src={thumbnailUrl} alt="" className="w-8 h-12 object-cover rounded" />
                 )}
                 <div className="text-sm">
-                  <p className="font-medium text-slate-800 dark:text-slate-100">
+                  <p className="font-medium text-text-primary">
                     {item.volumeInfo.title}
                   </p>
-                  <p className="text-slate-500 dark:text-slate-400">
+                  <p className="text-text-muted">
                     {item.volumeInfo.authors?.join(', ')}
                   </p>
                 </div>
