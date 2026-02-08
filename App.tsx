@@ -23,7 +23,7 @@ const Analytics = lazy(() => import('./components/Analytics').then(m => ({ defau
 const BookForm = lazy(() => import('./components/BookForm').then(m => ({ default: m.BookForm as React.ComponentType<any> })));
 import { supabase, bookApi } from './services/supabase';
 import { ebookStorage } from './services/ebookStorage';
-import { BookOpen, BarChart2, Plus, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, Moon, Sun, Laptop, LogOut, Loader2, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText, Globe, Check, Flame, Target, Lightbulb, Library, Bell, Eye, Crown, Sparkles } from 'lucide-react';
+import { BookOpen, BarChart2, Plus, Trash2, Edit2, Download, BrainCircuit, X, Trophy, ArrowUpDown, Moon, Sun, Laptop, LogOut, Loader2, Star, User, Camera, MessageSquare, Shield, ChevronRight, Home, ArrowLeft, FileText, Globe, Check, Flame, Target, Lightbulb, Library, Bell, Eye, Crown, Sparkles, AlertTriangle } from 'lucide-react';
 import { getBookRecommendations, analyzeReadingHabits, getBookSummary } from './services/gemini';
 import { App as CapApp } from '@capacitor/app';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
@@ -59,6 +59,9 @@ export default function App() {
     return saved ? JSON.parse(saved) : DEFAULT_ACCESSIBILITY;
   });
   const [showAccessibility, setShowAccessibility] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const [view, setView] = useState<ViewMode>('library');
   const [activeTab, setActiveTab] = useState<TabView>('home');
@@ -504,6 +507,41 @@ export default function App() {
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Failed to sign out. Please try again.');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') return;
+    setDeletingAccount(true);
+    try {
+      // Call server-side RPC to delete all user data + auth record
+      const { error: rpcError } = await supabase.rpc('delete_user_account');
+      if (rpcError) {
+        console.error('RPC delete error:', rpcError);
+        toast.error('Failed to delete account. Please try again.');
+        setDeletingAccount(false);
+        return;
+      }
+
+      // Clear all localStorage
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('libris-')) keysToRemove.push(key);
+        if (key && (key.startsWith('ebook-position-') || key.startsWith('pdf-position-'))) keysToRemove.push(key);
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+
+      // Sign out (clears session)
+      await supabase.auth.signOut();
+      setShowDeleteAccount(false);
+      setDeleteConfirmText('');
+      toast.success('Your account has been permanently deleted.');
+    } catch (error) {
+      console.error('Delete account error:', error);
+      toast.error('Failed to delete account. Please contact support.');
+    } finally {
+      setDeletingAccount(false);
     }
   };
 
@@ -1848,6 +1886,65 @@ export default function App() {
               {session.user.email}
             </div>
           </div>
+        </div>
+
+        {/* Delete Account */}
+        <div className="mt-6">
+          {!showDeleteAccount ? (
+            <button
+              onClick={() => setShowDeleteAccount(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 text-red-500 text-sm hover:bg-red-500/10 rounded-xl transition-colors"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Delete Account</span>
+            </button>
+          ) : (
+            <div className="bg-surface-card rounded-xl border border-red-500/30 overflow-hidden">
+              <div className="p-4 bg-red-500/5 border-b border-red-500/20">
+                <div className="flex items-center gap-2 text-red-500 mb-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  <h3 className="font-semibold">Delete Account Permanently</h3>
+                </div>
+                <p className="text-sm text-text-secondary">
+                  This will permanently delete your account and all associated data including your books, reading history, notes, streaks, community posts, and challenges. This action <strong className="text-red-500">cannot be undone</strong>.
+                </p>
+              </div>
+              <div className="p-4 space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-text-muted block mb-1.5">
+                    Type <span className="font-bold text-red-500">DELETE</span> to confirm
+                  </label>
+                  <input
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder="DELETE"
+                    className="w-full px-3 py-2 rounded-lg bg-surface-base text-text-primary border border-surface-border focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50"
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setShowDeleteAccount(false); setDeleteConfirmText(''); }}
+                    className="flex-1 py-2.5 bg-surface-base text-text-secondary font-medium rounded-lg hover:bg-surface-border transition-colors text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deleteConfirmText !== 'DELETE' || deletingAccount}
+                    className="flex-1 py-2.5 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
+                  >
+                    {deletingAccount ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /> Deleting...</>
+                    ) : (
+                      <><Trash2 className="h-4 w-4" /> Delete Forever</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

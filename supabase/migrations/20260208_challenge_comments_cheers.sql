@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS challenge_comments (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   challenge_id UUID NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
   content TEXT NOT NULL CHECK (char_length(content) <= 500),
   created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS challenge_comments (
 CREATE TABLE IF NOT EXISTS challenge_cheers (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   challenge_id UUID NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
   emoji TEXT NOT NULL CHECK (char_length(emoji) <= 4),
   created_at TIMESTAMPTZ DEFAULT now(),
   -- One emoji reaction per user per challenge
@@ -24,10 +24,13 @@ CREATE INDEX IF NOT EXISTS idx_challenge_comments_created_at ON challenge_commen
 CREATE INDEX IF NOT EXISTS idx_challenge_cheers_challenge_id ON challenge_cheers(challenge_id);
 
 -- Foreign key references to profiles for JOINs
+-- Drop first in case a prior run left stale constraints
+ALTER TABLE challenge_comments DROP CONSTRAINT IF EXISTS challenge_comments_user_id_fkey;
 ALTER TABLE challenge_comments
   ADD CONSTRAINT challenge_comments_user_id_fkey
   FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
 
+ALTER TABLE challenge_cheers DROP CONSTRAINT IF EXISTS challenge_cheers_user_id_fkey;
 ALTER TABLE challenge_cheers
   ADD CONSTRAINT challenge_cheers_user_id_fkey
   FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
