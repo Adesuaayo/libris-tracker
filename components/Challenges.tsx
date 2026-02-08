@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo, useRef } from 'react';
 import { 
   Trophy, 
   Plus, 
@@ -13,9 +13,12 @@ import {
   Loader2,
   Medal,
   Crown,
-  Sparkles
+  Sparkles,
+  MessageCircle,
+  Send,
+  Trash2
 } from 'lucide-react';
-import { communityApi, Challenge, ChallengeProgress } from '../services/community';
+import { communityApi, Challenge, ChallengeProgress, ChallengeComment, CheerEmoji } from '../services/community';
 import { useToastActions } from './Toast';
 
 interface ChallengesProps {
@@ -41,6 +44,23 @@ const CHALLENGE_TYPE_ICONS: Record<ChallengeType, React.ReactNode> = {
   custom: <Trophy className="w-4 h-4" />
 };
 
+const CHEER_EMOJIS: CheerEmoji[] = ['🔥', '🎉', '👏', '📚', '💪', '⭐'];
+
+const formatCommentTime = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMs / 3600000);
+  const diffDay = Math.floor(diffMs / 86400000);
+
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
 export const Challenges = memo<ChallengesProps>(({ currentUserId }) => {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [filter, setFilter] = useState<ChallengeFilter>('all');
@@ -49,6 +69,13 @@ export const Challenges = memo<ChallengesProps>(({ currentUserId }) => {
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
   const [leaderboard, setLeaderboard] = useState<ChallengeProgress[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [comments, setComments] = useState<ChallengeComment[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [sendingComment, setSendingComment] = useState(false);
+  const [cheers, setCheers] = useState<Record<string, { count: number; userCheered: boolean }>>({});
+  const [cheerAnimating, setCheerAnimating] = useState<string | null>(null);
+  const commentsEndRef = useRef<HTMLDivElement>(null);
   
   const toast = useToastActions();
 
@@ -132,6 +159,88 @@ export const Challenges = memo<ChallengesProps>(({ currentUserId }) => {
   const handleSelectChallenge = async (challenge: Challenge) => {
     setSelectedChallenge(challenge);
     loadLeaderboard(challenge.id);
+    loadComments(challenge.id);
+    loadCheers(challenge.id);
+  };
+
+  const loadComments = async (challengeId: string) => {
+    setLoadingComments(true);
+    try {
+      const data = await communityApi.challenges.getComments(challengeId);
+      setComments(data);
+    } catch (error) {
+      console.error('Error loading comments:', error);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const loadCheers = async (challengeId: string) => {
+    try {
+      const data = await communityApi.challenges.getCheers(challengeId);
+      setCheers(data);
+    } catch (error) {
+      console.error('Error loading cheers:', error);
+    }
+  };
+
+  const handleSendComment = async () => {
+    if (!newComment.trim() || !selectedChallenge) return;
+    setSendingComment(true);
+    try {
+      const comment = await communityApi.challenges.addComment(selectedChallenge.id, newComment.trim());
+      if (comment) {
+        setComments(prev => [...prev, comment]);
+        setNewComment('');
+        // Scroll to bottom after short delay
+        setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      } else {
+        toast.error('Failed to send comment');
+      }
+    } catch (error) {
+      toast.error('Failed to send comment');
+    } finally {
+      setSendingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      const success = await communityApi.challenges.deleteComment(commentId);
+      if (success) {
+        setComments(prev => prev.filter(c => c.id !== commentId));
+      }
+    } catch (error) {
+      toast.error('Failed to delete comment');
+    }
+  };
+
+  const handleToggleCheer = async (emoji: string) => {
+    if (!selectedChallenge) return;
+    
+    // Optimistic update
+    setCheers(prev => {
+      const current = prev[emoji] || { count: 0, userCheered: false };
+      return {
+        ...prev,
+        [emoji]: {
+          count: current.userCheered ? current.count - 1 : current.count + 1,
+          userCheered: !current.userCheered
+        }
+      };
+    });
+    setCheerAnimating(emoji);
+    setTimeout(() => setCheerAnimating(null), 600);
+
+    try {
+      const result = await communityApi.challenges.toggleCheer(selectedChallenge.id, emoji);
+      if (!result) {
+        // Revert on failure
+        loadCheers(selectedChallenge.id);
+      }
+    } catch (error) {
+      loadCheers(selectedChallenge.id);
+    }
   };
 
   const getProgressPercentage = (current: number, target: number) => {
@@ -348,6 +457,129 @@ export const Challenges = memo<ChallengesProps>(({ currentUserId }) => {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Cheers / Emoji Reactions */}
+          <div className="bg-surface-card border border-surface-border rounded-xl p-4">
+            <h3 className="font-semibold text-text-primary text-sm mb-3">Cheer this challenge!</h3>
+            <div className="flex flex-wrap gap-2">
+              {CHEER_EMOJIS.map((emoji) => {
+                const cheerData = cheers[emoji];
+                const count = cheerData?.count || 0;
+                const userCheered = cheerData?.userCheered || false;
+                return (
+                  <button
+                    key={emoji}
+                    onClick={() => handleToggleCheer(emoji)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all duration-200 ${
+                      userCheered
+                        ? 'bg-accent/15 border-accent/40 scale-105'
+                        : 'bg-surface-base border-surface-border hover:border-accent/30'
+                    } ${cheerAnimating === emoji ? 'animate-bounce' : ''}`}
+                  >
+                    <span className="text-base">{emoji}</span>
+                    {count > 0 && (
+                      <span className={`text-xs font-medium ${userCheered ? 'text-accent' : 'text-text-muted'}`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Comments Section */}
+          <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-surface-border">
+              <h3 className="font-semibold text-text-primary flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-accent" />
+                Discussion
+                {comments.length > 0 && (
+                  <span className="text-xs text-text-muted font-normal">({comments.length})</span>
+                )}
+              </h3>
+            </div>
+
+            {/* Comments List */}
+            <div className="max-h-80 overflow-y-auto">
+              {loadingComments ? (
+                <div className="p-6 flex items-center justify-center">
+                  <Loader2 className="w-5 h-5 animate-spin text-accent" />
+                </div>
+              ) : comments.length === 0 ? (
+                <div className="p-6 text-center text-text-muted">
+                  <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No comments yet</p>
+                  <p className="text-xs mt-1">Be the first to say something!</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-surface-border">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="p-3 group">
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden flex-shrink-0 mt-0.5">
+                          {comment.user?.avatar_url ? (
+                            <img src={comment.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-xs font-medium text-accent">
+                              {(comment.user?.display_name || comment.user?.username || '?')[0].toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-text-primary">
+                              {comment.user?.display_name || comment.user?.username || 'User'}
+                            </span>
+                            <span className="text-xs text-text-muted">
+                              {formatCommentTime(comment.created_at)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-text-secondary mt-0.5 break-words">{comment.content}</p>
+                        </div>
+                        {comment.user_id === currentUserId && (
+                          <button
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="p-1 opacity-0 group-hover:opacity-60 sm:group-hover:opacity-100 hover:text-red-500 transition-all flex-shrink-0"
+                            title="Delete comment"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={commentsEndRef} />
+                </div>
+              )}
+            </div>
+
+            {/* Comment Input */}
+            <div className="p-3 border-t border-surface-border bg-surface-base/50">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendComment(); } }}
+                  placeholder="Write a comment..."
+                  className="flex-1 px-3 py-2 bg-surface-card border border-surface-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent/50"
+                  maxLength={500}
+                />
+                <button
+                  onClick={handleSendComment}
+                  disabled={!newComment.trim() || sendingComment}
+                  className="p-2 bg-accent text-white rounded-lg hover:bg-accent-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {sendingComment ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

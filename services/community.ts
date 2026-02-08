@@ -220,6 +220,25 @@ export interface ChallengeProgress {
   user?: UserProfile;
 }
 
+export interface ChallengeComment {
+  id: string;
+  challenge_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  user?: UserProfile;
+}
+
+export interface ChallengeCheer {
+  id: string;
+  challenge_id: string;
+  user_id: string;
+  emoji: string;
+  created_at: string;
+}
+
+export type CheerEmoji = '🔥' | '🎉' | '👏' | '📚' | '💪' | '⭐';
+
 // =============================================
 // PROFILES API
 // =============================================
@@ -1908,6 +1927,134 @@ export const challengesApi = {
     }
 
     return true;
+  },
+
+  // --- Comments ---
+  async getComments(challengeId: string): Promise<ChallengeComment[]> {
+    const { data, error } = await supabase
+      .from('challenge_comments')
+      .select(`
+        *,
+        user:profiles!challenge_comments_user_id_fkey(id, username, display_name, avatar_url)
+      `)
+      .eq('challenge_id', challengeId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching challenge comments:', error);
+      return [];
+    }
+
+    return data || [];
+  },
+
+  async addComment(challengeId: string, content: string): Promise<ChallengeComment | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('challenge_comments')
+      .insert({
+        challenge_id: challengeId,
+        user_id: user.id,
+        content
+      })
+      .select(`
+        *,
+        user:profiles!challenge_comments_user_id_fkey(id, username, display_name, avatar_url)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error adding challenge comment:', error);
+      return null;
+    }
+
+    return data;
+  },
+
+  async deleteComment(commentId: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from('challenge_comments')
+      .delete()
+      .eq('id', commentId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error deleting challenge comment:', error);
+      return false;
+    }
+
+    return true;
+  },
+
+  // --- Cheers (Emoji Reactions) ---
+  async getCheers(challengeId: string): Promise<Record<string, { count: number; userCheered: boolean }>> {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+      .from('challenge_cheers')
+      .select('*')
+      .eq('challenge_id', challengeId);
+
+    if (error) {
+      console.error('Error fetching cheers:', error);
+      return {};
+    }
+
+    // Aggregate by emoji
+    const cheers: Record<string, { count: number; userCheered: boolean }> = {};
+    for (const cheer of (data || [])) {
+      if (!cheers[cheer.emoji]) {
+        cheers[cheer.emoji] = { count: 0, userCheered: false };
+      }
+      cheers[cheer.emoji].count++;
+      if (user && cheer.user_id === user.id) {
+        cheers[cheer.emoji].userCheered = true;
+      }
+    }
+
+    return cheers;
+  },
+
+  async toggleCheer(challengeId: string, emoji: string): Promise<{ added: boolean } | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    // Check if user already cheered with this emoji
+    const { data: existing } = await supabase
+      .from('challenge_cheers')
+      .select('id')
+      .eq('challenge_id', challengeId)
+      .eq('user_id', user.id)
+      .eq('emoji', emoji)
+      .single();
+
+    if (existing) {
+      // Remove cheer
+      await supabase
+        .from('challenge_cheers')
+        .delete()
+        .eq('id', existing.id);
+      return { added: false };
+    } else {
+      // Add cheer
+      const { error } = await supabase
+        .from('challenge_cheers')
+        .insert({
+          challenge_id: challengeId,
+          user_id: user.id,
+          emoji
+        });
+      if (error) {
+        console.error('Error adding cheer:', error);
+        return null;
+      }
+      return { added: true };
+    }
   }
 };
 

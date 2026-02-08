@@ -187,6 +187,10 @@ export default function App() {
       console.log(`[App] Auth State Change: ${event}`);
       setSession(session);
       if (session) {
+          // Always land on Home after sign-in / sign-up
+          setActiveTab('home');
+          setShowDashboard(true);
+          setView('library');
           loadBooks();
           // Load user settings from metadata on auth change
           loadUserSettings(session);
@@ -507,6 +511,9 @@ export default function App() {
   const handleOnboardingComplete = async (preferences: ReadingPreferences, yearlyGoalTarget?: number) => {
     setReadingPreferences(preferences);
     setShowOnboarding(false);
+    // Ensure user lands on Home after onboarding
+    setActiveTab('home');
+    setShowDashboard(true);
     localStorage.setItem('libris-reading-preferences', JSON.stringify(preferences));
     
     // Create yearly reading goal if user set one
@@ -546,6 +553,9 @@ export default function App() {
     const skippedPrefs = { ...DEFAULT_PREFERENCES, hasCompletedOnboarding: true };
     setReadingPreferences(skippedPrefs);
     setShowOnboarding(false);
+    // Ensure user lands on Home after skipping onboarding
+    setActiveTab('home');
+    setShowDashboard(true);
     localStorage.setItem('libris-reading-preferences', JSON.stringify(skippedPrefs));
   };
 
