@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - polish-prelaunch
 
 jobs:
   build:
